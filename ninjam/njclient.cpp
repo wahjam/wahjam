@@ -1533,7 +1533,7 @@ void NJClient::mixInChannel(bool muted, float vol, float pan, DecodeState *chan,
     // advance the queue
     chan->decode_samplesout += needed/chan->decode_codec->GetNumChannels();
     chan->decode_codec->m_samples_used -= needed+chan->dump_samples;
-    memcpy(sptr,sptr+needed+chan->dump_samples,chan->decode_codec->m_samples_used*sizeof(float));
+    memmove(sptr,sptr+needed+chan->dump_samples,chan->decode_codec->m_samples_used*sizeof(float));
     chan->dump_samples=0;
   }
   else
