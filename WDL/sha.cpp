@@ -46,13 +46,6 @@
 
 */
 
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <stdlib.h>
-#include <string.h>
-#endif
-
 #include "sha.h"
 
 /// sha
@@ -71,7 +64,8 @@ void WDL_SHA1::reset()
   H[2] = 0x98badcfeL;
   H[3] = 0x10325476L;
   H[4] = 0xc3d2e1f0L;
-  memset(W,0,sizeof(W));
+  int x;
+  for (x = 0; x < sizeof(W)/sizeof(W[0]); x ++) W[x]=0;
 }
 
 

@@ -63,11 +63,13 @@ public:
   {
   }
 
-  void Add(const void *buf, int len)
+  void *Add(const void *buf, int len)
   {
     int olen=m_hb.GetSize();
-    void *obuf=m_hb.Resize(olen+len);
-    if (obuf) memcpy((char*)obuf+olen,buf,len);
+    void *obuf=m_hb.Resize(olen+len,false);
+    if (!obuf) return 0;
+    if (buf) memcpy((char*)obuf+olen,buf,len);
+    return (char*)obuf+olen;
   }
 
   int GetSize()
@@ -87,12 +89,18 @@ public:
     return m_hb.GetSize() - m_pos;
   }
 
+  void Clear()
+  {
+    m_pos=0;
+    m_hb.Resize(0,false);
+  }
+
   void Advance(int bytecnt)
   {
     m_pos+=bytecnt;
   }
 
-  void Compact()
+  void Compact(bool allocdown=false)
   {
     if (m_pos > 0)
     {
@@ -100,14 +108,18 @@ public:
       if (m_pos < olen)
       {
         void *a=m_hb.Get();
-        if (a) memcpy(a,(char*)a+m_pos,olen-m_pos);
-        m_hb.Resize(olen-m_pos);
+        if (a) memmove(a,(char*)a+m_pos,olen-m_pos);
+        m_hb.Resize(olen-m_pos,allocdown);
       }
-      else m_hb.Resize(0);
+      else m_hb.Resize(0,allocdown);
       m_pos=0;
     }
   }
 
+  void SetGranul(int granul) 
+  {
+    m_hb.SetGranul(granul);
+  }
 
 
 private:

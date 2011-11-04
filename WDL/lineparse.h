@@ -51,9 +51,11 @@
   
 */
 
-#ifndef _LINEPARSE_H_
-#define _LINEPARSE_H_
+#ifndef WDL_LINEPARSE_H_
+#define WDL_LINEPARSE_H_
 
+
+#ifndef WDL_LINEPARSE_IMPL_ONLY
 class LineParser {
   public:
 
@@ -73,8 +75,24 @@ class LineParser {
     {
       return m_bCommentBlock;
     }
+    int getnumtokens() { return m_nt-m_eat; }
+
+    void eattoken() { m_eat++; }
     
-    int parse(char *line, int ignore_escaping=0) // returns -1 on error
+#define WDL_LINEPARSE_PREFIX 
+#else
+#define WDL_LINEPARSE_PREFIX LineParser::
+#endif
+    
+    int WDL_LINEPARSE_PREFIX parse(const char *line, int ignore_escaping
+#ifdef WDL_LINEPARSE_INTF_ONLY
+      =1); // returns -1 on error
+#else
+#ifdef WDL_LINEPARSE_IMPL_ONLY
+    )
+#else
+    =1)
+#endif
     {
       freetokens();
       bool bPrevCB=m_bCommentBlock;
@@ -93,12 +111,19 @@ class LineParser {
       }
       return 0;
     }
+#endif
 
-    int getnumtokens() { return m_nt-m_eat; }
 
-    void eattoken() { m_eat++; }
+    double WDL_LINEPARSE_PREFIX gettoken_float(int token, int *success
+#ifdef WDL_LINEPARSE_INTF_ONLY
+      =0);
+#else
 
-    double gettoken_float(int token, int *success=0)
+#ifdef WDL_LINEPARSE_IMPL_ONLY
+    )
+#else
+    =0)
+#endif
     {
       token+=m_eat;
       if (token < 0 || token >= m_nt) 
@@ -118,7 +143,17 @@ class LineParser {
       }
       return atof(m_tokens[token]);
     }
-    int gettoken_int(int token, int *success=0) 
+#endif
+
+    int WDL_LINEPARSE_PREFIX gettoken_int(int token, int *success
+#ifdef WDL_LINEPARSE_INTF_ONLY
+      =0) ;
+#else
+#ifdef WDL_LINEPARSE_IMPL_ONLY
+    )
+#else
+    =0)
+#endif
     { 
       token+=m_eat;
       if (token < 0 || token >= m_nt || !m_tokens[token][0]) 
@@ -133,13 +168,21 @@ class LineParser {
       if (success) *success=! (int)(*tmp);
       return l;
     }
-    char *gettoken_str(int token) 
+#endif
+    char * WDL_LINEPARSE_PREFIX gettoken_str(int token) 
+#ifdef WDL_LINEPARSE_INTF_ONLY
+      ;
+#else
     { 
       token+=m_eat;
       if (token < 0 || token >= m_nt) return "";
       return m_tokens[token]; 
     }
-    int gettoken_enum(int token, const char *strlist) // null seperated list
+#endif
+    int WDL_LINEPARSE_PREFIX gettoken_enum(int token, const char *strlist) // null seperated list
+#ifdef WDL_LINEPARSE_INTF_ONLY
+      ;
+#else
     {
       int x=0;
       char *tt=gettoken_str(token);
@@ -155,8 +198,15 @@ class LineParser {
       }
       return -1;
     }
+#endif
+
+#ifndef WDL_LINEPARSE_IMPL_ONLY
   private:
-    void freetokens()
+#endif//!WDL_LINEPARSE_IMPL_ONLY
+    void WDL_LINEPARSE_PREFIX freetokens()
+#ifdef WDL_LINEPARSE_INTF_ONLY
+      ;
+#else
     {
       if (m_tokens)
       {
@@ -168,8 +218,12 @@ class LineParser {
       m_tokens=0;
       m_nt=0;
     }
+#endif
 
-    int doline(char *line, int ignore_escaping=0)
+    int WDL_LINEPARSE_PREFIX doline(const char *line, int ignore_escaping)
+#ifdef WDL_LINEPARSE_INTF_ONLY
+      ;
+#else
     {
       m_nt=0;
       if ( m_bCommentBlock )
@@ -201,7 +255,7 @@ class LineParser {
         else if (*line == '`') lstate=4;
         if (lstate) line++;
         int nc=0;
-        char *p = line;
+        const char *p = line;
         while (*line)
         {
           if (line[0] == '$' && line[1] == '\\') {
@@ -248,11 +302,14 @@ class LineParser {
       }
       return 0;
     }
+#endif
     
+#ifndef WDL_LINEPARSE_IMPL_ONLY
     int m_eat;
     int m_nt;
     bool m_bCommentBlock;
     char **m_tokens;
 };
-#endif//_LINEPARSE_H_
+#endif//!WDL_LINEPARSE_IMPL_ONLY
+#endif//WDL_LINEPARSE_H_
 

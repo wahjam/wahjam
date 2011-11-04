@@ -52,6 +52,7 @@
 
 #include "heapbuf.h"
 
+#ifndef WDL_STRING_IMPL_ONLY
 class WDL_String
 {
 public:
@@ -70,8 +71,20 @@ public:
   ~WDL_String()
   {
   }
+#define WDL_STRING_PREFIX 
+#else
+#define WDL_STRING_PREFIX WDL_String::
+#endif
 
-  void Set(const char *str, int maxlen=0)
+  void WDL_STRING_PREFIX Set(const char *str, int maxlen
+#ifdef WDL_STRING_INTF_ONLY
+      =0); 
+#else
+#ifdef WDL_STRING_IMPL_ONLY
+    )
+#else
+    =0)
+#endif
   {
     int s=strlen(str);
     if (maxlen && s > maxlen) s=maxlen;   
@@ -83,8 +96,17 @@ public:
       newbuf[s]=0;
     }
   }
+#endif
 
-  void Append(const char *str, int maxlen=0)
+  void WDL_STRING_PREFIX Append(const char *str, int maxlen
+#ifdef WDL_STRING_INTF_ONLY
+      =0); 
+#else
+#ifdef WDL_STRING_IMPL_ONLY
+    )
+#else
+    =0)
+#endif
   {
     int s=strlen(str);
     if (maxlen && s > maxlen) s=maxlen;
@@ -98,8 +120,12 @@ public:
       newbuf[olds+s]=0;
     }
   }
+#endif
 
-  void DeleteSub(int position, int len)
+  void WDL_STRING_PREFIX DeleteSub(int position, int len)
+#ifdef WDL_STRING_INTF_ONLY
+    ;
+#else
   {
 	  char *p=Get();
 	  if (!p || !*p) return;
@@ -109,8 +135,17 @@ public:
 	  if (position+len > l) len=l-position;
 	  memmove(p+position,p+position+len,l-position-len+1); // +1 for null
   }
+#endif
 
-  void Insert(const char *str, int position, int maxlen=0)
+  void WDL_STRING_PREFIX Insert(const char *str, int position, int maxlen
+#ifdef WDL_STRING_INTF_ONLY
+      =0); 
+#else
+#ifdef WDL_STRING_IMPL_ONLY
+    )
+#else
+    =0)
+#endif
   {
 	  int sl=strlen(Get());
 	  if (position > sl) position=sl;
@@ -125,13 +160,19 @@ public:
 	  memcpy(cur+position,str,ilen);
 	  cur[sl+ilen]=0;
   }
+#endif
 
-  void SetLen(int length) // sets number of chars allocated for string, not including null terminator
+  void WDL_STRING_PREFIX SetLen(int length) // sets number of chars allocated for string, not including null terminator
+#ifdef WDL_STRING_INTF_ONLY
+    ; 
+#else
   {                       // can use to resize down, too, or resize up for a sprintf() etc
     char *b=(char*)m_hb.Resize(length+1);
     if (b) b[length]=0;
   }
+#endif
 
+#ifndef WDL_STRING_IMPL_ONLY
   char *Get()
   {
     if (m_hb.Get()) return (char *)m_hb.Get();
@@ -141,6 +182,7 @@ public:
   private:
     WDL_HeapBuf m_hb;
 };
+#endif
 
 #endif
 
