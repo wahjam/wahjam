@@ -1,0 +1,29 @@
+Ninjam clients and server
+-------------------------
+
+To build a particular target change into its directory and run make(1).  For
+Mac OS X an Xcode project is available.  For Windows Visual Studio projects are
+available.
+
+Source tree layout:
+
+  ninjam/
+    winclient/      Windows client
+    cocoaclient/    Mac OS X client
+    cursesclient/   Linux/Mac OS X curses client
+    server/         Server
+  WDL/              Common library
+  sdks/             Third-party source libraries (Windows only)
+  jesusonic/        Jesusonic DLL API header
+
+The original source trees were taken from http://www.ninjam.com/.  The files
+were:
+
+  ninjam_winclient_0.06.zip
+  ninjam_osxclient_0.02a.tar.gz
+  cclient_src_v0.01a.tar.gz
+  ninjam_server_0.06.tar.gz
+
+This code is licensed GPL v2 or later:
+
+  http://www.gnu.org/licenses/gpl-2.0.html
