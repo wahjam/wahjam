@@ -162,7 +162,7 @@ class BufferQueue
       for (x = 0; x < m_emptybufs.GetSize(); x ++)
         delete m_emptybufs.Get(x);
       m_emptybufs.Empty();
-      int l=m_samplequeue.Available()/4;
+      int l=m_samplequeue.Available()/sizeof(WDL_HeapBuf *);
       WDL_HeapBuf **bufs=(WDL_HeapBuf **)m_samplequeue.Get();
       if (bufs) while (l--)
       {
