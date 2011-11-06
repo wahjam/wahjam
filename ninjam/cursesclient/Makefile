@@ -50,4 +50,4 @@ cninjam: $(OBJS)
 	$(CXX) $(CXXFLAGS) -o cninjam $(OBJS) -lpthread $(LFLAGS) -logg -lvorbis -lvorbisenc 
 
 clean:
-	-rm $(OBJS) cninjam
+	-rm -f $(OBJS) cninjam
