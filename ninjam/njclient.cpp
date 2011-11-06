@@ -1949,7 +1949,7 @@ RemoteUser_Channel::~RemoteUser_Channel()
 }
 
 
-RemoteDownload::RemoteDownload() : chidx(-1), playtime(0), fp(0)
+RemoteDownload::RemoteDownload() : chidx(-1), playtime(0), m_parent(0), fp(0)
 {
   memset(&guid,0,sizeof(guid));
   time(&last_time);
