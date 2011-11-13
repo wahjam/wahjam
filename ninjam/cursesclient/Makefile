@@ -17,7 +17,7 @@ endif
 #############################################################
 
 # we MUST have -fomit-frame-pointer and -lm, otherwise we hate life
-CFLAGS = $(OPTFLAGS) -s 
+CFLAGS = $(OPTFLAGS) -g -Wno-write-strings
 # CFLAGS += -Wshadow
 CC=gcc
 CXX=g++
