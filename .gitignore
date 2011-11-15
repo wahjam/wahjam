@@ -2,3 +2,5 @@ tags
 *.o
 ninjam/cursesclient/cwahjam
 ninjam/server/wahjamsrv
+ninjam/qtclient/Makefile
+ninjam/qtclient/qtclient
