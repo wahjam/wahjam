@@ -11,7 +11,10 @@ QMAKE_CXXFLAGS += -Wno-write-strings
 LIBS += -lm -lasound -logg -lvorbis -lvorbisenc
 
 # Input
+HEADERS += ConnectDialog.h
+
 SOURCES += qtclient.cpp
+SOURCES += ConnectDialog.cpp
 SOURCES += ../../WDL/jnetlib/asyncdns.cpp
 SOURCES += ../../WDL/jnetlib/connection.cpp
 SOURCES += ../../WDL/jnetlib/listen.cpp
