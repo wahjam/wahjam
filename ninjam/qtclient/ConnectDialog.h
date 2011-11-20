@@ -8,29 +8,29 @@
 
 class ConnectDialog : public QDialog
 {
-	Q_OBJECT
+  Q_OBJECT
 
 public:
-	ConnectDialog(QWidget *parent = 0);
-	QString GetHost();
-	QString GetUser();
-	QString GetPass();
-	bool IsPublicServer();
+  ConnectDialog(QWidget *parent = 0);
+  QString GetHost();
+  QString GetUser();
+  QString GetPass();
+  bool IsPublicServer();
 
 public slots:
-	void connectToHost();
-	void publicServerStateChanged(int state);
+  void connectToHost();
+  void publicServerStateChanged(int state);
 
 private:
-	QLineEdit *hostEdit;
-	QLineEdit *userEdit;
-	QCheckBox *publicCheckbox;
-	QLineEdit *passEdit;
-	QPushButton *connectButton;
-	QString host;
-	QString user;
-	QString pass;
-	bool isPublicServer;
+  QLineEdit *hostEdit;
+  QLineEdit *userEdit;
+  QCheckBox *publicCheckbox;
+  QLineEdit *passEdit;
+  QPushButton *connectButton;
+  QString host;
+  QString user;
+  QString pass;
+  bool isPublicServer;
 };
 
 #endif /* _CONNECTDIALOG_H_ */
