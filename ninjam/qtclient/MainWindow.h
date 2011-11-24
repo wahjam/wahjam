@@ -3,6 +3,11 @@
 
 #include <QMainWindow>
 #include <QWidget>
+#include <QMutex>
+#include "../njclient.h"
+#include "../audiostream.h"
+
+class ClientRunThread;
 
 class MainWindow : public QMainWindow
 {
@@ -10,7 +15,25 @@ class MainWindow : public QMainWindow
 
 public:
   MainWindow(QWidget *parent = 0);
-  virtual ~MainWindow();
+  ~MainWindow();
+
+  static MainWindow *GetInstance();
+
+private:
+  static MainWindow *instance;
+
+  NJClient client;
+  audioStreamer *audio;
+  bool audioEnabled;
+  QMutex clientMutex;
+  ClientRunThread *runThread;
+
+  void OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
+  static void OnSamplesTrampoline(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
+  int LicenseCallback(char *licensetext);
+  static int LicenseCallbackTrampoline(int user32, char *licensetext);
+  void ChatMessageCallback(char **parms, int nparms);
+  static void ChatMessageCallbackTrampoline(int user32, NJClient *inst, char **parms, int nparms);
 };
 
 #endif /* _MAINWINDOW_H_ */
