@@ -1,3 +1,4 @@
 tags
 *.o
 ninjam/cursesclient/cwahjam
+ninjam/server/wahjamsrv
