@@ -800,10 +800,10 @@ void sigfunc(int sig)
 }
 
 
-void usage(int noexit=0)
+void usage(const char *progname, int noexit=0)
 {
 
-  printf("Usage: NINJAM hostname [options]\n"
+  printf("Usage: %s hostname [options]\n"
     "Options:\n"
     "  -user <username>\n"
     "  -pass <password>\n"
@@ -831,7 +831,8 @@ void usage(int noexit=0)
     "  -nosavesourcefiles   -- don't save source files for remixing\n"
 
     "  -writewav            -- writes a .wav of the jam in the session directory\n"
-    "  -writeogg <bitrate>  -- writes a .ogg of the jam (bitrate 64-256)..\n");
+    "  -writeogg <bitrate>  -- writes a .ogg of the jam (bitrate 64-256)..\n",
+    progname);
 
   if (!noexit) exit(1);
 }
@@ -976,7 +977,7 @@ int main(int argc, char **argv)
   char hostbuf[512];
   if (argc < 2)
   {
-    usage(1);
+    usage(argv[0], 1);
     printf("(no command line options specified, using interactive mode!)\n\n\nHost to connect to: ");
     fgets(hostbuf,sizeof(hostbuf),stdin);
     if (hostbuf[0] && hostbuf[strlen(hostbuf)-1] == '\n') hostbuf[strlen(hostbuf)-1]=0;
@@ -984,7 +985,7 @@ int main(int argc, char **argv)
     if (!hostbuf[0]) return 0;
   }
 #else
-  if (argc < 2) usage();
+  if (argc < 2) usage(argv[0]);
 #endif
   else hostname=argv[1];
 
@@ -1005,7 +1006,7 @@ int main(int argc, char **argv)
       }
       else if (!stricmp(argv[p],"-debuglevel"))
       {
-        if (++p >= argc) usage();
+        if (++p >= argc) usage(argv[0]);
         g_client->config_debug_level=atoi(argv[p]);
       }
       else if (!stricmp(argv[p],"-noaudiocfg"))
@@ -1014,17 +1015,17 @@ int main(int argc, char **argv)
       }
       else if (!stricmp(argv[p],"-audiostr"))
       {
-        if (++p >= argc) usage();
+        if (++p >= argc) usage(argv[0]);
         audioconfigstr=argv[p];
       }
       else if (!stricmp(argv[p],"-user"))
       {
-        if (++p >= argc) usage();
+        if (++p >= argc) usage(argv[0]);
         parmuser=argv[p];
       }
       else if (!stricmp(argv[p],"-pass"))
       {
-        if (++p >= argc) usage();
+        if (++p >= argc) usage(argv[0]);
         parmpass=argv[p];
       }
       else if (!stricmp(argv[p],"-writewav"))
@@ -1033,7 +1034,7 @@ int main(int argc, char **argv)
       }
       else if (!stricmp(argv[p],"-writeogg"))
       {
-        if (++p >= argc) usage();
+        if (++p >= argc) usage(argv[0]);
         writeogg=atoi(argv[p]);
       }
       else if (!stricmp(argv[p],"-nowritelog"))
@@ -1047,17 +1048,17 @@ int main(int argc, char **argv)
 #ifdef _WIN32
       else if (!stricmp(argv[p],"-jesusonic"))
       {
-        if (++p >= argc) usage();
+        if (++p >= argc) usage(argv[0]);
         jesusdir.Set(argv[p]);
       }
 #endif
       else if (!stricmp(argv[p],"-sessiondir"))
       {
-        if (++p >= argc) usage();
+        if (++p >= argc) usage(argv[0]);
         sessiondir.Set(argv[p]);
         sessionspec=1;
       }
-      else usage();
+      else usage(argv[0]);
     }
   }
 

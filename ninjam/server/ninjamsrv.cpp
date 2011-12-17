@@ -629,9 +629,9 @@ void enforceACL()
 }
 
 
-void usage()
+void usage(const char *progname)
 {
-    printf("Usage: NINJAMserver config.cfg [options]\n"
+    printf("Usage: %s config.cfg [options]\n"
            "Options (override config file):\n"
 #ifndef _WIN32
            "  -pidfile <filename.pid>\n"
@@ -642,7 +642,7 @@ void usage()
 #ifndef _WIN32
            "  -setuid <uid>\n"
 #endif
-      );
+      , progname);
     exit(1);
 }
 
@@ -672,7 +672,7 @@ int main(int argc, char **argv)
 
   if (argc < 2)
   {
-    usage();
+    usage(argv[0]);
   }
 
   m_group=new User_Group;
@@ -688,30 +688,30 @@ int main(int argc, char **argv)
   {
       if (!strcmp(argv[p],"-pidfile"))
       {
-        if (++p >= argc) usage();
+        if (++p >= argc) usage(argv[0]);
         g_pidfilename.Set(argv[p]);
       }
       else if (!strcmp(argv[p],"-logfile"))
       {
-        if (++p >= argc) usage();
+        if (++p >= argc) usage(argv[0]);
         g_logfilename.Set(argv[p]);
       }
       else if (!strcmp(argv[p],"-archive"))
       {
-        if (++p >= argc) usage();
+        if (++p >= argc) usage(argv[0]);
         g_config_logpath.Set(argv[p]);
       }
       else if (!strcmp(argv[p],"-setuid"))
       {
-        if (++p >= argc) usage();
+        if (++p >= argc) usage(argv[0]);
         g_set_uid=atoi(argv[p]);
       }
       else if (!strcmp(argv[p],"-port"))
       {
-        if (++p >= argc) usage();
+        if (++p >= argc) usage(argv[0]);
         g_config_port=atoi(argv[p]);
       }
-      else usage();
+      else usage(argv[0]);
 
   }
 
