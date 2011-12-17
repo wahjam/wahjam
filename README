@@ -1,5 +1,8 @@
-Ninjam clients and server
--------------------------
+Wahjam clients and server (http://wahjam.org/)
+----------------------------------------------
+
+This software allows musicians to play music together over the internet.  It is
+compatible with and based on NINJAM (http://ninjam.com/).
 
 To build a particular target change into its directory and run make(1).  For
 Mac OS X an Xcode project is available.  For Windows Visual Studio projects are
