@@ -963,7 +963,7 @@ int main(int argc, char **argv)
   int sessionspec=0;
   int nolog=0,nowav=1,writeogg=0,g_nssf=0;
 
-  printf("NINJAM v0.01a ALPHA curses client, compiled " __DATE__ " at " __TIME__ "\nCopyright (C) 2004-2005 Cockos, Inc.\n\n");
+  printf("Wahjam 0.1 curses client, compiled " __DATE__ " at " __TIME__ "\n\n");
   char *audioconfigstr=NULL;
   g_client=new NJClient;
   g_client->config_savelocalaudio=1;
