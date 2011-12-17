@@ -1,5 +1,4 @@
 /*
-    NINJAM ASIO driver - njasiodrv_if.cpp
     Copyright (C) 2005 Cockos Incorporated
 
     NJASIODRV is dual-licensed. You may modify and/or distribute NJASIODRV under either of 

@@ -1,5 +1,4 @@
 /*
-    NINJAM ASIO driver - njadmain.cpp
     Copyright (C) 2005 Cockos Incorporated
 
   

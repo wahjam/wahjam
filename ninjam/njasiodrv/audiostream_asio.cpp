@@ -1,5 +1,4 @@
 /*
-    NINJAM ASIO driver - audiostream_asio.cpp
     Copyright (C) 2005 Cockos Incorporated
 
   
