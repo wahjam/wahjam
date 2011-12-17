@@ -23,7 +23,7 @@
 
 /*
 
-  This provides ASIO input/output functionality for NINJAM. The reason it is 
+  This provides ASIO input/output functionality for Wahjam. The reason it is 
   in a seperate DLL file is so that people who want to develop the GPL'd 
   client can do so without having to agree to Steinberg's ASIO SDK license 
   agreement.  This file implements an audioStreamer object that uses ASIO.

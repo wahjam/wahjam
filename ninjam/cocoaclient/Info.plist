@@ -5,11 +5,11 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
-	<string>NINJAM</string>
+	<string>Wahjam</string>
 	<key>CFBundleIconFile</key>
-	<string>ninjam_gui_osx.icns</string>
+	<string>wahjam_gui_osx.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>NINJAMClient</string>
+	<string>WahjamClient</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>

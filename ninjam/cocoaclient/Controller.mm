@@ -581,7 +581,7 @@ if (needadd)
           t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min);
 
       if (cnt) sprintf(buf+strlen(buf),"_%d",cnt);
-      strcat(buf,".ninjam");
+      strcat(buf,".wahjam");
 
       if (!mkdir(buf,0700)) break;
 

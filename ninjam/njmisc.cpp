@@ -95,7 +95,7 @@ void deleteJesusonicProc(void *i, int chi)
   if (JesusonicAPI && i)
   {
       char buf[4096];
-      sprintf(buf,"%s\\ninjam.p%02d",jesusdir.Get()[0]?jesusdir.Get():".",chi);
+      sprintf(buf,"%s\\wahjam.p%02d",jesusdir.Get()[0]?jesusdir.Get():".",chi);
       JesusonicAPI->preset_save(i,buf);
       JesusonicAPI->ui_wnd_destroy(i);
       JesusonicAPI->set_opts(i,-1,-1,1);
@@ -121,7 +121,7 @@ void JesusUpdateInfo(void *myInst, char *chdesc, int srate)
   if (myInst)
   {
     JesusonicAPI->set_sample_fmt(myInst,srate,1,33);
-    WDL_String tmp("NINJAM embedded: ");
+    WDL_String tmp("Wahjam embedded: ");
     tmp.Append(chdesc);
     JesusonicAPI->set_status(myInst,"",tmp.Get());
   }
@@ -140,7 +140,7 @@ void *CreateJesusInstance(int a, char *chdesc, int srate)
     JesusUpdateInfo(myInst,chdesc,srate);
 
     char buf[4096];
-    sprintf(buf,"%s\\ninjam.p%02d",jesusdir.Get()[0]?jesusdir.Get():".",a);
+    sprintf(buf,"%s\\wahjam.p%02d",jesusdir.Get()[0]?jesusdir.Get():".",a);
 
     JesusonicAPI->preset_load(myInst,buf);
 

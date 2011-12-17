@@ -23,11 +23,11 @@
 
 /*
 
-  This provides ASIO input/output functionality for NINJAM. The reason it is 
+  This provides ASIO input/output functionality for Wahjam. The reason it is 
   in a seperate DLL file is so that people who want to develop the GPL'd 
   client can do so without having to agree to Steinberg's ASIO SDK license 
   agreement.  This file provides the dialog code and exports so that the 
-  NINJAM client can load the DLL.
+  Wahjam client can load the DLL.
 
 */
 

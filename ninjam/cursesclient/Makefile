@@ -44,10 +44,10 @@ OBJS += cursesclient.o
 
 CXXFLAGS = $(CFLAGS)
 
-default: cninjam
+default: cwahjam
 
-cninjam: $(OBJS)
-	$(CXX) $(CXXFLAGS) -o cninjam $(OBJS) -lpthread $(LFLAGS) -logg -lvorbis -lvorbisenc 
+cwahjam: $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) -lpthread $(LFLAGS) -logg -lvorbis -lvorbisenc 
 
 clean:
-	-rm -f $(OBJS) cninjam
+	-rm -f $(OBJS) cwahjam

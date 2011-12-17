@@ -45,7 +45,7 @@
 
 #define VERSION "0.06"
 
-#define CONFSEC "ninjam"
+#define CONFSEC "wahjam"
 
 
 WDL_String g_ini_file;
@@ -409,7 +409,7 @@ static void do_connect()
         t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min);
 
     if (cnt) sprintf(buf+strlen(buf),"_%d",cnt);
-    strcat(buf,".ninjam");
+    strcat(buf,".wahjam");
 
     if (CreateDirectory(buf,NULL)) break;
 
@@ -418,7 +418,7 @@ static void do_connect()
   if (cnt >= 16)
   {      
     SetDlgItemText(g_hwnd,IDC_STATUS,"Status: ERROR CREATING SESSION DIRECTORY");
-    MessageBox(g_hwnd,"Error creating session directory!", "NINJAM error", MB_OK);
+    MessageBox(g_hwnd,"Error creating session directory!", "Wahjam error", MB_OK);
     return;
   }
 
@@ -427,7 +427,7 @@ static void do_connect()
   {
     RemoveDirectory(buf);
     SetDlgItemText(g_hwnd,IDC_STATUS,"Status: ERROR OPENING AUDIO");
-    MessageBox(g_hwnd,"Error opening audio device, try reconfiguring!", "NINJAM error", MB_OK);
+    MessageBox(g_hwnd,"Error opening audio device, try reconfiguring!", "Wahjam error", MB_OK);
     return;
   }
 
@@ -624,7 +624,7 @@ static BOOL WINAPI MainProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
       {
         GetWindowRect(hwndDlg,&init_r);
 
-        SetWindowText(hwndDlg,"NINJAM v" VERSION);
+        SetWindowText(hwndDlg,"Wahjam v" VERSION);
         g_hwnd=hwndDlg;
 
         resize.init(hwndDlg);
@@ -903,17 +903,17 @@ static BOOL WINAPI MainProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
               if (ns == NJClient::NJC_STATUS_DISCONNECTED)
               {
                 SetDlgItemText(hwndDlg,IDC_STATUS,"Status: disconnected from host.");
-                MessageBox(g_hwnd,"Disconnected from host!", "NINJAM Notice", MB_OK);
+                MessageBox(g_hwnd,"Disconnected from host!", "Wahjam Notice", MB_OK);
               }
               if (ns == NJClient::NJC_STATUS_INVALIDAUTH)
               {
                 SetDlgItemText(hwndDlg,IDC_STATUS,"invalid authentication info.");
-                MessageBox(g_hwnd,"Error connecting: invalid authentication information!", "NINJAM error", MB_OK);
+                MessageBox(g_hwnd,"Error connecting: invalid authentication information!", "Wahjam error", MB_OK);
               }
               if (ns == NJClient::NJC_STATUS_CANTCONNECT)
               {
                 SetDlgItemText(hwndDlg,IDC_STATUS,"Status: can't connect to host.");
-                MessageBox(g_hwnd,"Error connecting: can't connect to host!", "NINJAM error", MB_OK);
+                MessageBox(g_hwnd,"Error connecting: can't connect to host!", "Wahjam error", MB_OK);
               }
             }
           }
@@ -1393,7 +1393,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdPa
     while (*p) p++;
     while (p > g_exepath && *p != '\\') p--; *p=0;
     g_ini_file.Set(g_exepath);
-    g_ini_file.Append("\\ninjam.ini");
+    g_ini_file.Append("\\wahjam.ini");
   }
 
   // read config file
@@ -1428,7 +1428,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdPa
     GetClassInfo(NULL,"#32770",&wc);
     wc.hIcon=LoadIcon(g_hInst,MAKEINTRESOURCE(IDI_ICON1));
     RegisterClass(&wc);
-    wc.lpszClassName = "NINJAMwnd";
+    wc.lpszClassName = "WAHJAMwnd";
     RegisterClass(&wc);
   }
 
@@ -1501,7 +1501,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdPa
 
   if (!CreateDialog(hInstance,MAKEINTRESOURCE(IDD_MAIN),GetDesktopWindow(),MainProc))
   {
-    MessageBox(NULL,"Error creating dialog","NINJAM Error",0);
+    MessageBox(NULL,"Error creating dialog","Wahjam Error",0);
     return 0;
   }
 

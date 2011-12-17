@@ -23,10 +23,10 @@ OBJS += usercon.o
 OBJS += ninjamsrv.o
 
 
-default: ninjamsrv
+default: wahjamsrv
 
-ninjamsrv: $(OBJS)
-	$(CXX) $(CXXFLAGS) -o ninjamsrv $(OBJS)
+wahjamsrv: $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJS)
 
 clean:
-	-rm $(OBJS) ninjamsrv
+	-rm $(OBJS) wahjamsrv

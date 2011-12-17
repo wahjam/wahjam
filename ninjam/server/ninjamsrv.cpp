@@ -52,7 +52,7 @@
 
 #define VERSION "v0.06"
 
-const char *startupmessage="NINJAM Server " VERSION " built on " __DATE__ " at " __TIME__ " starting up...\n" "Copyright (C) 2005-2007, Cockos, Inc.\n";
+const char *startupmessage="Wahjam Server " VERSION " built on " __DATE__ " at " __TIME__ " starting up...\n" "Copyright (C) 2005-2007, Cockos, Inc.\n";
 
 int g_set_uid=-1;
 int g_default_bpm,g_default_bpi;
@@ -754,7 +754,7 @@ int main(int argc, char **argv)
     if (!g_logfp)
       printf("Error opening log file '%s'\n",g_logfilename.Get());
     else
-      logText("Opened log. NINJAM Server %s built on %s at %s\n",VERSION,__DATE__,__TIME__);
+      logText("Opened log. Wahjam Server %s built on %s at %s\n",VERSION,__DATE__,__TIME__);
 
   }
 
@@ -935,7 +935,7 @@ int main(int argc, char **argv)
                 sprintf(buf,"/%04d%02d%02d_%02d%02d",t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min);
                 if (cnt)
                   wsprintf(buf+strlen(buf),"_%d",cnt);
-                strcat(buf,".ninjam");
+                strcat(buf,".wahjam");
 
                 tmp.Set(g_config_logpath.Get());
                 tmp.Append(buf);

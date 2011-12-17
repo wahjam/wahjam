@@ -18,7 +18,7 @@
 
 /*
 
-  This header is used by NINJAM clients to define an abstract audio streamer interface, as
+  This header is used by Wahjam clients to define an abstract audio streamer interface, as
   well as declare functions for creating instances of these audio streamers. 
 
   On Windows, these functions are primarily called from audioconfig.cpp, and on

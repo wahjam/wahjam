@@ -18,7 +18,7 @@
 
 /*
 
-  This command line tool parses a NINJAM session .log file (clipsort.log), 
+  This command line tool parses a Wahjam session .log file (clipsort.log), 
   and writes out a EDL text file that Vegas 4.0+ (and maybe others) can read,
   as well as a LOF file for Audacity.
 
@@ -461,7 +461,7 @@ void WriteOutTrack(char *chname, UserChannelList *list, int *track_id, int *id, 
 int main(int argc, char **argv)
 {
   printf("ClipLogCvt v0.02 - Copyright (C) 2005, Cockos, Inc.\n"
-         "(Converts NINJAM sessions to EDL/LOF,\n"
+         "(Converts Wahjam sessions to EDL/LOF,\n"
          " optionally writing uncompressed WAVs etc)\n\n");
   if (argc <  2 || argv[1][0] == '-')
   {

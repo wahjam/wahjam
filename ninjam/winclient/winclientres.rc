@@ -54,7 +54,7 @@ END
 
 IDD_CONFIG DIALOG DISCARDABLE  0, 0, 252, 180
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "NINJAM audio I/O configuration"
+CAPTION "Wahjam audio I/O configuration"
 FONT 8, "MS Sans Serif"
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,7,159,50,14
@@ -70,7 +70,7 @@ IDD_CFG_ASIO DIALOG DISCARDABLE  0, 0, 238, 129
 STYLE WS_CHILD
 FONT 8, "MS Sans Serif"
 BEGIN
-    LTEXT           "ASIO support is not installed, please make sure the file \r\nnjasiodrv.dll is in the same directory as the NINJAM software.",
+    LTEXT           "ASIO support is not installed, please make sure the file \r\nnjasiodrv.dll is in the same directory as the Wahjam software.",
                     IDC_STATIC,9,9,217,25
 END
 
@@ -133,9 +133,9 @@ END
 IDD_MAIN DIALOGEX 0, 0, 460, 238
 STYLE DS_CENTER | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CAPTION | WS_SYSMENU | 
     WS_THICKFRAME
-CAPTION "NINJAM v0.666"
+CAPTION "Wahjam v0.666"
 MENU IDR_MENU1
-CLASS "NINJAMwnd"
+CLASS "WAHJAMwnd"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
     LTEXT           "Master: ",IDC_STATIC,7,10,26,8
@@ -184,7 +184,7 @@ END
 
 IDD_CONNECT DIALOG DISCARDABLE  0, 0, 225, 119
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "NINJAM Connection Configuration"
+CAPTION "Wahjam Connection Configuration"
 FONT 8, "MS Sans Serif"
 BEGIN
     COMBOBOX        IDC_HOST,63,14,155,186,CBS_DROPDOWN | WS_VSCROLL | 
@@ -206,7 +206,7 @@ END
 
 IDD_LICENSE DIALOG DISCARDABLE  0, 0, 316, 215
 STYLE DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "NINJAM Server License Agreement"
+CAPTION "Wahjam Server License Agreement"
 FONT 8, "MS Sans Serif"
 BEGIN
     CONTROL         "I &agree to the above license terms",IDC_CHECK1,"Button",
@@ -219,7 +219,7 @@ END
 
 IDD_PREFS DIALOG DISCARDABLE  0, 0, 241, 142
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "NINJAM Preferences"
+CAPTION "Wahjam Preferences"
 FONT 8, "MS Sans Serif"
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,129,121,50,14
@@ -317,12 +317,12 @@ END
 
 IDD_ABOUT DIALOG DISCARDABLE  0, 0, 248, 124
 STYLE DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "About NINJAM"
+CAPTION "About Wahjam"
 FONT 8, "MS Sans Serif"
 BEGIN
     DEFPUSHBUTTON   "Close",IDOK,98,101,50,14
     ICON            IDI_ICON1,IDC_STATIC,7,7,20,20
-    LTEXT           "NINJAM",IDC_STATIC,31,11,28,8
+    LTEXT           "Wahjam",IDC_STATIC,31,11,28,8
     LTEXT           "Novel Intervallic Network Jamming Architecture for Musicians",
                     IDC_STATIC,31,23,193,8
     LTEXT           "Copyright (C) 2005 Cockos Incorporated",IDC_STATIC,31,
@@ -330,14 +330,14 @@ BEGIN
     LTEXT           "version",IDC_VER,31,35,195,8
     LTEXT           "Portions Copyright (C) 2005 Brennan Underwood",
                     IDC_STATIC,31,59,154,8
-    LTEXT           "NINJAM is free software, and is licensed under the GNU General Public License. See the included license.txt for the full license terms.",
+    LTEXT           "Wahjam is free software, and is licensed under the GNU General Public License. See the included license.txt for the full license terms.",
                     IDC_STATIC,31,71,195,26
 END
 
 IDD_MIXERDLG DIALOG DISCARDABLE  0, 0, 209, 145
 STYLE WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_CAPTION | WS_HSCROLL | 
     WS_SYSMENU | WS_THICKFRAME
-CAPTION "NINJAM Channel Mixer"
+CAPTION "Wahjam Channel Mixer"
 FONT 8, "MS Sans Serif"
 BEGIN
 END
@@ -500,7 +500,7 @@ BEGIN
     END
     POPUP "&Help", HELP
     BEGIN
-        MENUITEM "&About NINJAM...",            ID_HELP_ABOUTNINJAM
+        MENUITEM "&About Wahjam...",            ID_HELP_ABOUTNINJAM
     END
 END
 

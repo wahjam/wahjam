@@ -141,7 +141,7 @@
 				19C28FACFE9D520D11CA2CBB,
 			);
 			isa = PBXGroup;
-			name = NINJAM;
+			name = Wahjam;
 			path = "";
 			refType = 4;
 			sourceTree = "<group>";
@@ -298,22 +298,22 @@
 			buildSettings = {
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = NINJAM_Prefix.pch;
+				GCC_PREFIX_HEADER = Wahjam_Prefix.pch;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = "";
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
 				OTHER_LDFLAGS = "";
-				PRODUCT_NAME = NINJAM;
+				PRODUCT_NAME = Wahjam;
 				WRAPPER_EXTENSION = app;
 			};
 			dependencies = (
 			);
 			isa = PBXNativeTarget;
-			name = NINJAM;
+			name = Wahjam;
 			productInstallPath = "$(HOME)/Applications";
-			productName = NINJAM;
+			productName = Wahjam;
 			productReference = 8D1107320486CEB800E47090;
 			productType = "com.apple.product-type.application";
 		};
@@ -402,7 +402,7 @@
 			explicitFileType = wrapper.application;
 			includeInIndex = 0;
 			isa = PBXFileReference;
-			path = NINJAM.app;
+			path = Wahjam.app;
 			refType = 3;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
@@ -444,7 +444,7 @@
 			fileEncoding = 30;
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.c.h;
-			path = NINJAM_Prefix.pch;
+			path = Wahjam_Prefix.pch;
 			refType = 4;
 			sourceTree = "<group>";
 		};
@@ -595,7 +595,7 @@
 				BC874A530870A07100F5991C,
 			);
 			isa = PBXGroup;
-			name = ninjamcommon;
+			name = wahjamcommon;
 			refType = 4;
 			sourceTree = "<group>";
 		};
@@ -762,7 +762,7 @@
 		BCD26748087B3CFF00831686 = {
 			isa = PBXFileReference;
 			lastKnownFileType = image.icns;
-			path = ninjam_gui_osx.icns;
+			path = wahjam_gui_osx.icns;
 			refType = 4;
 			sourceTree = "<group>";
 		};

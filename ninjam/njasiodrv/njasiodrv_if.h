@@ -40,7 +40,7 @@
 
 /*
 
-  This file provides the interface for loading NJASIODRV.DLL from the NINJAM 
+  This file provides the interface for loading NJASIODRV.DLL from the Wahjam 
   application.
 
 */

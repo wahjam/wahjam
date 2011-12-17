@@ -758,7 +758,7 @@ void showmainview(bool action=false, int ymove=0)
 
 
   ypos=LINES-1;
-  sprintf(linebuf,"[QUIT NINJAM] : %s : %.1fBPM %dBPI : %dHz %dch->%dch %dbps%s",
+  sprintf(linebuf,"[QUIT Wahjam] : %s : %.1fBPM %dBPI : %dHz %dch->%dch %dbps%s",
     g_client->GetHostName(),g_client->GetActualBPM(),g_client->GetBPI(),g_audio->m_srate,g_audio->m_innch,g_audio->m_outnch,g_audio->m_bps&~7,g_audio->m_bps&1 ? "(f)":"");
   highlightoutline(ypos++,linebuf,COLORMAP(1),COLORMAP(1),COLORMAP(1),COLORMAP(1),COLORMAP(5),COLORMAP(5),(g_sel_ypos != selpos || g_sel_ycat != selcat) ? -1 : g_sel_x);
   attrset(COLORMAP(1));
@@ -1089,7 +1089,7 @@ int main(int argc, char **argv)
   }
 
 #ifdef _WIN32
-  g_audio=CreateConfiguredStreamer("ninjam.ini", !audioconfigstr, NULL);
+  g_audio=CreateConfiguredStreamer("wahjam.ini", !audioconfigstr, NULL);
 
 #else
   {
@@ -1143,7 +1143,7 @@ int main(int argc, char **argv)
   // end jesusonic init
 
   {
-    FILE *fp=fopen("ninjam.config","rt");
+    FILE *fp=fopen("wahjam.config","rt");
     int x=0;
     if (fp) 
     {
@@ -1277,7 +1277,7 @@ int main(int argc, char **argv)
 #endif
       if (cnt)
         wsprintf(buf+strlen(buf),"_%d",cnt);
-      strcat(buf,".ninjam");
+      strcat(buf,".wahjam");
 
 #ifdef _WIN32
       if (CreateDirectory(buf,NULL)) break;
@@ -1820,7 +1820,7 @@ time(NULL) >= nextupd
 
   // save local channel state
   {
-    FILE *fp=fopen("ninjam.config","wt");
+    FILE *fp=fopen("wahjam.config","wt");
     int x=0;
     if (fp) 
     {

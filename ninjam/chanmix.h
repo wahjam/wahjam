@@ -79,7 +79,7 @@ class ChanMixer
     {
       if (m_hwnd)
       {
-        WDL_String a("NINJAM Channel Mixer: ");
+        WDL_String a("Wahjam Channel Mixer: ");
         a.Append(m_desc.Get());
         SetWindowText(m_hwnd,a.Get());
       }
