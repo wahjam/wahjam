@@ -29,4 +29,4 @@ wahjamsrv: $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJS)
 
 clean:
-	-rm $(OBJS) wahjamsrv
+	-rm -f $(OBJS) wahjamsrv
