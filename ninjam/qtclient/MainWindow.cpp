@@ -70,7 +70,7 @@ MainWindow *MainWindow::GetInstance()
 }
 
 MainWindow::MainWindow(QWidget *parent)
-  : QMainWindow(parent)
+  : QMainWindow(parent), audioEnabled(false)
 {
   /* Since the ninjam callbacks do not pass a void* opaque argument we rely on
    * a global variable.
