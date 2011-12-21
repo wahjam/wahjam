@@ -150,7 +150,7 @@ int audioStreamer_ALSA::Open(char *devname, int is_write, int srate, int nch, in
     	if (snd_pcm_hw_params_set_format(pcm_handle, hwparams, 
 				bps==32?SND_PCM_FORMAT_S32_LE:bps==24?SND_PCM_FORMAT_S24_3LE:SND_PCM_FORMAT_S16_LE) < 0) {
 		fprintf(stderr, "Error setting format.\n");
-		fprintf(stderr, "Try -bps 16, -bps 24, or -bps 32\n");
+		fprintf(stderr, "Try bps 16, bps 24, or bps 32\n");
 		return(-1);
 	}
 
@@ -173,7 +173,7 @@ int audioStreamer_ALSA::Open(char *devname, int is_write, int srate, int nch, in
         if (snd_pcm_hw_params_set_channels(pcm_handle, hwparams, nch) < 0) 
 	{
 		fprintf(stderr, "Error setting channels.\n");
-		fprintf(stderr, "Try -nch 1 or -nch 2\n");
+		fprintf(stderr, "Try nch 1 or nch 2\n");
 		return(-1);
         }
 	m_nch=nch;
@@ -185,7 +185,7 @@ int audioStreamer_ALSA::Open(char *devname, int is_write, int srate, int nch, in
 	if (snd_pcm_hw_params_set_periods(pcm_handle, hwparams, periods, 0) < 0) 
 	{
 		fprintf(stderr, "Error setting periods.\n");
-		fprintf(stderr, "Try -nbufs 2 through -nbufs 16\n");
+		fprintf(stderr, "Try nblock 2 through nblock 16\n");
 		return(-1);
 	}
 
@@ -194,7 +194,7 @@ int audioStreamer_ALSA::Open(char *devname, int is_write, int srate, int nch, in
     	if (snd_pcm_hw_params_set_buffer_size(pcm_handle, hwparams, m_bufsize = (periodsize * periods)/(m_nch * m_bps/8)) < 0) 
 	{
 		fprintf(stderr, "Error setting buffersize.\n");
-		fprintf(stderr, "Try -bufsize 256 through -bufsize 2048\n");
+		fprintf(stderr, "Try bsize 256 through bsize 2048\n");
 		return(-1);
 	}
 
