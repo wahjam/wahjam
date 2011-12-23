@@ -13,10 +13,12 @@ LIBS += -lm -lasound -logg -lvorbis -lvorbisenc
 # Input
 HEADERS += MainWindow.h
 HEADERS += ConnectDialog.h
+HEADERS += ClientRunThread.h
 
 SOURCES += qtclient.cpp
 SOURCES += MainWindow.cpp
 SOURCES += ConnectDialog.cpp
+SOURCES += ClientRunThread.cpp
 SOURCES += ../../WDL/jnetlib/asyncdns.cpp
 SOURCES += ../../WDL/jnetlib/connection.cpp
 SOURCES += ../../WDL/jnetlib/listen.cpp

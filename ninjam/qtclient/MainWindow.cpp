@@ -1,51 +1,8 @@
-#include <QThread>
-#include <QWaitCondition>
 
 #include "MainWindow.h"
 #include "ConnectDialog.h"
+#include "ClientRunThread.h"
 #include "../../WDL/jnetlib/jnetlib.h"
-
-/*
- * Thread that invokes NJClient::Run() at regular intervals
- */
-class ClientRunThread : public QThread
-{
-public:
-  /*
-   * Pass in a mutex to synchronize NJClient access with other threads in the
-   * program.
-   */
-  ClientRunThread(QMutex *mutex, NJClient *client, QObject *parent = 0)
-    : QThread(parent), mutex(mutex), client(client)
-  {
-  }
-
-  void run()
-  {
-    running = true;
-    mutex->lock();
-    while (running) {
-      while (!client->Run());
-      cond.wait(mutex, 20 /* milliseconds */);
-    }
-    mutex->unlock();
-  }
-
-  void stop()
-  {
-    mutex->lock();
-    running = false;
-    cond.wakeOne();
-    mutex->unlock();
-    wait();
-  }
-
-private:
-  bool running;
-  QMutex *mutex;
-  QWaitCondition cond;
-  NJClient *client;
-};
 
 MainWindow *MainWindow::instance; /* singleton */
 
