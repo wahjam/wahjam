@@ -20,6 +20,10 @@ public:
 
   void run();
   void stop();
+  bool licenseCallbackTrampoline(const char *licensetext);
+
+signals:
+  void licenseCallback(const char *licensetext, bool *result);
 
 private:
   bool running;

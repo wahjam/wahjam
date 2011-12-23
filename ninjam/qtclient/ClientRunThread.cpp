@@ -28,3 +28,11 @@ void ClientRunThread::stop()
   mutex->unlock();
   wait();
 }
+
+/* Called from trampoline function, bounces into GUI thread */
+bool ClientRunThread::licenseCallbackTrampoline(const char *licensetext)
+{
+  bool result = false;
+  emit licenseCallback(licensetext, &result);
+  return result;
+}

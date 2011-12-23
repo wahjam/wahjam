@@ -1,3 +1,4 @@
+#include <QMessageBox>
 
 #include "MainWindow.h"
 #include "ConnectDialog.h"
@@ -13,7 +14,8 @@ void MainWindow::OnSamplesTrampoline(float **inbuf, int innch, float **outbuf, i
 
 int MainWindow::LicenseCallbackTrampoline(int user32, char *licensetext)
 {
-  return MainWindow::GetInstance()->LicenseCallback(licensetext);
+  /* Bounce back into ClientRunThread */
+  return MainWindow::GetInstance()->runThread->licenseCallbackTrampoline(licensetext);
 }
 
 void MainWindow::ChatMessageCallbackTrampoline(int user32, NJClient *inst, char **parms, int nparms)
@@ -83,6 +85,12 @@ MainWindow::MainWindow(QWidget *parent)
   setCentralWidget(new QWidget);
 
   runThread = new ClientRunThread(&clientMutex, &client);
+
+  /* Hook up an inter-thread signal for the license agreement dialog */
+  connect(runThread, SIGNAL(licenseCallback(const char *, bool *)),
+          this, SLOT(LicenseCallback(const char *, bool *)),
+          Qt::BlockingQueuedConnection);
+
   runThread->start();
 }
 
@@ -106,11 +114,16 @@ void MainWindow::OnSamples(float **inbuf, int innch, float **outbuf, int outnch,
   client.AudioProc(inbuf, innch, outbuf, outnch, len, srate);
 }
 
-int MainWindow::LicenseCallback(char *licensetext)
+void MainWindow::LicenseCallback(const char *licensetext, bool *result)
 {
-  /* TODO */
-  abort();
-  return TRUE;
+  QMessageBox msgBox(this);
+
+  msgBox.setText("Please review this server license agreement.");
+  msgBox.setInformativeText(licensetext);
+  msgBox.setStandardButtons(QMessageBox::Cancel | QMessageBox::Ok);
+  msgBox.setTextFormat(Qt::PlainText);
+
+  *result = msgBox.exec() == QMessageBox::Ok ? TRUE : FALSE;
 }
 
 void MainWindow::ChatMessageCallback(char **parms, int nparms)
