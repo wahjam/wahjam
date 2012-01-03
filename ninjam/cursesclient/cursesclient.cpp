@@ -997,7 +997,6 @@ int main(int argc, char **argv)
     int p;
     for (p = 2; p < argc; p++)
     {
-	  printf("\t%s\n",argv[p]);
       if (!stricmp(argv[p],"-jack"))
       {
         audio_jack=1;     
