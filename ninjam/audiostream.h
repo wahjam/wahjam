@@ -36,6 +36,7 @@
 #ifndef _AUDIOSTREAM_H_
 #define _AUDIOSTREAM_H_
 
+class NJClient;
 
 class audioStreamer
 {
@@ -63,6 +64,11 @@ audioStreamer *create_audioStreamer_DS(int srate, int bps, GUID devs[2], int *nb
 #ifdef _MAC
 audioStreamer *create_audioStreamer_CoreAudio(char **dev, int srate, int nch, int bps, SPLPROC proc);
 #else
+audioStreamer *create_audioStreamer_JACK(const char* clientName,
+                                         int nInputChannels,
+                                         int nOutputChannels,
+                                         SPLPROC proc,
+                                         NJClient *njclient);
 audioStreamer *create_audioStreamer_ALSA(char *cfg, SPLPROC proc);
 #endif
 

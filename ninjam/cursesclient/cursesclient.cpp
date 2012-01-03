@@ -824,6 +824,8 @@ void usage(const char *progname, int noexit=0)
     "       nblock 16    -- set number of blocks\n"
 #endif
 #endif
+	
+	"  -jack   -- use jack audio connection kit\n"
 
     "  -sessiondir <path>   -- sets the session directory (default: auto)\n"
     "  -savelocalwavs       -- save full quality copies of recorded files\n"
@@ -961,7 +963,7 @@ int main(int argc, char **argv)
   char *parmpass=NULL;
   WDL_String sessiondir;
   int sessionspec=0;
-  int nolog=0,nowav=1,writeogg=0,g_nssf=0;
+  int nolog=0,nowav=1,writeogg=0,g_nssf=0,audio_jack=0;
 
   printf("Wahjam 0.1 curses client, compiled " __DATE__ " at " __TIME__ "\n\n");
   char *audioconfigstr=NULL;
@@ -995,7 +997,12 @@ int main(int argc, char **argv)
     int p;
     for (p = 2; p < argc; p++)
     {
-      if (!stricmp(argv[p],"-savelocalwavs"))
+	  printf("\t%s\n",argv[p]);
+      if (!stricmp(argv[p],"-jack"))
+      {
+        audio_jack=1;     
+      }		
+      else if (!stricmp(argv[p],"-savelocalwavs"))
       {
         g_client->config_savelocalaudio=2;     
       }
@@ -1097,7 +1104,11 @@ int main(int argc, char **argv)
 #ifdef _MAC
     g_audio=create_audioStreamer_CoreAudio(&dev_name_in,48000,2,16,audiostream_onsamples);
 #else
-    g_audio=create_audioStreamer_ALSA(dev_name_in,audiostream_onsamples);
+    if (audio_jack==1){
+		g_audio=create_audioStreamer_JACK("wahjam", 4, 4, audiostream_onsamples, g_client);
+	} else {
+		g_audio=create_audioStreamer_ALSA(dev_name_in,audiostream_onsamples);
+	}
 #endif
   }
 #endif
