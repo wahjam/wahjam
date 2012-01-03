@@ -169,7 +169,7 @@ bool audioStreamer_JACK::init(const char* clientName,
       jack_client_close(client);
       client = NULL;
     }
-    if ((client = jack_client_new(clientName)) == 0) {
+    if ((client = jack_client_open(clientName, JackNullOption, NULL)) == 0) {
       fprintf (stderr, "jack server not running?\n");
       return false;
       // exit(20);
