@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: wahjam-client
+Description: Realtime Music Collaboration Software (client library)
+Requires: wahjam
+Version: @VERSION@
+Libs: -L${libdir} -lwahjam-client
+Cflags: -I${includedir}/libwahjam
