@@ -9,7 +9,7 @@ OPTFLAGS += -D_MAC -mcpu=7450
 LFLAGS = -framework coreaudio -lncurses.5 -lm
 else
 OPTFLAGS += -malign-double 
-LFLAGS = -lncurses -lm -lasound
+LFLAGS = -lncurses -lm -ljack -lasound
 endif
 
 #############################################################
@@ -35,6 +35,7 @@ OBJS += ../njclient.o
 ifdef MAC
 OBJS += ../audiostream_mac.o
 else
+OBJS += ../audiostream_jack.o
 OBJS += ../audiostream_alsa.o
 endif
 
