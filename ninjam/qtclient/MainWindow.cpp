@@ -1,4 +1,5 @@
 #include <QMessageBox>
+#include <QVBoxLayout>
 
 #include "MainWindow.h"
 #include "ConnectDialog.h"
@@ -87,7 +88,18 @@ MainWindow::MainWindow(QWidget *parent)
   chatOutput = new QTextEdit(this);
   chatOutput->setReadOnly(true);
 
-  setCentralWidget(chatOutput);
+  chatInput = new QLineEdit(this);
+  chatInput->connect(chatInput, SIGNAL(returnPressed()),
+                     this, SLOT(ChatInputReturnPressed()));
+
+  QWidget *content = new QWidget(this);
+  QVBoxLayout *layout = new QVBoxLayout;
+  layout->addWidget(chatOutput);
+  layout->addWidget(chatInput);
+  content->setLayout(layout);
+  content->setTabOrder(chatInput, chatOutput);
+
+  setCentralWidget(content);
 
   runThread = new ClientRunThread(&clientMutex, &client);
 
@@ -141,7 +153,7 @@ void MainWindow::chatAddLine(const QString &src, const QString &msg)
   if (src.isEmpty()) {
     chatOutput->append(QString("*** %1").arg(msg));
   } else if (msg.startsWith("/me ")) {
-    chatOutput->append(QString("* %1 %2").arg(src).arg(msg));
+    chatOutput->append(QString("* %1 %2").arg(src).arg(msg.mid(4)));
   } else {
     chatOutput->append(QString("<%1> %2").arg(src).arg(msg));
   }
@@ -190,5 +202,56 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
     for (i = 0; i < nparms; i++) {
       chatOutput->append(QString("[%1] %2").arg(i).arg(parms[i]));
     }
+  }
+}
+
+void MainWindow::ChatInputReturnPressed()
+{
+  QString line = chatInput->text();
+  chatInput->clear();
+
+  QString command, parm, msg;
+  if (line.compare("/clear", Qt::CaseInsensitive) == 0) {
+    chatOutput->clear();
+    return;
+  } else if (line.startsWith("/me ", Qt::CaseInsensitive)) {
+    command = "MSG";
+    parm = line;
+  } else if (line.startsWith("/topic ", Qt::CaseInsensitive) ||
+             line.startsWith("/kick ", Qt::CaseInsensitive) ||
+             line.startsWith("/bpm ", Qt::CaseInsensitive) ||
+             line.startsWith("/bpi ", Qt::CaseInsensitive)) {
+    command = "ADMIN";
+    parm = line.mid(1);
+  } else if (line.startsWith("/admin ", Qt::CaseInsensitive)) {
+    command = "ADMIN";
+    parm = line.section(' ', 1, -1, QString::SectionSkipEmpty);
+  } else if (line.startsWith("/msg ", Qt::CaseInsensitive)) {
+    command = "PRIVMSG";
+    parm = line.section(' ', 1, 1, QString::SectionSkipEmpty);
+    msg = line.section(' ', 2, -1, QString::SectionSkipEmpty);
+    if (msg.isEmpty()) {
+      chatAddLine("", "error: /msg requires a username and a message.");
+      return;
+    }
+    chatAddLine("", QString("-> *%1* %2").arg(parm).arg(msg));
+  } else {
+    command = "MSG";
+    parm = line;
+  }
+
+  clientMutex.lock();
+  bool connected = client.GetStatus() == NJClient::NJC_STATUS_OK;
+  if (connected) {
+    if (command == "PRIVMSG") {
+      client.ChatMessage_Send(command.toUtf8().data(), parm.toUtf8().data(), msg.toUtf8().data());
+    } else {
+      client.ChatMessage_Send(command.toUtf8().data(), parm.toUtf8().data());
+    }
+  }
+  clientMutex.unlock();
+
+  if (!connected) {
+    chatAddLine("", "error: not connected to a server.");
   }
 }

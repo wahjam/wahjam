@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QWidget>
 #include <QTextEdit>
+#include <QLineEdit>
 #include <QMutex>
 #include "../njclient.h"
 #include "../audiostream.h"
@@ -23,6 +24,7 @@ public:
 public slots:
   void LicenseCallback(const char *licensetext, bool *result);
   void ChatMessageCallback(char **parms, int nparms);
+  void ChatInputReturnPressed();
 
 private:
   static MainWindow *instance;
@@ -33,6 +35,7 @@ private:
   QMutex clientMutex;
   ClientRunThread *runThread;
   QTextEdit *chatOutput;
+  QLineEdit *chatInput;
 
   void OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
   void chatAddLine(const QString &src, const QString &msg);
