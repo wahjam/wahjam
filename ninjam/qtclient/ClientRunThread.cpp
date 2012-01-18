@@ -36,3 +36,8 @@ bool ClientRunThread::licenseCallbackTrampoline(const char *licensetext)
   emit licenseCallback(licensetext, &result);
   return result;
 }
+
+void ClientRunThread::chatMessageCallbackTrampoline(char **parms, int nparms)
+{
+  emit chatMessageCallback(parms, nparms);
+}

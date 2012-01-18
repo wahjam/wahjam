@@ -20,7 +20,8 @@ int MainWindow::LicenseCallbackTrampoline(int user32, char *licensetext)
 
 void MainWindow::ChatMessageCallbackTrampoline(int user32, NJClient *inst, char **parms, int nparms)
 {
-  MainWindow::GetInstance()->ChatMessageCallback(parms, nparms);
+  /* Bounce back into ClientRunThread */
+  MainWindow::GetInstance()->runThread->chatMessageCallbackTrampoline(parms, nparms);
 }
 
 MainWindow *MainWindow::GetInstance()
@@ -82,13 +83,22 @@ MainWindow::MainWindow(QWidget *parent)
   audioEnabled = true;
 
   setWindowTitle(tr("Wahjam"));
-  setCentralWidget(new QWidget);
+
+  chatOutput = new QTextEdit(this);
+  chatOutput->setReadOnly(true);
+
+  setCentralWidget(chatOutput);
 
   runThread = new ClientRunThread(&clientMutex, &client);
 
   /* Hook up an inter-thread signal for the license agreement dialog */
   connect(runThread, SIGNAL(licenseCallback(const char *, bool *)),
           this, SLOT(LicenseCallback(const char *, bool *)),
+          Qt::BlockingQueuedConnection);
+
+  /* Hook up an inter-thread signal for the chat message callback */
+  connect(runThread, SIGNAL(chatMessageCallback(char **, int)),
+          this, SLOT(ChatMessageCallback(char **, int)),
           Qt::BlockingQueuedConnection);
 
   runThread->start();
@@ -126,8 +136,40 @@ void MainWindow::LicenseCallback(const char *licensetext, bool *result)
   *result = msgBox.exec() == QMessageBox::Ok ? TRUE : FALSE;
 }
 
-void MainWindow::ChatMessageCallback(char **parms, int nparms)
+void MainWindow::ChatMessageCallback(char **charparms, int nparms)
 {
-  /* TODO */
-  abort();
+  QString parms[nparms];
+  int i;
+
+  for (i = 0; i < nparms; i++) {
+    if (charparms[i]) {
+      parms[i] = QString::fromUtf8(charparms[i]);
+    }
+  }
+
+  if (parms[0] == "TOPIC") {
+    QString line;
+
+    if (parms[1].isEmpty()) {
+      if (parms[2].isEmpty()) {
+        line = "No topic is set.";
+      } else {
+        line = QString("Topic is: %1").arg(parms[2]);
+      }
+    } else {
+      if (parms[2].isEmpty()) {
+        line = QString("%1 sets topic to: %2").arg(parms[1]).arg(parms[2]);
+      } else {
+        line = QString("%2 removes topic.").arg(parms[1]);
+      }
+    }
+
+    /* TODO set topic */
+    chatOutput->append(line);
+  } else {
+    chatOutput->append("Unrecognized command:");
+    for (i = 0; i < nparms; i++) {
+      chatOutput->append(QString("[%1] %2").arg(i).arg(parms[i]));
+    }
+  }
 }

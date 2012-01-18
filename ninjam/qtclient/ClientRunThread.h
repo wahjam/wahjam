@@ -21,9 +21,11 @@ public:
   void run();
   void stop();
   bool licenseCallbackTrampoline(const char *licensetext);
+  void chatMessageCallbackTrampoline(char **parms, int nparms);
 
 signals:
   void licenseCallback(const char *licensetext, bool *result);
+  void chatMessageCallback(char **parms, int nparms);
 
 private:
   bool running;

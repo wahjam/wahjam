@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QWidget>
+#include <QTextEdit>
 #include <QMutex>
 #include "../njclient.h"
 #include "../audiostream.h"
@@ -21,6 +22,7 @@ public:
 
 public slots:
   void LicenseCallback(const char *licensetext, bool *result);
+  void ChatMessageCallback(char **parms, int nparms);
 
 private:
   static MainWindow *instance;
@@ -30,11 +32,11 @@ private:
   bool audioEnabled;
   QMutex clientMutex;
   ClientRunThread *runThread;
+  QTextEdit *chatOutput;
 
   void OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
   static void OnSamplesTrampoline(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
   static int LicenseCallbackTrampoline(int user32, char *licensetext);
-  void ChatMessageCallback(char **parms, int nparms);
   static void ChatMessageCallbackTrampoline(int user32, NJClient *inst, char **parms, int nparms);
 };
 
