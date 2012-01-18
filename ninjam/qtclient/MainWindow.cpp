@@ -136,6 +136,17 @@ void MainWindow::LicenseCallback(const char *licensetext, bool *result)
   *result = msgBox.exec() == QMessageBox::Ok ? TRUE : FALSE;
 }
 
+void MainWindow::chatAddLine(const QString &src, const QString &msg)
+{
+  if (src.isEmpty()) {
+    chatOutput->append(QString("*** %1").arg(msg));
+  } else if (msg.startsWith("/me ")) {
+    chatOutput->append(QString("* %1 %2").arg(src).arg(msg));
+  } else {
+    chatOutput->append(QString("<%1> %2").arg(src).arg(msg));
+  }
+}
+
 void MainWindow::ChatMessageCallback(char **charparms, int nparms)
 {
   QString parms[nparms];
@@ -165,7 +176,15 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
     }
 
     /* TODO set topic */
-    chatOutput->append(line);
+    chatAddLine("", line);
+  } else if (parms[0] == "MSG") {
+    chatAddLine(parms[1], parms[2]);
+  } else if (parms[0] == "PRIVMSG") {
+    chatOutput->append(QString("* %1 * %2").arg(parms[1]).arg(parms[2]));
+  } else if (parms[0] == "JOIN") {
+    chatAddLine("", QString("%1 has joined the server").arg(parms[1]));
+  } else if (parms[0] == "PART") {
+    chatAddLine("", QString("%1 has left the server").arg(parms[1]));
   } else {
     chatOutput->append("Unrecognized command:");
     for (i = 0; i < nparms; i++) {
