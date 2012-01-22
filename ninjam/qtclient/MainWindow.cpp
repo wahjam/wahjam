@@ -148,14 +148,28 @@ void MainWindow::LicenseCallback(const char *licensetext, bool *result)
   *result = msgBox.exec() == QMessageBox::Ok ? TRUE : FALSE;
 }
 
-void MainWindow::chatAddLine(const QString &src, const QString &msg)
+/* Append line with bold formatted prefix to the chat widget */
+void MainWindow::chatAddLine(const QString &prefix, const QString &content)
+{
+  QTextCharFormat oldFormat = chatOutput->currentCharFormat();
+  QTextCharFormat boldFormat = oldFormat;
+  boldFormat.setFontWeight(QFont::Bold);
+
+  chatOutput->setCurrentCharFormat(boldFormat);
+  chatOutput->append(prefix);
+  chatOutput->setCurrentCharFormat(oldFormat);
+  chatOutput->insertPlainText(content);
+}
+
+/* Append a message from a given source to the chat widget */
+void MainWindow::chatAddMessage(const QString &src, const QString &msg)
 {
   if (src.isEmpty()) {
-    chatOutput->append(QString("*** %1").arg(msg));
+    chatAddLine("*** ", msg);
   } else if (msg.startsWith("/me ")) {
-    chatOutput->append(QString("* %1 %2").arg(src, msg.mid(4)));
+    chatAddLine(QString("* %1 ").arg(src), msg.mid(4));
   } else {
-    chatOutput->append(QString("<%1> %2").arg(src, msg));
+    chatAddLine(QString("<%1> ").arg(src), msg);
   }
 }
 
@@ -171,32 +185,29 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
   }
 
   if (parms[0] == "TOPIC") {
-    QString line;
-
     if (parms[1].isEmpty()) {
       if (parms[2].isEmpty()) {
-        line = "No topic is set.";
+        chatAddLine("No topic is set.", "");
       } else {
-        line = QString("Topic is: %1").arg(parms[2]);
+        chatAddLine(QString("Topic is: "), parms[2]);
       }
     } else {
       if (parms[2].isEmpty()) {
-        line = QString("%1 removes topic.").arg(parms[1]);
+        chatAddLine(QString("%1 removes topic.").arg(parms[1]), "");
       } else {
-        line = QString("%1 sets topic to: %2").arg(parms[1], parms[2]);
+        chatAddLine(QString("%1 sets topic to: ").arg(parms[1]), parms[2]);
       }
     }
 
     /* TODO set topic */
-    chatAddLine("", line);
   } else if (parms[0] == "MSG") {
-    chatAddLine(parms[1], parms[2]);
+    chatAddMessage(parms[1], parms[2]);
   } else if (parms[0] == "PRIVMSG") {
-    chatOutput->append(QString("* %1 * %2").arg(parms[1], parms[2]));
+    chatAddLine(QString("* %1 * ").arg(parms[1]), parms[2]);
   } else if (parms[0] == "JOIN") {
-    chatAddLine("", QString("%1 has joined the server").arg(parms[1]));
+    chatAddLine(QString("%1 has joined the server").arg(parms[1]), "");
   } else if (parms[0] == "PART") {
-    chatAddLine("", QString("%1 has left the server").arg(parms[1]));
+    chatAddLine(QString("%1 has left the server").arg(parms[1]), "");
   } else {
     chatOutput->append("Unrecognized command:");
     for (i = 0; i < nparms; i++) {
@@ -231,10 +242,10 @@ void MainWindow::ChatInputReturnPressed()
     parm = line.section(' ', 1, 1, QString::SectionSkipEmpty);
     msg = line.section(' ', 2, -1, QString::SectionSkipEmpty);
     if (msg.isEmpty()) {
-      chatAddLine("", "error: /msg requires a username and a message.");
+      chatAddLine("error: /msg requires a username and a message.", "");
       return;
     }
-    chatAddLine("", QString("-> *%1* %2").arg(parm, msg));
+    chatAddLine(QString("-> *%1* ").arg(parm), msg);
   } else {
     command = "MSG";
     parm = line;
@@ -252,6 +263,6 @@ void MainWindow::ChatInputReturnPressed()
   clientMutex.unlock();
 
   if (!connected) {
-    chatAddLine("", "error: not connected to a server.");
+    chatAddLine("error: not connected to a server.", "");
   }
 }
