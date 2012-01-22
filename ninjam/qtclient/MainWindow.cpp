@@ -153,9 +153,9 @@ void MainWindow::chatAddLine(const QString &src, const QString &msg)
   if (src.isEmpty()) {
     chatOutput->append(QString("*** %1").arg(msg));
   } else if (msg.startsWith("/me ")) {
-    chatOutput->append(QString("* %1 %2").arg(src).arg(msg.mid(4)));
+    chatOutput->append(QString("* %1 %2").arg(src, msg.mid(4)));
   } else {
-    chatOutput->append(QString("<%1> %2").arg(src).arg(msg));
+    chatOutput->append(QString("<%1> %2").arg(src, msg));
   }
 }
 
@@ -181,9 +181,9 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
       }
     } else {
       if (parms[2].isEmpty()) {
-        line = QString("%1 sets topic to: %2").arg(parms[1]).arg(parms[2]);
+        line = QString("%1 removes topic.").arg(parms[1]);
       } else {
-        line = QString("%2 removes topic.").arg(parms[1]);
+        line = QString("%1 sets topic to: %2").arg(parms[1], parms[2]);
       }
     }
 
@@ -192,7 +192,7 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
   } else if (parms[0] == "MSG") {
     chatAddLine(parms[1], parms[2]);
   } else if (parms[0] == "PRIVMSG") {
-    chatOutput->append(QString("* %1 * %2").arg(parms[1]).arg(parms[2]));
+    chatOutput->append(QString("* %1 * %2").arg(parms[1], parms[2]));
   } else if (parms[0] == "JOIN") {
     chatAddLine("", QString("%1 has joined the server").arg(parms[1]));
   } else if (parms[0] == "PART") {
@@ -234,7 +234,7 @@ void MainWindow::ChatInputReturnPressed()
       chatAddLine("", "error: /msg requires a username and a message.");
       return;
     }
-    chatAddLine("", QString("-> *%1* %2").arg(parm).arg(msg));
+    chatAddLine("", QString("-> *%1* %2").arg(parm, msg));
   } else {
     command = "MSG";
     parm = line;
