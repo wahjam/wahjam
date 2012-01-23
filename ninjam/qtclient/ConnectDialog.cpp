@@ -45,9 +45,19 @@ QString ConnectDialog::host() const
   return hostEdit->text();
 }
 
+void ConnectDialog::setHost(const QString &host)
+{
+  hostEdit->setText(host);
+}
+
 QString ConnectDialog::user() const
 {
   return userEdit->text();
+}
+
+void ConnectDialog::setUser(const QString &user)
+{
+  userEdit->setText(user);
 }
 
 QString ConnectDialog::pass() const
@@ -58,4 +68,15 @@ QString ConnectDialog::pass() const
 bool ConnectDialog::isPublicServer() const
 {
   return publicCheckbox->checkState() == Qt::Checked;
+}
+
+void ConnectDialog::setIsPublicServer(bool isPublicServer)
+{
+  if (isPublicServer) {
+    publicCheckbox->setCheckState(Qt::Checked);
+    passEdit->setEnabled(false);
+  } else {
+    publicCheckbox->setCheckState(Qt::Unchecked);
+    passEdit->setEnabled(true);
+  }
 }
