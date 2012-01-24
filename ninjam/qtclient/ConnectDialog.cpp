@@ -7,7 +7,9 @@
 ConnectDialog::ConnectDialog(QWidget *parent)
   : QDialog(parent)
 {
-  hostEdit = new QLineEdit;
+  hostEdit = new QComboBox;
+  hostEdit->setEditable(true);
+
   userEdit = new QLineEdit;
   passEdit = new QLineEdit;
   passEdit->setEchoMode(QLineEdit::Password);
@@ -40,14 +42,15 @@ void ConnectDialog::publicServerStateChanged(int state)
   passEdit->setEnabled(state == Qt::Unchecked);
 }
 
-QString ConnectDialog::host() const
+void ConnectDialog::setRecentHostsList(const QStringList &hosts)
 {
-  return hostEdit->text();
+  hostEdit->clear();
+  hostEdit->addItems(hosts);
 }
 
-void ConnectDialog::setHost(const QString &host)
+QString ConnectDialog::host() const
 {
-  hostEdit->setText(host);
+  return hostEdit->currentText();
 }
 
 QString ConnectDialog::user() const

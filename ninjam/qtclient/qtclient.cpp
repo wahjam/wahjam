@@ -18,7 +18,9 @@ int main(int argc, char *argv[])
 
   ConnectDialog connectDialog;
   QSettings settings;
-  connectDialog.setHost(settings.value("connect/host").toString());
+  QStringList hosts = settings.value("connect/hosts").toStringList();
+
+  connectDialog.setRecentHostsList(hosts);
   connectDialog.setUser(settings.value("connect/user").toString());
   connectDialog.setIsPublicServer(settings.value("connect/public", true).toBool());
 
@@ -26,7 +28,11 @@ int main(int argc, char *argv[])
     return 0;
   }
 
-  settings.setValue("connect/host", connectDialog.host());
+  hosts.prepend(connectDialog.host());
+  hosts.removeDuplicates();
+  hosts = hosts.mid(0, 16); /* limit maximum number of elements */
+
+  settings.setValue("connect/hosts", hosts);
   settings.setValue("connect/user", connectDialog.user());
   settings.setValue("connect/public", connectDialog.isPublicServer());
 
