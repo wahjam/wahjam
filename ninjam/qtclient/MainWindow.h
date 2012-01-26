@@ -39,6 +39,8 @@ private:
   QTextEdit *chatOutput;
   QLineEdit *chatInput;
 
+  bool setupWorkDir();
+  void cleanupWorkDir(const QString &path);
   void OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
   void chatAddLine(const QString &prefix, const QString &content);
   void chatAddMessage(const QString &src, const QString &msg);

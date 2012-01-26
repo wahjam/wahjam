@@ -1,5 +1,8 @@
 #include <QMessageBox>
 #include <QVBoxLayout>
+#include <QDateTime>
+#include <QDir>
+#include <QDesktopServices>
 
 #include "MainWindow.h"
 #include "ClientRunThread.h"
@@ -96,7 +99,10 @@ MainWindow::~MainWindow()
 
 void MainWindow::Connect(const QString &host, const QString &user, const QString &pass)
 {
-  /* TODO set work dir */
+  if (!setupWorkDir()) {
+    chatAddLine("Unable to create work directory.", "");
+    return;
+  }
 
   /* TODO replace with PortAudio */
 #if defined(_WIN32)
@@ -125,7 +131,60 @@ void MainWindow::Disconnect()
 
   clientMutex.lock();
   client.Disconnect();
+  QString workDirPath = QString::fromUtf8(client.GetWorkDir());
+  bool keepWorkDir = client.config_savelocalaudio;
+  client.SetWorkDir(NULL);
   clientMutex.unlock();
+
+  if (!workDirPath.isEmpty() && !keepWorkDir) {
+    cleanupWorkDir(workDirPath);
+  }
+}
+
+bool MainWindow::setupWorkDir()
+{
+  QDir basedir(QDesktopServices::storageLocation(QDesktopServices::DataLocation));
+
+  /* The app data directory might not exist, so create it */
+  if (!basedir.mkpath(basedir.absolutePath())) {
+    return false;
+  }
+
+  /* Filename generation uses date/time plus a unique number, if necessary */
+  int i;
+  for (i = 0; i < 16; i++) {
+    QString filename(QDateTime::currentDateTime().toString("yyyyMMdd_hhmm"));
+    if (i > 0) {
+      filename += QString("_%1").arg(i);
+    }
+    filename += ".wahjam";
+
+    if (basedir.mkdir(filename)) {
+      client.SetWorkDir(basedir.filePath(filename).toUtf8().data());
+      return true;
+    }
+  }
+  return false;
+}
+
+void MainWindow::cleanupWorkDir(const QString &path)
+{
+  QDir workDir(path);
+
+  foreach (const QFileInfo &subdirInfo,
+           workDir.entryInfoList(QDir::NoDotAndDotDot | QDir::Dirs)) {
+    QDir subdir(subdirInfo.absoluteDir());
+
+    foreach (const QString &file,
+             subdir.entryList(QDir::NoDotAndDotDot | QDir::Files)) {
+      subdir.remove(file);
+    }
+    workDir.rmdir(subdirInfo.fileName());
+  }
+
+  QString name(workDir.dirName());
+  workDir.cdUp();
+  workDir.rmdir(name);
 }
 
 void MainWindow::OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate)
