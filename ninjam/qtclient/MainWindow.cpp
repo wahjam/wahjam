@@ -30,7 +30,7 @@ MainWindow *MainWindow::GetInstance()
 }
 
 MainWindow::MainWindow(QWidget *parent)
-  : QMainWindow(parent), audioEnabled(false)
+  : QMainWindow(parent), audio(NULL), audioEnabled(false)
 {
   /* Since the ninjam callbacks do not pass a void* opaque argument we rely on
    * a global variable.
@@ -43,28 +43,11 @@ MainWindow::MainWindow(QWidget *parent)
 
   JNL::open_socketlib();
 
-  /* TODO replace with PortAudio */
-#if defined(_WIN32)
-#error
-#elif defined(_MAC)
-#error
-#else
-  char device[] = "in pulse out pulse";
-  audio = create_audioStreamer_ALSA(device, OnSamplesTrampoline);
-#endif
-  if (!audio)
-  {
-    printf("Error opening audio!\n");
-    exit(1);
-  }
-
   client.config_savelocalaudio = 0;
   client.LicenseAgreementCallback = LicenseCallbackTrampoline;
   client.ChatMessage_Callback = ChatMessageCallbackTrampoline;
   client.SetLocalChannelInfo(0, "channel0", true, 0, false, 0, true, true);
   client.SetLocalChannelMonitoring(0, false, 0.0f, false, 0.0f, false, false, false, false);
-
-  /* TODO set work dir */
 
   setWindowTitle(tr("Wahjam"));
 
@@ -110,6 +93,23 @@ MainWindow::~MainWindow()
 
 void MainWindow::Connect(const QString &host, const QString &user, const QString &pass)
 {
+  /* TODO set work dir */
+
+  /* TODO replace with PortAudio */
+#if defined(_WIN32)
+#error
+#elif defined(_MAC)
+#error
+#else
+  char device[] = "in pulse out pulse";
+  audio = create_audioStreamer_ALSA(device, OnSamplesTrampoline);
+#endif
+  if (!audio)
+  {
+    printf("Error opening audio!\n");
+    exit(1);
+  }
+
   client.Connect(host.toAscii().data(),
                  user.toUtf8().data(),
                  pass.toUtf8().data());
