@@ -1,5 +1,6 @@
 #include <QLabel>
 #include <QFormLayout>
+#include <QPushButton>
 
 #include "ConnectDialog.h"
 
@@ -12,8 +13,7 @@ ConnectDialog::ConnectDialog(QWidget *parent)
   passEdit->setEchoMode(QLineEdit::Password);
   passEdit->setEnabled(false);
 
-  connectButton = new QPushButton(tr("&Connect"));
-
+  QPushButton *connectButton = new QPushButton(tr("&Connect"));
   connect(connectButton, SIGNAL(clicked()), this, SLOT(accept()));
 
   QVBoxLayout *layout = new QVBoxLayout;

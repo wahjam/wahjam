@@ -3,7 +3,6 @@
 
 #include <QDialog>
 #include <QLineEdit>
-#include <QPushButton>
 #include <QCheckBox>
 
 class ConnectDialog : public QDialog
@@ -29,7 +28,6 @@ private:
   QLineEdit *userEdit;
   QCheckBox *publicCheckbox;
   QLineEdit *passEdit;
-  QPushButton *connectButton;
 };
 
 #endif /* _CONNECTDIALOG_H_ */
