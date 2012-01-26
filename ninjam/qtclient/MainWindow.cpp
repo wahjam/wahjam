@@ -90,6 +90,8 @@ MainWindow::~MainWindow()
 
   if (runThread) {
     runThread->stop();
+    delete runThread;
+    runThread = NULL;
   }
   JNL::close_socketlib();
 }
