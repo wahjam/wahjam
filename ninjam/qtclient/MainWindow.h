@@ -19,6 +19,8 @@ public:
   MainWindow(QWidget *parent = 0);
   ~MainWindow();
 
+  void Connect(const QString &host, const QString &user, const QString &pass);
+
   static MainWindow *GetInstance();
 
 public slots:

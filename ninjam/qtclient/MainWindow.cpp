@@ -2,7 +2,6 @@
 #include <QVBoxLayout>
 
 #include "MainWindow.h"
-#include "ConnectDialog.h"
 #include "ClientRunThread.h"
 #include "../../WDL/jnetlib/jnetlib.h"
 
@@ -67,22 +66,6 @@ MainWindow::MainWindow(QWidget *parent)
 
   /* TODO set work dir */
 
-  ConnectDialog connectDialog;
-
-  if (connectDialog.exec() != QDialog::Accepted) {
-    return; /* TODO exit */
-  }
-
-  QString user = connectDialog.GetUser();
-  if (connectDialog.IsPublicServer()) {
-    user.prepend("anonymous:");
-  }
-
-  client.Connect(connectDialog.GetHost().toAscii().data(),
-                 user.toUtf8().data(),
-                 connectDialog.GetPass().toUtf8().data());
-  audioEnabled = true;
-
   setWindowTitle(tr("Wahjam"));
 
   chatOutput = new QTextEdit(this);
@@ -123,6 +106,14 @@ MainWindow::~MainWindow()
     runThread->stop();
   }
   JNL::close_socketlib();
+}
+
+void MainWindow::Connect(const QString &host, const QString &user, const QString &pass)
+{
+  client.Connect(host.toAscii().data(),
+                 user.toUtf8().data(),
+                 pass.toUtf8().data());
+  audioEnabled = true;
 }
 
 void MainWindow::OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate)

@@ -14,7 +14,7 @@ ConnectDialog::ConnectDialog(QWidget *parent)
 
   connectButton = new QPushButton(tr("&Connect"));
 
-  connect(connectButton, SIGNAL(clicked()), this, SLOT(connectToHost()));
+  connect(connectButton, SIGNAL(clicked()), this, SLOT(accept()));
 
   QVBoxLayout *layout = new QVBoxLayout;
   QWidget *form = new QWidget;
@@ -35,43 +35,27 @@ ConnectDialog::ConnectDialog(QWidget *parent)
   setWindowTitle(tr("Connect to server..."));
 }
 
-void ConnectDialog::connectToHost()
-{
-  host = hostEdit->text();
-  user = userEdit->text();
-  pass = passEdit->text();
-  isPublicServer = publicCheckbox->isChecked();
-
-  hostEdit->clear();
-  userEdit->clear();
-  passEdit->clear();
-  passEdit->setEnabled(false);
-  publicCheckbox->setChecked(true);
-
-  accept();
-}
-
 void ConnectDialog::publicServerStateChanged(int state)
 {
   passEdit->setEnabled(state == Qt::Unchecked);
 }
 
-QString ConnectDialog::GetHost()
+QString ConnectDialog::host() const
 {
-  return host;
+  return hostEdit->text();
 }
 
-QString ConnectDialog::GetUser()
+QString ConnectDialog::user() const
 {
-  return user;
+  return userEdit->text();
 }
 
-QString ConnectDialog::GetPass()
+QString ConnectDialog::pass() const
 {
-  return pass;
+  return passEdit->text();
 }
 
-bool ConnectDialog::IsPublicServer()
+bool ConnectDialog::isPublicServer() const
 {
-  return isPublicServer;
+  return publicCheckbox->checkState() == Qt::Checked;
 }
