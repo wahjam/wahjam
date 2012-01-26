@@ -85,6 +85,9 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
   audioEnabled = false;
+  delete audio;
+  audio = NULL;
+
   if (runThread) {
     runThread->stop();
   }
