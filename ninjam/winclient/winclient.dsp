@@ -334,10 +334,6 @@ SOURCE=.\winclient.h
 # PROP Default_Filter "ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
 # Begin Source File
 
-SOURCE=.\jesusonic.ico
-# End Source File
-# Begin Source File
-
 SOURCE=.\ninjam_gui_win.ico
 # End Source File
 # End Group

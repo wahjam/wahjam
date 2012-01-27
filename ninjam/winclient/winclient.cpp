@@ -52,14 +52,11 @@ WDL_String g_ini_file;
 WDL_Mutex g_client_mutex;
 audioStreamer *g_audio;
 NJClient *g_client;
-jesusonicAPI *JesusonicAPI;  
 HINSTANCE g_hInst;
 int g_done;
-WDL_String jesusdir;
 WDL_String g_topic;
 
 
-static HINSTANCE jesus_hDllInst;
 static HWND g_hwnd;
 static HANDLE g_hThread;
 static char g_exepath[1024];
@@ -433,7 +430,6 @@ static void do_connect()
 
   g_client_mutex.Enter();
 
-  // configure any running jesusonic instances with new samplerate
   {
     int x=0;
     for (x = 0;;x++)
@@ -455,10 +451,6 @@ static void do_connect()
         }
         p->DoWndUpdate();
       }
-
-      void *i=0;
-      g_client->GetLocalChannelProcessor(a,NULL,&i);
-      if (i) JesusUpdateInfo(i,g_client->GetLocalChannelInfo(a,NULL,NULL,NULL),g_audio?g_audio->m_srate:44100);
     }
   }
   
@@ -747,7 +739,7 @@ static BOOL WINAPI MainProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
             {
               int ch=lp.gettoken_int(0);
               int n;
-              int wj=0, ok=0;
+              int ok=0;
               char *name=NULL;
               ChanMixer *newa=NULL;
               if (ch >= 0 && ch <= MAX_LOCAL_CHANNELS) for (n = 1; n < lp.getnumtokens()-1; n += 2)
@@ -787,10 +779,6 @@ static BOOL WINAPI MainProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
                     g_client->SetLocalChannelMonitoring(ch,false,false,true,(float)lp.gettoken_float(n+1),false,false,false,false);
                   break;
                   case 6: //jesus
-                    if (lp.gettoken_int(n+1))
-                    {
-                      wj=1;
-                    }
                   break;
                   case 7: //name
                     g_client->SetLocalChannelInfo(ch,name=lp.gettoken_str(n+1),false,false,false,0,false,false);
@@ -806,14 +794,6 @@ static BOOL WINAPI MainProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
                 {
                   if (name) newa->SetDesc(name);
                   newa->DoWndUpdate();
-                }
-                if (wj && name)
-                {
-                  void *p=CreateJesusInstance(ch,name,g_audio?g_audio->m_srate:44100);
-                  if (p)
-                  {
-                    g_client->SetLocalChannelProcessor(ch,jesusonic_processor,p);
-                  }
                 }
 
                 SendMessage(m_locwnd,WM_LCUSER_ADDCHILD,ch,0);
@@ -1277,14 +1257,12 @@ static BOOL WINAPI MainProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 
           int sch=0;
           bool bc=0;
-          void *has_jesus=0;
           char *lcn;
           float v=0.0f,p=0.0f;
           bool m=0,s=0;
       
           lcn=g_client->GetLocalChannelInfo(a,&sch,NULL,&bc);
           g_client->GetLocalChannelMonitoring(a,&v,&p,&m,&s);
-          g_client->GetLocalChannelProcessor(a,NULL,&has_jesus);
 
           char *ptr=lcn;
           while (*ptr)
@@ -1307,7 +1285,7 @@ static BOOL WINAPI MainProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
             sstr.Set(buf);           
           }
           
-          sprintf(buf,"%d source '%s' bc %d mute %d solo %d volume %f pan %f jesus %d name `%s`",a,sstr.Get(),bc,m,s,v,p,!!has_jesus,lcn);
+          sprintf(buf,"%d source '%s' bc %d mute %d solo %d volume %f pan %f jesus 0 name `%s`",a,sstr.Get(),bc,m,s,v,p,lcn);
           char specbuf[64];
           sprintf(specbuf,"lc_%d",cnt++);
           WritePrivateProfileString(CONFSEC,specbuf,buf,g_ini_file.Get());
@@ -1365,10 +1343,6 @@ static BOOL WINAPI MainProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
             delete t;
             g_client->SetLocalChannelInfo(a,NULL,true,0,false,false,false,false);
           }
-          void *i=0;
-          g_client->GetLocalChannelProcessor(a,NULL,&i);
-          if (i) deleteJesusonicProc(i,a);
-          g_client->SetLocalChannelProcessor(a,NULL,NULL);
         }
       }
 
@@ -1432,63 +1406,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdPa
     RegisterClass(&wc);
   }
 
-  // get jesusonic from registry
-  {
-    HKEY k;
-    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE,"SOFTWARE\\Jesusonic",0,KEY_READ,&k) == ERROR_SUCCESS)
-    {
-      char buf[1024];
-      DWORD b=sizeof(buf);
-      DWORD t=REG_SZ;
-      if (RegQueryValueEx(k,NULL,0,&t,(unsigned char *)buf,&b) == ERROR_SUCCESS && t == REG_SZ)
-      {
-        jesusdir.Set(buf);
-      }
-      RegCloseKey(k);
-    }
-
-
-    if (!jesusdir.Get()[0])
-    {
-      WDL_String nd(g_exepath);
-      nd.Append("\\effects");
-      
-      WDL_DirScan d;
-      if (!d.First(nd.Get()))
-      {
-        jesusdir.Set(g_exepath);
-      }
-    }
-
-  }
-
-
-
-  if (jesusdir.Get()[0])
-  {
-    WDL_String dll;
-
-
-    dll.Set(g_exepath);
-    dll.Append("\\jesus.dll");
-
-    jesus_hDllInst = LoadLibrary(dll.Get()); // load from current dir
-    if (!jesus_hDllInst) 
-    {
-      dll.Set(jesusdir.Get());
-      dll.Append("\\jesus.dll");
-      jesus_hDllInst = LoadLibrary(dll.Get());
-    }
-    if (jesus_hDllInst) 
-    {
-      *(void **)(&JesusonicAPI) = (void *)GetProcAddress(jesus_hDllInst,"JesusonicAPI");
-      if (JesusonicAPI && JesusonicAPI->ver == JESUSONIC_API_VERSION_CURRENT)
-      {
-      }
-      else JesusonicAPI = 0;
-    }
-  }
-
   JNL::open_socketlib();
 
   g_client = new NJClient;
@@ -1516,11 +1433,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdPa
     }
   }
 
-
-  ///// jesusonic stuff
-  if (jesus_hDllInst) FreeLibrary(jesus_hDllInst);
-  jesus_hDllInst=0;
-  JesusonicAPI=0;
 
   JNL::close_socketlib();
   return 0;

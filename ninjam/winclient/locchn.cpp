@@ -51,8 +51,6 @@ static BOOL WINAPI LocalChannelItemProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
         float vol=0.0,pan=0.0 ;
         bool ismute=0,issolo=0;
         g_client->GetLocalChannelMonitoring(m_idx, &vol, &pan, &ismute, &issolo);
-        void *jesinst=0;
-        g_client->GetLocalChannelProcessor(m_idx,NULL,&jesinst);
 
         g_client_mutex.Leave();
 
@@ -60,16 +58,6 @@ static BOOL WINAPI LocalChannelItemProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
         if (bc) CheckDlgButton(hwndDlg,IDC_TRANSMIT,BST_CHECKED);
         if (ismute) CheckDlgButton(hwndDlg,IDC_MUTE,BST_CHECKED);
         if (issolo) CheckDlgButton(hwndDlg,IDC_SOLO,BST_CHECKED);
-        if (jesinst) CheckDlgButton(hwndDlg,IDC_JS,BST_CHECKED);
-
-        if (!JesusonicAPI)
-        {
-          EnableWindow(GetDlgItem(hwndDlg,IDC_JS),0);
-          EnableWindow(GetDlgItem(hwndDlg,IDC_JSCFG),0);
-        }
-        else if (jesinst)
-          EnableWindow(GetDlgItem(hwndDlg,IDC_JSCFG),1);
-
 
         SendMessage(hwndDlg,WM_LCUSER_REPOP_CH,0,0);        
 
@@ -103,25 +91,13 @@ static BOOL WINAPI LocalChannelItemProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
         g_client_mutex.Enter();
         g_client->SetLocalChannelInfo(m_idx,buf,false,0,false,0,false,0);
         g_client->NotifyServerOfChannelChange();
-        void *i=0;
         int sch=0;
-        g_client->GetLocalChannelProcessor(m_idx,NULL,&i);
         char *n=g_client->GetLocalChannelInfo(m_idx,&sch,NULL,NULL);
         g_client_mutex.Leave();
         if (IS_CMIX(sch))
         {
           ChanMixer *p=(ChanMixer *)sch;
           p->SetDesc(n?n:"");
-        }
-        if (i)
-        {
-          JesusUpdateInfo(i,buf,g_audio?g_audio->m_srate:44100);
-          HWND h=JesusonicAPI->ui_wnd_gethwnd(i);
-          if (h)
-          {
-            strcat(buf," : Effects Processor Control");
-            SetWindowText(h,buf);
-          }
         }
       }
     return 0;
@@ -204,77 +180,11 @@ static BOOL WINAPI LocalChannelItemProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
         break;
         case IDC_REMOVE:
           {
-            // remove JS for this channel
-            void *i=0;
-            g_client_mutex.Enter();
-            g_client->GetLocalChannelProcessor(m_idx,NULL,&i);
-            if (i) deleteJesusonicProc(i,m_idx);
-            g_client->SetLocalChannelProcessor(m_idx,NULL,NULL);
-
             // remove the channel
+            g_client_mutex.Enter();
             g_client->DeleteLocalChannel(m_idx);
             g_client_mutex.Leave();
             PostMessage(GetParent(hwndDlg),WM_LCUSER_REMCHILD,0,(LPARAM)hwndDlg);
-          }
-        break;
-        case IDC_JS:
-          if (IsDlgButtonChecked(hwndDlg,IDC_JS))
-          {
-            char buf[512];
-            GetDlgItemText(hwndDlg,IDC_NAME,buf,sizeof(buf));
-            void *p=CreateJesusInstance(m_idx,buf,g_audio?g_audio->m_srate:44100);
-            if (p)
-            {
-              g_client->SetLocalChannelProcessor(m_idx,jesusonic_processor,p);
-              EnableWindow(GetDlgItem(hwndDlg,IDC_JSCFG),1);
-            }
-          }
-          else
-          {
-            void *i=0;
-            g_client_mutex.Enter();
-            g_client->GetLocalChannelProcessor(m_idx,NULL,&i);
-            if (i)
-            {
-              deleteJesusonicProc(i,m_idx);
-              g_client->SetLocalChannelProcessor(m_idx,NULL,NULL);
-            }
-            g_client_mutex.Leave();
-            EnableWindow(GetDlgItem(hwndDlg,IDC_JSCFG),0);
-          }
-        break;
-        case IDC_JSCFG:
-          {
-            void *i=0;
-            g_client_mutex.Enter();
-            g_client->GetLocalChannelProcessor(m_idx,NULL,&i);
-            HWND h=JesusonicAPI->ui_wnd_gethwnd(i);
-            g_client_mutex.Leave();
-            if (h && IsWindow(h))
-            {
-              ShowWindow(h,SW_SHOWNA);
-              SetForegroundWindow(h);
-            }
-            else
-            {
-              HWND h=JesusonicAPI->ui_wnd_create(i);
-              if (h)
-              {
-                //SetParent(h,GetParent(GetParent(GetParent(hwndDlg))));
-                SetWindowLong(h,-8,(long)GetParent(GetParent(GetParent(hwndDlg))));
-
-                SetClassLong(h,GCL_HICON,(long)LoadIcon(g_hInst,MAKEINTRESOURCE(IDI_ICON2)));
-
-                char fmtbuf[1024];
-                GetDlgItemText(hwndDlg,IDC_NAME,fmtbuf,sizeof(fmtbuf)-128);
-                strcat(fmtbuf," : Effects Processor Control");
-                SetWindowText(h,fmtbuf);
-
-                ShowWindow(h,SW_SHOW);
-                SetTimer(h,1,40,NULL);
-              }
-
-            }
           }
         break;
         case IDC_VOLLBL:

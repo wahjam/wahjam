@@ -17,7 +17,6 @@ Source tree layout:
     server/         Server
   WDL/              Common library
   sdks/             Third-party source libraries (Windows only)
-  jesusonic/        Jesusonic DLL API header
 
 The original source trees were taken from http://www.ninjam.com/.  The files
 were:

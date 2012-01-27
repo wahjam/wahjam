@@ -22,7 +22,6 @@
 #define IDD_MIXERDLG                    117
 #define IDD_MIXERITEM                   118
 #define IDD_REMOTEUSER                  119
-#define IDI_ICON2                       121
 #define IDC_COMBO1                      1000
 #define IDC_MASTERVOL                   1000
 #define IDC_CRECT                       1001
@@ -94,8 +93,6 @@
 #define IDC_VOL                         1045
 #define IDC_PAN                         1046
 #define IDC_VOLLBL                      1047
-#define IDC_JS                          1048
-#define IDC_JSCFG                       1049
 #define IDC_ADDCH                       1050
 #define IDC_PANLBL                      1050
 #define IDC_RECV                        1051

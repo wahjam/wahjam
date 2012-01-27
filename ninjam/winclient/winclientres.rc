@@ -264,9 +264,6 @@ BEGIN
     CONTROL         "Solo",IDC_SOLO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
                     214,20,30,8
     PUSHBUTTON      "Remove",IDC_REMOVE,264,35,50,13
-    CONTROL         "Effects processor",IDC_JS,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,6,38,68,10
-    PUSHBUTTON      "config...",IDC_JSCFG,78,38,38,11,WS_DISABLED
     CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDHORZ,0,51,316,1
     CONTROL         "center",IDC_PANLBL,"Static",SS_LEFTNOWORDWRAP | 
                     SS_NOTIFY | WS_GROUP,155,20,23,8
@@ -513,7 +510,6 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDI_ICON1               ICON    DISCARDABLE     "ninjam_gui_win.ico"
-IDI_ICON2               ICON    DISCARDABLE     "jesusonic.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
