@@ -8,7 +8,8 @@ DEPENDPATH += .
 INCLUDEPATH += .
 
 QMAKE_CXXFLAGS += -Wno-write-strings
-LIBS += -lm -lasound -logg -lvorbis -lvorbisenc
+LIBS += -lm -logg -lvorbis -lvorbisenc
+unix:LIBS += -lasound
 
 # Input
 HEADERS += MainWindow.h
@@ -29,4 +30,4 @@ SOURCES += ../mpb.cpp
 SOURCES += ../netmsg.cpp
 SOURCES += ../njclient.cpp
 SOURCES += ../njmisc.cpp
-SOURCES += ../audiostream_alsa.cpp
+unix:SOURCES += ../audiostream_alsa.cpp
