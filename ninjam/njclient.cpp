@@ -25,6 +25,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include "njclient.h"
 #include "mpb.h"
 #include "../WDL/pcmfmtcvt.h"
