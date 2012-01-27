@@ -10,6 +10,7 @@ INCLUDEPATH += .
 QMAKE_CXXFLAGS += -Wno-write-strings
 LIBS += -lm -logg -lvorbis -lvorbisenc
 unix:LIBS += -lasound
+win32:LIBS += -lwsock32
 
 # Core ninjam/ code does not use wide characters
 win32:DEFINES -= UNICODE
