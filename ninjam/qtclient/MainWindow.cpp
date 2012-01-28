@@ -65,10 +65,17 @@ MainWindow::MainWindow(QWidget *parent)
                      this, SLOT(ChatInputReturnPressed()));
 
   channelTree = new ChannelTreeWidget(this);
+  setupChannelTree();
   connect(channelTree, SIGNAL(MetronomeMuteChanged(bool)),
           this, SLOT(MetronomeMuteChanged(bool)));
   connect(channelTree, SIGNAL(MetronomeBoostChanged(bool)),
           this, SLOT(MetronomeBoostChanged(bool)));
+  connect(channelTree, SIGNAL(LocalChannelMuteChanged(int, bool)),
+          this, SLOT(LocalChannelMuteChanged(int, bool)));
+  connect(channelTree, SIGNAL(LocalChannelBoostChanged(int, bool)),
+          this, SLOT(LocalChannelBoostChanged(int, bool)));
+  connect(channelTree, SIGNAL(LocalChannelBroadcastChanged(int, bool)),
+          this, SLOT(LocalChannelBroadcastChanged(int, bool)));
 
   QSplitter *splitter = new QSplitter(this);
   QWidget *content = new QWidget;
@@ -110,6 +117,19 @@ MainWindow::~MainWindow()
     runThread = NULL;
   }
   JNL::close_socketlib();
+}
+
+/* Must be called with client mutex held or before client thread is started */
+void MainWindow::setupChannelTree()
+{
+  int i, ch;
+  for (i = 0; (ch = client.EnumLocalChannels(i)) != -1; i++) {
+    bool broadcast, mute;
+    const char *name = client.GetLocalChannelInfo(ch, NULL, NULL, &broadcast);
+    client.GetLocalChannelMonitoring(ch, NULL, NULL, &mute, NULL);
+
+    channelTree->addLocalChannel(ch, QString::fromUtf8(name), mute, broadcast);
+  }
 }
 
 void MainWindow::Connect(const QString &host, const QString &user, const QString &pass)
@@ -349,5 +369,27 @@ void MainWindow::MetronomeBoostChanged(bool boost)
 {
   clientMutex.lock();
   client.config_metronome = boost ? DB2VAL(3) : DB2VAL(0);
+  clientMutex.unlock();
+}
+
+void MainWindow::LocalChannelMuteChanged(int ch, bool mute)
+{
+  clientMutex.lock();
+  client.SetLocalChannelMonitoring(ch, false, 0, false, 0, true, mute, false, false);
+  clientMutex.unlock();
+}
+
+void MainWindow::LocalChannelBoostChanged(int ch, bool boost)
+{
+  clientMutex.lock();
+  client.SetLocalChannelMonitoring(ch, true, boost ? DB2VAL(3) : DB2VAL(0),
+                                   false, 0, false, false, false, false);
+  clientMutex.unlock();
+}
+
+void MainWindow::LocalChannelBroadcastChanged(int ch, bool broadcast)
+{
+  clientMutex.lock();
+  client.SetLocalChannelInfo(ch, NULL, false, 0, false, 0, true, broadcast);
   clientMutex.unlock();
 }

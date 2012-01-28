@@ -22,8 +22,10 @@
 enum
 {
   ItemTypeMetronome = 0,
+  ItemTypeLocalChannel,
 
   ItemTypeRole = Qt::UserRole,
+  ChannelIndexRole,
 };
 
 ChannelTreeWidget::ChannelTreeWidget(QWidget *parent)
@@ -65,6 +67,17 @@ QTreeWidgetItem *ChannelTreeWidget::addChannelItem(QTreeWidgetItem *parent, cons
   return channel;
 }
 
+void ChannelTreeWidget::addLocalChannel(int ch, const QString &name, bool mute, bool broadcast)
+{
+  QTreeWidgetItem *local = topLevelItem(0);
+  QTreeWidgetItem *channel = addChannelItem(local, name, CF_BROADCAST | CF_BOOST);
+
+  channel->setData(0, ItemTypeRole, ItemTypeLocalChannel);
+  channel->setData(0, ChannelIndexRole, ch);
+  channel->setCheckState(1, mute ? Qt::Checked : Qt::Unchecked);
+  channel->setCheckState(2, broadcast ? Qt::Checked : Qt::Unchecked);
+}
+
 void ChannelTreeWidget::handleItemChanged(QTreeWidgetItem *item, int column)
 {
   QVariant itemType = item->data(0, ItemTypeRole);
@@ -81,5 +94,17 @@ void ChannelTreeWidget::handleItemChanged(QTreeWidgetItem *item, int column)
       emit MetronomeBoostChanged(state);
     }
     break;
+  case ItemTypeLocalChannel:
+  {
+    int ch = item->data(0, ChannelIndexRole).toInt(NULL);
+    if (column == 1) {
+      emit LocalChannelMuteChanged(ch, state);
+    } else if (column == 2) {
+      emit LocalChannelBroadcastChanged(ch, state);
+    } else if (column == 3) {
+      emit LocalChannelBoostChanged(ch, state);
+    }
+    break;
+  }
   }
 }

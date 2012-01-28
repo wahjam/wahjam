@@ -28,9 +28,14 @@ class ChannelTreeWidget : public QTreeWidget
 public:
   ChannelTreeWidget(QWidget *parent = 0);
 
+  void addLocalChannel(int ch, const QString &name, bool mute, bool broadcast);
+
 signals:
   void MetronomeMuteChanged(bool mute);
   void MetronomeBoostChanged(bool boost);
+  void LocalChannelMuteChanged(int ch, bool mute);
+  void LocalChannelBoostChanged(int ch, bool boost);
+  void LocalChannelBroadcastChanged(int ch, bool broadcast);
 
 private slots:
   void handleItemChanged(QTreeWidgetItem *item, int column);

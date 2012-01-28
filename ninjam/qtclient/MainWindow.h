@@ -31,6 +31,9 @@ private slots:
   void ChatInputReturnPressed();
   void MetronomeMuteChanged(bool mute);
   void MetronomeBoostChanged(bool boost);
+  void LocalChannelMuteChanged(int ch, bool mute);
+  void LocalChannelBoostChanged(int ch, bool boost);
+  void LocalChannelBroadcastChanged(int ch, bool broadcast);
 
 private:
   static MainWindow *instance;
@@ -43,6 +46,7 @@ private:
   QLineEdit *chatInput;
   ChannelTreeWidget *channelTree;
 
+  void setupChannelTree();
   bool setupWorkDir();
   void cleanupWorkDir(const QString &path);
   void OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
