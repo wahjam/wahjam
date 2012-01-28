@@ -30,12 +30,38 @@ public:
 
   void addLocalChannel(int ch, const QString &name, bool mute, bool broadcast);
 
+  /*
+   * Remote user and channel updates must be performed by enumerating all users
+   * and their channels each time.  Any users or channels present in the last
+   * update but not in the current update will be removed.
+   *
+   * This interface is an artifact of how NJClient only informs us that user
+   * information has changed, but not what specifically to add/remove/update.
+   */
+  class RemoteChannelUpdater
+  {
+  public:
+    RemoteChannelUpdater(ChannelTreeWidget *owner);
+    void addUser(int useridx, const QString &name);
+    void addChannel(int channelidx, const QString &name, bool mute);
+    void commit();
+
+  private:
+    ChannelTreeWidget *owner;
+    int toplevelidx;
+    int childidx;
+    int useridx;
+
+    void prunePreviousUser();
+  };
+
 signals:
   void MetronomeMuteChanged(bool mute);
   void MetronomeBoostChanged(bool boost);
   void LocalChannelMuteChanged(int ch, bool mute);
   void LocalChannelBoostChanged(int ch, bool boost);
   void LocalChannelBroadcastChanged(int ch, bool broadcast);
+  void RemoteChannelMuteChanged(int useridx, int channelidx, bool mute);
 
 private slots:
   void handleItemChanged(QTreeWidgetItem *item, int column);

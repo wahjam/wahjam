@@ -23,9 +23,11 @@ enum
 {
   ItemTypeMetronome = 0,
   ItemTypeLocalChannel,
+  ItemTypeRemoteChannel,
 
   ItemTypeRole = Qt::UserRole,
   ChannelIndexRole,
+  UserIndexRole,
 };
 
 ChannelTreeWidget::ChannelTreeWidget(QWidget *parent)
@@ -106,5 +108,75 @@ void ChannelTreeWidget::handleItemChanged(QTreeWidgetItem *item, int column)
     }
     break;
   }
+  case ItemTypeRemoteChannel:
+  {
+    int useridx = item->data(0, UserIndexRole).toInt(NULL);
+    int channelidx = item->data(0, ChannelIndexRole).toInt(NULL);
+    if (column == 1) {
+      emit RemoteChannelMuteChanged(useridx, channelidx, state);
+    }
+    break;
+  }
+  }
+}
+
+ChannelTreeWidget::RemoteChannelUpdater::RemoteChannelUpdater(ChannelTreeWidget *owner_)
+  : owner(owner_), toplevelidx(0), childidx(-1)
+{
+}
+
+void ChannelTreeWidget::RemoteChannelUpdater::addUser(int useridx_, const QString &name)
+{
+  prunePreviousUser();
+
+  QTreeWidgetItem *item = owner->topLevelItem(++toplevelidx);
+  if (item) {
+    item->setText(0, name);
+  } else {
+    owner->addRootItem(name);
+  }
+  childidx = -1;
+  useridx = useridx_;
+}
+
+void ChannelTreeWidget::RemoteChannelUpdater::addChannel(int channelidx, const QString &name, bool mute)
+{
+  QTreeWidgetItem *user = owner->topLevelItem(toplevelidx);
+  QTreeWidgetItem *channel = user->child(++childidx);
+  if (channel) {
+    channel->setText(0, name);
+  } else {
+    channel = owner->addChannelItem(user, name, 0);
+    channel->setData(0, ItemTypeRole, ItemTypeRemoteChannel);
+    channel->setData(0, UserIndexRole, useridx);
+  }
+
+  channel->setData(0, ChannelIndexRole, channelidx);
+  channel->setCheckState(1, mute ? Qt::Checked : Qt::Unchecked);
+}
+
+/* Delete unused channels from previous user */
+void ChannelTreeWidget::RemoteChannelUpdater::prunePreviousUser()
+{
+  if (toplevelidx > 0) {
+    QTreeWidgetItem *user = owner->topLevelItem(toplevelidx);
+    while (user->childCount() > childidx + 1) {
+      QTreeWidgetItem *channel = user->takeChild(user->childCount() - 1);
+      delete channel;
+    }
+  }
+}
+
+void ChannelTreeWidget::RemoteChannelUpdater::commit()
+{
+  prunePreviousUser();
+
+  while (owner->topLevelItemCount() > toplevelidx + 1) {
+    QTreeWidgetItem *user = owner->takeTopLevelItem(owner->topLevelItemCount() - 1);
+    while (user->childCount() > 0) {
+      QTreeWidgetItem *channel = user->takeChild(user->childCount() - 1);
+      delete channel;
+    }
+    delete user;
   }
 }

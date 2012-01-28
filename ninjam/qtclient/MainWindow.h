@@ -28,11 +28,13 @@ private slots:
   void LicenseCallback(const char *licensetext, bool *result);
   void ChatMessageCallback(char **parms, int nparms);
   void ChatInputReturnPressed();
+  void UserInfoChanged();
   void MetronomeMuteChanged(bool mute);
   void MetronomeBoostChanged(bool boost);
   void LocalChannelMuteChanged(int ch, bool mute);
   void LocalChannelBoostChanged(int ch, bool boost);
   void LocalChannelBroadcastChanged(int ch, bool broadcast);
+  void RemoteChannelMuteChanged(int useridx, int channelidx, bool mute);
 
 private:
   static MainWindow *instance;

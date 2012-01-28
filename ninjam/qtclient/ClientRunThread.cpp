@@ -15,6 +15,9 @@ void ClientRunThread::run()
   running = true;
   while (running) {
     while (!client->Run());
+    if (client->HasUserInfoChanged()) {
+      emit userInfoChanged();
+    }
     cond.wait(mutex, 20 /* milliseconds */);
   }
   mutex->unlock();
