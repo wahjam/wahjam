@@ -33,7 +33,6 @@ private:
 
   NJClient client;
   audioStreamer *audio;
-  bool audioEnabled;
   QMutex clientMutex;
   ClientRunThread *runThread;
   QTextEdit *chatOutput;
