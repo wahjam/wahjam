@@ -1,9 +1,12 @@
 #include <QMessageBox>
 #include <QVBoxLayout>
+#include <QPushButton>
+#include <QSplitter>
 
 #include "MainWindow.h"
 #include "ClientRunThread.h"
 #include "../../WDL/jnetlib/jnetlib.h"
+#include "../njmisc.h"
 
 MainWindow *MainWindow::instance; /* singleton */
 
@@ -58,14 +61,26 @@ MainWindow::MainWindow(QWidget *parent)
   chatInput->connect(chatInput, SIGNAL(returnPressed()),
                      this, SLOT(ChatInputReturnPressed()));
 
-  QWidget *content = new QWidget(this);
+  channelTree = new ChannelTreeWidget(this);
+  connect(channelTree, SIGNAL(MetronomeMuteChanged(bool)),
+          this, SLOT(MetronomeMuteChanged(bool)));
+  connect(channelTree, SIGNAL(MetronomeBoostChanged(bool)),
+          this, SLOT(MetronomeBoostChanged(bool)));
+
+  QSplitter *splitter = new QSplitter(this);
+  QWidget *content = new QWidget;
   QVBoxLayout *layout = new QVBoxLayout;
+
   layout->addWidget(chatOutput);
   layout->addWidget(chatInput);
   content->setLayout(layout);
   content->setTabOrder(chatInput, chatOutput);
 
-  setCentralWidget(content);
+  splitter->addWidget(channelTree);
+  splitter->addWidget(content);
+  splitter->setOrientation(Qt::Vertical);
+
+  setCentralWidget(splitter);
 
   runThread = new ClientRunThread(&clientMutex, &client);
 
@@ -261,4 +276,18 @@ void MainWindow::ChatInputReturnPressed()
   if (!connected) {
     chatAddLine("error: not connected to a server.", "");
   }
+}
+
+void MainWindow::MetronomeMuteChanged(bool mute)
+{
+  clientMutex.lock();
+  client.config_metronome_mute = mute;
+  clientMutex.unlock();
+}
+
+void MainWindow::MetronomeBoostChanged(bool boost)
+{
+  clientMutex.lock();
+  client.config_metronome = boost ? DB2VAL(3) : DB2VAL(0);
+  clientMutex.unlock();
 }

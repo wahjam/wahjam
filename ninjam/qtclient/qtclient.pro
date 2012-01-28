@@ -19,11 +19,13 @@ win32:DEFINES -= UNICODE
 HEADERS += MainWindow.h
 HEADERS += ConnectDialog.h
 HEADERS += ClientRunThread.h
+HEADERS += ChannelTreeWidget.h
 
 SOURCES += qtclient.cpp
 SOURCES += MainWindow.cpp
 SOURCES += ConnectDialog.cpp
 SOURCES += ClientRunThread.cpp
+SOURCES += ChannelTreeWidget.cpp
 SOURCES += ../../WDL/jnetlib/asyncdns.cpp
 SOURCES += ../../WDL/jnetlib/connection.cpp
 SOURCES += ../../WDL/jnetlib/listen.cpp
