@@ -76,6 +76,8 @@ MainWindow::MainWindow(QWidget *parent)
           this, SLOT(LocalChannelBoostChanged(int, bool)));
   connect(channelTree, SIGNAL(LocalChannelBroadcastChanged(int, bool)),
           this, SLOT(LocalChannelBroadcastChanged(int, bool)));
+  connect(channelTree, SIGNAL(RemoteChannelMuteChanged(int, int, bool)),
+          this, SLOT(RemoteChannelMuteChanged(int, int, bool)));
 
   QSplitter *splitter = new QSplitter(this);
   QWidget *content = new QWidget;
@@ -103,6 +105,10 @@ MainWindow::MainWindow(QWidget *parent)
   connect(runThread, SIGNAL(chatMessageCallback(char **, int)),
           this, SLOT(ChatMessageCallback(char **, int)),
           Qt::BlockingQueuedConnection);
+
+  /* No need to block for the remote user info callback */
+  connect(runThread, SIGNAL(userInfoChanged()),
+          this, SLOT(UserInfoChanged()));
 
   runThread->start();
 }
@@ -220,6 +226,28 @@ void MainWindow::cleanupWorkDir(const QString &path)
   QString name(workDir.dirName());
   workDir.cdUp();
   workDir.rmdir(name);
+}
+
+void MainWindow::UserInfoChanged()
+{
+  ChannelTreeWidget::RemoteChannelUpdater updater(channelTree);
+  clientMutex.lock();
+
+  int useridx;
+  for (useridx = 0; useridx < client.GetNumUsers(); useridx++) {
+    const char *name = client.GetUserState(useridx, NULL, NULL, NULL);
+    updater.addUser(useridx, QString::fromUtf8(name));
+
+    int channelidx;
+    for (channelidx = 0; client.EnumUserChannels(useridx, channelidx) != -1; channelidx++) {
+      bool mute;
+      name = client.GetUserChannelState(useridx, channelidx, NULL, NULL, NULL, &mute, NULL);
+      updater.addChannel(channelidx, QString::fromUtf8(name), mute);
+    }
+  }
+
+  clientMutex.unlock();
+  updater.commit();
 }
 
 void MainWindow::OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate)
@@ -391,5 +419,12 @@ void MainWindow::LocalChannelBroadcastChanged(int ch, bool broadcast)
 {
   clientMutex.lock();
   client.SetLocalChannelInfo(ch, NULL, false, 0, false, 0, true, broadcast);
+  clientMutex.unlock();
+}
+
+void MainWindow::RemoteChannelMuteChanged(int useridx, int channelidx, bool mute)
+{
+  clientMutex.lock();
+  client.SetUserChannelState(useridx, channelidx, false, false, false, 0, false, 0, true, mute, false, false);
   clientMutex.unlock();
 }

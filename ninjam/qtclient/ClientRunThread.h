@@ -26,6 +26,7 @@ public:
 signals:
   void licenseCallback(const char *licensetext, bool *result);
   void chatMessageCallback(char **parms, int nparms);
+  void userInfoChanged();
 
 private:
   bool running;
