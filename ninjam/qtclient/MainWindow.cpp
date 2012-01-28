@@ -84,8 +84,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-  delete audio;
-  audio = NULL;
+  Disconnect();
 
   if (runThread) {
     runThread->stop();
@@ -117,6 +116,16 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
   client.Connect(host.toAscii().data(),
                  user.toUtf8().data(),
                  pass.toUtf8().data());
+}
+
+void MainWindow::Disconnect()
+{
+  delete audio;
+  audio = NULL;
+
+  clientMutex.lock();
+  client.Disconnect();
+  clientMutex.unlock();
 }
 
 void MainWindow::OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate)
