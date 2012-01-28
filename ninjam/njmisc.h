@@ -25,6 +25,8 @@
 #ifndef _NJMISC_H_
 #define _NJMISC_H_
 
+#include <math.h>
+
 // some utility functions
 double DB2SLIDER(double x);
 double SLIDER2DB(double y);
