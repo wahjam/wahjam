@@ -8,7 +8,7 @@ DEPENDPATH += .
 INCLUDEPATH += .
 
 QMAKE_CXXFLAGS += -Wno-write-strings
-LIBS += -lm -logg -lvorbis -lvorbisenc
+LIBS += -lm -lvorbisenc -lvorbis -logg
 unix:LIBS += -lasound
 win32:LIBS += -lwsock32
 
