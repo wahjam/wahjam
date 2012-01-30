@@ -12,6 +12,7 @@
 #include "MainWindow.h"
 #include "ClientRunThread.h"
 #include "ConnectDialog.h"
+#include "PortAudioConfigDialog.h"
 #include "../../WDL/jnetlib/jnetlib.h"
 #include "../njmisc.h"
 
@@ -66,6 +67,9 @@ MainWindow::MainWindow(QWidget *parent)
   disconnectAction->setEnabled(false);
   connect(disconnectAction, SIGNAL(triggered()), this, SLOT(Disconnect()));
 
+  audioConfigAction = new QAction(tr("Configure &audio..."), this);
+  connect(audioConfigAction, SIGNAL(triggered()), this, SLOT(ShowAudioConfigDialog()));
+
   QAction *exitAction = new QAction(tr("E&xit"), this);
   exitAction->setShortcuts(QKeySequence::Quit);
   connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
@@ -73,6 +77,7 @@ MainWindow::MainWindow(QWidget *parent)
   QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
   fileMenu->addAction(connectAction);
   fileMenu->addAction(disconnectAction);
+  fileMenu->addAction(audioConfigAction);
   fileMenu->addAction(exitAction);
 
   setWindowTitle(tr("Wahjam"));
@@ -165,13 +170,21 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
     return;
   }
 
-  audio = create_audioStreamer_PortAudio(OnSamplesTrampoline);
+  QSettings settings;
+  QString hostAPI = settings.value("audio/hostAPI").toString();
+  QString inputDevice = settings.value("audio/inputDevice").toString();
+  QString outputDevice = settings.value("audio/outputDevice").toString();
+  audio = create_audioStreamer_PortAudio(hostAPI.toLocal8Bit().data(),
+                                         inputDevice.toLocal8Bit().data(),
+                                         outputDevice.toLocal8Bit().data(),
+                                         OnSamplesTrampoline);
   if (!audio)
   {
     printf("Error opening audio!\n");
     exit(1);
   }
 
+  audioConfigAction->setEnabled(false);
   connectAction->setEnabled(false);
   disconnectAction->setEnabled(true);
 
@@ -196,6 +209,7 @@ void MainWindow::Disconnect()
     cleanupWorkDir(workDirPath);
   }
 
+  audioConfigAction->setEnabled(true);
   connectAction->setEnabled(true);
   disconnectAction->setEnabled(false);
 }
@@ -274,6 +288,22 @@ void MainWindow::ShowConnectDialog()
   }
 
   Connect(connectDialog.host(), user, connectDialog.pass());
+}
+
+void MainWindow::ShowAudioConfigDialog()
+{
+  PortAudioConfigDialog audioDialog;
+  QSettings settings;
+
+  audioDialog.setHostAPI(settings.value("audio/hostAPI").toString());
+  audioDialog.setInputDevice(settings.value("audio/inputDevice").toString());
+  audioDialog.setOutputDevice(settings.value("audio/outputDevice").toString());
+
+  if (audioDialog.exec() == QDialog::Accepted) {
+    settings.setValue("audio/hostAPI", audioDialog.hostAPI());
+    settings.setValue("audio/inputDevice", audioDialog.inputDevice());
+    settings.setValue("audio/outputDevice", audioDialog.outputDevice());
+  }
 }
 
 void MainWindow::UserInfoChanged()

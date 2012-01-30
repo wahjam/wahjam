@@ -27,6 +27,7 @@ public:
   static MainWindow *GetInstance();
 
 public slots:
+  void ShowAudioConfigDialog();
   void ShowConnectDialog();
   void Disconnect();
 
@@ -54,6 +55,7 @@ private:
   ChannelTreeWidget *channelTree;
   QAction *connectAction;
   QAction *disconnectAction;
+  QAction *audioConfigAction;
 
   void setupChannelTree();
   bool setupWorkDir();

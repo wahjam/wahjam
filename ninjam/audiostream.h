@@ -54,7 +54,8 @@ class audioStreamer
 
 typedef void (*SPLPROC)(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
 
-audioStreamer *create_audioStreamer_PortAudio(SPLPROC proc);
+audioStreamer *create_audioStreamer_PortAudio(const char *hostAPI,
+    const char *inputDevice, const char *outputDevice, SPLPROC proc);
 
 #ifdef _WIN32
 audioStreamer *create_audioStreamer_KS(int srate, int bps, int *nbufs, int *bufsize, SPLPROC proc);

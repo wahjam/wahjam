@@ -17,6 +17,7 @@
 */
 
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <portaudio.h>
 #include "audiostream.h"
@@ -27,7 +28,8 @@ public:
   PortAudioStreamer(SPLPROC proc);
   ~PortAudioStreamer();
 
-  bool Start();
+  bool Start(const PaStreamParameters *inputParams,
+             const PaStreamParameters *outputParams);
   void Stop();
 
   const char *GetChannelName(int idx);
@@ -88,24 +90,24 @@ PortAudioStreamer::~PortAudioStreamer()
 }
 
 /* Returns true on success, false on failure */
-bool PortAudioStreamer::Start()
+bool PortAudioStreamer::Start(const PaStreamParameters *inputParams,
+                              const PaStreamParameters *outputParams)
 {
   PaError error;
 
-  // TODO works for all host APIs/devices?
-  PaSampleFormat sampleFormat = paFloat32 | paNonInterleaved;
-
-  m_innch = m_outnch = 1;
-  m_bps = 32;
-  error = Pa_OpenDefaultStream(&stream, m_innch, m_outnch,
-                               sampleFormat, m_srate,
-                               paFramesPerBufferUnspecified,
-                               streamCallbackTrampoline, this);
+  error = Pa_OpenStream(&stream, inputParams, outputParams,
+                        m_srate, paFramesPerBufferUnspecified,
+                        paPrimeOutputBuffersUsingStreamCallback,
+                        streamCallbackTrampoline, this);
   if (error != paNoError) {
-    fprintf(stderr, "Pa_OpenDefaultStream: %s\n", Pa_GetErrorText(error));
+    fprintf(stderr, "Pa_OpenStream: %s\n", Pa_GetErrorText(error));
     stream = NULL;
     return false;
   }
+
+  m_innch = inputParams->channelCount;
+  m_outnch = outputParams->channelCount;
+  m_bps = 32;
 
   error = Pa_StartStream(stream);
   if (error != paNoError) {
@@ -126,11 +128,111 @@ void PortAudioStreamer::Stop()
   }
 }
 
-audioStreamer *create_audioStreamer_PortAudio(SPLPROC proc)
+static const PaHostApiInfo *findHostAPIInfo(const char *hostAPI, PaHostApiIndex *index)
 {
-  PortAudioStreamer *streamer = new PortAudioStreamer(proc);
+  const PaHostApiInfo *hostAPIInfo = NULL;
+  PaHostApiIndex i;
 
-  if (!streamer->Start()) {
+  for (i = 0; i < Pa_GetHostApiCount(); i++) {
+    hostAPIInfo = Pa_GetHostApiInfo(i);
+
+    if (hostAPIInfo && strcmp(hostAPI, hostAPIInfo->name) == 0) {
+      break;
+    }
+  }
+  if (i >= Pa_GetHostApiCount()) {
+    i = Pa_GetDefaultHostApi();
+    hostAPIInfo = Pa_GetHostApiInfo(i);
+  }
+
+  if (index) {
+    *index = i;
+  }
+  return hostAPIInfo;
+}
+
+static const PaDeviceInfo *findDeviceInfo(PaHostApiIndex hostAPI, const char *name,
+                                          PaDeviceIndex *index)
+{
+  const PaHostApiInfo *hostAPIInfo = Pa_GetHostApiInfo(hostAPI);
+  if (!hostAPIInfo) {
+    return NULL;
+  }
+
+  const PaDeviceInfo *deviceInfo;
+  PaDeviceIndex deviceIndex;
+  int i;
+  for (i = 0; i < hostAPIInfo->deviceCount; i++) {
+    deviceIndex = Pa_HostApiDeviceIndexToDeviceIndex(hostAPI, i);
+    if (deviceIndex < 0) {
+      continue;
+    }
+
+    deviceInfo = Pa_GetDeviceInfo(deviceIndex);
+    if (deviceInfo && strcmp(name, deviceInfo->name) == 0) {
+      break;
+    }
+  }
+  if (i >= hostAPIInfo->deviceCount) {
+    deviceIndex = hostAPIInfo->defaultInputDevice;
+    deviceInfo = Pa_GetDeviceInfo(deviceIndex);
+  }
+
+  if (index) {
+    *index = deviceIndex;
+  }
+  return deviceInfo;
+}
+
+static bool setupParameters(const char *hostAPI, const char *inputDevice,
+    const char *outputDevice, PaStreamParameters *inputParams,
+    PaStreamParameters *outputParams)
+{
+  PaHostApiIndex hostAPIIndex;
+  if (!findHostAPIInfo(hostAPI, &hostAPIIndex)) {
+    return false;
+  }
+
+  const PaDeviceInfo *inputDeviceInfo = findDeviceInfo(hostAPIIndex,
+      inputDevice, &inputParams->device);
+  if (!inputDeviceInfo) {
+    return false;
+  }
+
+  const PaDeviceInfo *outputDeviceInfo = findDeviceInfo(hostAPIIndex,
+      outputDevice, &outputParams->device);
+  if (!outputDeviceInfo) {
+    return false;
+  }
+
+  /* TODO do all host APIs/devices support this? */
+  PaSampleFormat sampleFormat = paFloat32 | paNonInterleaved;
+  inputParams->sampleFormat = sampleFormat;
+  outputParams->sampleFormat = sampleFormat;
+
+  /* TODO support stereo and user-defined channel configuration */
+  inputParams->channelCount = 1;
+  outputParams->channelCount = 1;
+
+  inputParams->suggestedLatency = inputDeviceInfo->defaultLowInputLatency;
+  outputParams->suggestedLatency = outputDeviceInfo->defaultLowOutputLatency;
+
+  inputParams->hostApiSpecificStreamInfo = NULL;
+  outputParams->hostApiSpecificStreamInfo = NULL;
+  return true;
+}
+
+audioStreamer *create_audioStreamer_PortAudio(const char *hostAPI,
+    const char *inputDevice, const char *outputDevice, SPLPROC proc)
+{
+  PaStreamParameters inputParams, outputParams;
+  if (!setupParameters(hostAPI, inputDevice, outputDevice,
+                       &inputParams, &outputParams)) {
+    return NULL;
+  }
+
+  PortAudioStreamer *streamer = new PortAudioStreamer(proc);
+  if (!streamer->Start(&inputParams, &outputParams)) {
     delete streamer;
     return NULL;
   }
