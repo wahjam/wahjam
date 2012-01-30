@@ -165,15 +165,7 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
     return;
   }
 
-  /* TODO replace with PortAudio */
-#if defined(_WIN32)
-#error
-#elif defined(_MAC)
-#error
-#else
-  char device[] = "in pulse out pulse";
-  audio = create_audioStreamer_ALSA(device, OnSamplesTrampoline);
-#endif
+  audio = create_audioStreamer_PortAudio(OnSamplesTrampoline);
   if (!audio)
   {
     printf("Error opening audio!\n");

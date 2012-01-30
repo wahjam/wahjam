@@ -9,7 +9,7 @@ INCLUDEPATH += .
 
 QMAKE_CXXFLAGS += -Wno-write-strings
 LIBS += -lm -lvorbisenc -lvorbis -logg
-unix:LIBS += -lasound
+LIBS += -lportaudio
 win32:LIBS += -lwsock32
 
 # Core ninjam/ code does not use wide characters
@@ -36,4 +36,4 @@ SOURCES += ../mpb.cpp
 SOURCES += ../netmsg.cpp
 SOURCES += ../njclient.cpp
 SOURCES += ../njmisc.cpp
-unix:SOURCES += ../audiostream_alsa.cpp
+SOURCES += ../audiostream_pa.cpp
