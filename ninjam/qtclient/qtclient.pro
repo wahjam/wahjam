@@ -20,12 +20,14 @@ HEADERS += MainWindow.h
 HEADERS += ConnectDialog.h
 HEADERS += ClientRunThread.h
 HEADERS += ChannelTreeWidget.h
+HEADERS += PortAudioConfigDialog.h
 
 SOURCES += qtclient.cpp
 SOURCES += MainWindow.cpp
 SOURCES += ConnectDialog.cpp
 SOURCES += ClientRunThread.cpp
 SOURCES += ChannelTreeWidget.cpp
+SOURCES += PortAudioConfigDialog.cpp
 SOURCES += ../../WDL/jnetlib/asyncdns.cpp
 SOURCES += ../../WDL/jnetlib/connection.cpp
 SOURCES += ../../WDL/jnetlib/listen.cpp
