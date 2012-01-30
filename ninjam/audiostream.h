@@ -36,6 +36,9 @@
 #ifndef _AUDIOSTREAM_H_
 #define _AUDIOSTREAM_H_
 
+#ifdef _WIN32
+#include <windows.h> // for GUID
+#endif
 
 class audioStreamer
 {
