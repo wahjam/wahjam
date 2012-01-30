@@ -2,12 +2,16 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QSplitter>
+#include <QMenuBar>
+#include <QMenu>
+#include <QSettings>
 #include <QDateTime>
 #include <QDir>
 #include <QDesktopServices>
 
 #include "MainWindow.h"
 #include "ClientRunThread.h"
+#include "ConnectDialog.h"
 #include "../../WDL/jnetlib/jnetlib.h"
 #include "../njmisc.h"
 
@@ -54,6 +58,22 @@ MainWindow::MainWindow(QWidget *parent)
   client.ChatMessage_Callback = ChatMessageCallbackTrampoline;
   client.SetLocalChannelInfo(0, "channel0", true, 0, false, 0, true, true);
   client.SetLocalChannelMonitoring(0, false, 0.0f, false, 0.0f, false, false, false, false);
+
+  connectAction = new QAction(tr("&Connect..."), this);
+  connect(connectAction, SIGNAL(triggered()), this, SLOT(ShowConnectDialog()));
+
+  disconnectAction = new QAction(tr("&Disconnect"), this);
+  disconnectAction->setEnabled(false);
+  connect(disconnectAction, SIGNAL(triggered()), this, SLOT(Disconnect()));
+
+  QAction *exitAction = new QAction(tr("E&xit"), this);
+  exitAction->setShortcuts(QKeySequence::Quit);
+  connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
+
+  QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
+  fileMenu->addAction(connectAction);
+  fileMenu->addAction(disconnectAction);
+  fileMenu->addAction(exitAction);
 
   setWindowTitle(tr("Wahjam"));
 
@@ -160,6 +180,9 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
     exit(1);
   }
 
+  connectAction->setEnabled(false);
+  disconnectAction->setEnabled(true);
+
   client.Connect(host.toAscii().data(),
                  user.toUtf8().data(),
                  pass.toUtf8().data());
@@ -180,6 +203,9 @@ void MainWindow::Disconnect()
   if (!workDirPath.isEmpty() && !keepWorkDir) {
     cleanupWorkDir(workDirPath);
   }
+
+  connectAction->setEnabled(true);
+  disconnectAction->setEnabled(false);
 }
 
 bool MainWindow::setupWorkDir()
@@ -226,6 +252,36 @@ void MainWindow::cleanupWorkDir(const QString &path)
   QString name(workDir.dirName());
   workDir.cdUp();
   workDir.rmdir(name);
+}
+
+void MainWindow::ShowConnectDialog()
+{
+  ConnectDialog connectDialog;
+  QSettings settings;
+  QStringList hosts = settings.value("connect/hosts").toStringList();
+
+  connectDialog.setRecentHostsList(hosts);
+  connectDialog.setUser(settings.value("connect/user").toString());
+  connectDialog.setIsPublicServer(settings.value("connect/public", true).toBool());
+
+  if (connectDialog.exec() != QDialog::Accepted) {
+    return;
+  }
+
+  hosts.prepend(connectDialog.host());
+  hosts.removeDuplicates();
+  hosts = hosts.mid(0, 16); /* limit maximum number of elements */
+
+  settings.setValue("connect/hosts", hosts);
+  settings.setValue("connect/user", connectDialog.user());
+  settings.setValue("connect/public", connectDialog.isPublicServer());
+
+  QString user = connectDialog.user();
+  if (connectDialog.isPublicServer()) {
+    user.prepend("anonymous:");
+  }
+
+  Connect(connectDialog.host(), user, connectDialog.pass());
 }
 
 void MainWindow::UserInfoChanged()
