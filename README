@@ -4,19 +4,76 @@ Wahjam clients and server (http://wahjam.org/)
 This software allows musicians to play music together over the internet.  It is
 compatible with and based on NINJAM (http://ninjam.com/).
 
-To build a particular target change into its directory and run make(1).  For
-Mac OS X an Xcode project is available.  For Windows Visual Studio projects are
-available.
+This code is licensed GPL v2 or later:
 
-Source tree layout:
+  http://www.gnu.org/licenses/gpl-2.0.html
+
+Source tree layout
+------------------
 
   ninjam/
+    qtclient/       Qt client (cross-platform)
     winclient/      Windows client
     cocoaclient/    Mac OS X client
     cursesclient/   Linux/Mac OS X curses client
     server/         Server
   WDL/              Common library
   sdks/             Third-party source libraries (Windows only)
+
+How to build the Qt client
+--------------------------
+
+Install the Qt cross-platform application and UI toolkit from http://qt.nokia.com/.
+
+Install Ogg and Vorbis audio codec libraries from http://xiph.org/.
+
+Then run the following commands:
+
+  cd ninjam/wahjam
+  qmake
+  make
+
+On Windows the recommended build environment for libogg and libvorbis is MinGW
+and MSYS from http://www.mingw.org/.  Build libogg and libvorbis inside MSYS,
+then use the Qt build environment to compile qtclient.  You may need to add the
+MSYS include/ and lib/ paths as QMAKE_CXXFLAGS -I and LIBS -L flags in
+ninjam/qtclient/qtclient.pro.
+
+How to build the other software
+-------------------------------
+
+To build a particular target change into its directory and run make(1).  For
+the Mac OS X cocoaclient an Xcode project is available.  For the Windows
+winclient a Visual Studio project is available.
+
+Cross-compiling the Qt client for Windows
+-----------------------------------------
+
+The MinGW compiler can be used as a cross-compiler to build Windows executables
+from a Linux host.  This allows us to set up a Linux build server capable of
+building Windows executables.
+
+The mingw-cross-env project provides a cross-compiler and many popular
+libraries, including Wahjam's dependencies on ogg, vorbis, the Qt framework,
+and PortAudio.  At the time of writing the latest release of mingw-cross-env
+had some dead URLs so the current development version was used from their
+mercurial repository.
+
+1. Clone mingw-cross-env:
+
+  hg clone http://hg.savannah.nongnu.org/hgweb/mingw-cross-env
+
+1. Build the cross-compiler and dependencies:
+
+  cd mingw-cross-env
+  make gcc ogg vorbis qt portaudio
+
+1. If you encounter any build errors try reducing optional dependencies.
+
+For example, try disabling SQL drivers and DBUS on the ./configure line in
+mingw-cross-env/src/qt.mk.
+
+NINJAM fork information:
 
 The original source trees were taken from http://www.ninjam.com/.  The files
 were:
@@ -25,7 +82,3 @@ were:
   ninjam_osxclient_0.02a.tar.gz
   cclient_src_v0.01a.tar.gz
   ninjam_server_0.06.tar.gz
-
-This code is licensed GPL v2 or later:
-
-  http://www.gnu.org/licenses/gpl-2.0.html
