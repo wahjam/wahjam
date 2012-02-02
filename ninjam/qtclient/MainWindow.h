@@ -6,6 +6,7 @@
 #include <QTextEdit>
 #include <QLineEdit>
 #include <QMutex>
+#include "ChannelTreeWidget.h"
 #include "../njclient.h"
 #include "../audiostream.h"
 
@@ -23,10 +24,17 @@ public:
 
   static MainWindow *GetInstance();
 
-public slots:
+private slots:
   void LicenseCallback(const char *licensetext, bool *result);
   void ChatMessageCallback(char **parms, int nparms);
   void ChatInputReturnPressed();
+  void UserInfoChanged();
+  void MetronomeMuteChanged(bool mute);
+  void MetronomeBoostChanged(bool boost);
+  void LocalChannelMuteChanged(int ch, bool mute);
+  void LocalChannelBoostChanged(int ch, bool boost);
+  void LocalChannelBroadcastChanged(int ch, bool broadcast);
+  void RemoteChannelMuteChanged(int useridx, int channelidx, bool mute);
 
 private:
   static MainWindow *instance;
@@ -38,7 +46,9 @@ private:
   ClientRunThread *runThread;
   QTextEdit *chatOutput;
   QLineEdit *chatInput;
+  ChannelTreeWidget *channelTree;
 
+  void setupChannelTree();
   void OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
   void chatAddLine(const QString &prefix, const QString &content);
   void chatAddMessage(const QString &src, const QString &msg);

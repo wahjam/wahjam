@@ -1,9 +1,12 @@
 #include <QMessageBox>
 #include <QVBoxLayout>
+#include <QPushButton>
+#include <QSplitter>
 
 #include "MainWindow.h"
 #include "ClientRunThread.h"
 #include "../../WDL/jnetlib/jnetlib.h"
+#include "../njmisc.h"
 
 MainWindow *MainWindow::instance; /* singleton */
 
@@ -58,14 +61,35 @@ MainWindow::MainWindow(QWidget *parent)
   chatInput->connect(chatInput, SIGNAL(returnPressed()),
                      this, SLOT(ChatInputReturnPressed()));
 
-  QWidget *content = new QWidget(this);
+  channelTree = new ChannelTreeWidget(this);
+  setupChannelTree();
+  connect(channelTree, SIGNAL(MetronomeMuteChanged(bool)),
+          this, SLOT(MetronomeMuteChanged(bool)));
+  connect(channelTree, SIGNAL(MetronomeBoostChanged(bool)),
+          this, SLOT(MetronomeBoostChanged(bool)));
+  connect(channelTree, SIGNAL(LocalChannelMuteChanged(int, bool)),
+          this, SLOT(LocalChannelMuteChanged(int, bool)));
+  connect(channelTree, SIGNAL(LocalChannelBoostChanged(int, bool)),
+          this, SLOT(LocalChannelBoostChanged(int, bool)));
+  connect(channelTree, SIGNAL(LocalChannelBroadcastChanged(int, bool)),
+          this, SLOT(LocalChannelBroadcastChanged(int, bool)));
+  connect(channelTree, SIGNAL(RemoteChannelMuteChanged(int, int, bool)),
+          this, SLOT(RemoteChannelMuteChanged(int, int, bool)));
+
+  QSplitter *splitter = new QSplitter(this);
+  QWidget *content = new QWidget;
   QVBoxLayout *layout = new QVBoxLayout;
+
   layout->addWidget(chatOutput);
   layout->addWidget(chatInput);
   content->setLayout(layout);
   content->setTabOrder(chatInput, chatOutput);
 
-  setCentralWidget(content);
+  splitter->addWidget(channelTree);
+  splitter->addWidget(content);
+  splitter->setOrientation(Qt::Vertical);
+
+  setCentralWidget(splitter);
 
   runThread = new ClientRunThread(&clientMutex, &client);
 
@@ -78,6 +102,10 @@ MainWindow::MainWindow(QWidget *parent)
   connect(runThread, SIGNAL(chatMessageCallback(char **, int)),
           this, SLOT(ChatMessageCallback(char **, int)),
           Qt::BlockingQueuedConnection);
+
+  /* No need to block for the remote user info callback */
+  connect(runThread, SIGNAL(userInfoChanged()),
+          this, SLOT(UserInfoChanged()));
 
   runThread->start();
 }
@@ -94,6 +122,19 @@ MainWindow::~MainWindow()
     runThread = NULL;
   }
   JNL::close_socketlib();
+}
+
+/* Must be called with client mutex held or before client thread is started */
+void MainWindow::setupChannelTree()
+{
+  int i, ch;
+  for (i = 0; (ch = client.EnumLocalChannels(i)) != -1; i++) {
+    bool broadcast, mute;
+    const char *name = client.GetLocalChannelInfo(ch, NULL, NULL, &broadcast);
+    client.GetLocalChannelMonitoring(ch, NULL, NULL, &mute, NULL);
+
+    channelTree->addLocalChannel(ch, QString::fromUtf8(name), mute, broadcast);
+  }
 }
 
 void MainWindow::Connect(const QString &host, const QString &user, const QString &pass)
@@ -119,6 +160,28 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
                  user.toUtf8().data(),
                  pass.toUtf8().data());
   audioEnabled = true;
+}
+
+void MainWindow::UserInfoChanged()
+{
+  ChannelTreeWidget::RemoteChannelUpdater updater(channelTree);
+  clientMutex.lock();
+
+  int useridx;
+  for (useridx = 0; useridx < client.GetNumUsers(); useridx++) {
+    const char *name = client.GetUserState(useridx, NULL, NULL, NULL);
+    updater.addUser(useridx, QString::fromUtf8(name));
+
+    int channelidx;
+    for (channelidx = 0; client.EnumUserChannels(useridx, channelidx) != -1; channelidx++) {
+      bool mute;
+      name = client.GetUserChannelState(useridx, channelidx, NULL, NULL, NULL, &mute, NULL);
+      updater.addChannel(channelidx, QString::fromUtf8(name), mute);
+    }
+  }
+
+  clientMutex.unlock();
+  updater.commit();
 }
 
 void MainWindow::OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate)
@@ -261,4 +324,47 @@ void MainWindow::ChatInputReturnPressed()
   if (!connected) {
     chatAddLine("error: not connected to a server.", "");
   }
+}
+
+void MainWindow::MetronomeMuteChanged(bool mute)
+{
+  clientMutex.lock();
+  client.config_metronome_mute = mute;
+  clientMutex.unlock();
+}
+
+void MainWindow::MetronomeBoostChanged(bool boost)
+{
+  clientMutex.lock();
+  client.config_metronome = boost ? DB2VAL(3) : DB2VAL(0);
+  clientMutex.unlock();
+}
+
+void MainWindow::LocalChannelMuteChanged(int ch, bool mute)
+{
+  clientMutex.lock();
+  client.SetLocalChannelMonitoring(ch, false, 0, false, 0, true, mute, false, false);
+  clientMutex.unlock();
+}
+
+void MainWindow::LocalChannelBoostChanged(int ch, bool boost)
+{
+  clientMutex.lock();
+  client.SetLocalChannelMonitoring(ch, true, boost ? DB2VAL(3) : DB2VAL(0),
+                                   false, 0, false, false, false, false);
+  clientMutex.unlock();
+}
+
+void MainWindow::LocalChannelBroadcastChanged(int ch, bool broadcast)
+{
+  clientMutex.lock();
+  client.SetLocalChannelInfo(ch, NULL, false, 0, false, 0, true, broadcast);
+  clientMutex.unlock();
+}
+
+void MainWindow::RemoteChannelMuteChanged(int useridx, int channelidx, bool mute)
+{
+  clientMutex.lock();
+  client.SetUserChannelState(useridx, channelidx, false, false, false, 0, false, 0, true, mute, false, false);
+  clientMutex.unlock();
 }
