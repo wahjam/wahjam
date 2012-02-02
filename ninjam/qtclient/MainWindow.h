@@ -20,6 +20,7 @@ public:
   ~MainWindow();
 
   void Connect(const QString &host, const QString &user, const QString &pass);
+  void Disconnect();
 
   static MainWindow *GetInstance();
 
@@ -33,12 +34,13 @@ private:
 
   NJClient client;
   audioStreamer *audio;
-  bool audioEnabled;
   QMutex clientMutex;
   ClientRunThread *runThread;
   QTextEdit *chatOutput;
   QLineEdit *chatInput;
 
+  bool setupWorkDir();
+  void cleanupWorkDir(const QString &path);
   void OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
   void chatAddLine(const QString &prefix, const QString &content);
   void chatAddMessage(const QString &src, const QString &msg);
