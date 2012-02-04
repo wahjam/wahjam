@@ -30,12 +30,21 @@ ClientRunThread::ClientRunThread(QMutex *mutex, NJClient *client, QObject *paren
 void ClientRunThread::run()
 {
   mutex->lock();
+  int lastStatus = client->GetStatus();
   running = true;
   while (running) {
     while (!client->Run());
+
     if (client->HasUserInfoChanged()) {
       emit userInfoChanged();
     }
+
+    int status = client->GetStatus();
+    if (status != lastStatus) {
+      emit statusChanged(status);
+      lastStatus = status;
+    }
+
     cond.wait(mutex, 20 /* milliseconds */);
   }
   mutex->unlock();

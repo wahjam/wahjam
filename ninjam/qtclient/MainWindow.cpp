@@ -154,6 +154,10 @@ MainWindow::MainWindow(QWidget *parent)
   connect(runThread, SIGNAL(userInfoChanged()),
           this, SLOT(UserInfoChanged()));
 
+  /* Hook up an inter-thread signal for client status changes */
+  connect(runThread, SIGNAL(statusChanged(int)),
+          this, SLOT(ClientStatusChanged(int)));
+
   runThread->start();
 }
 
@@ -226,6 +230,7 @@ void MainWindow::Disconnect()
 
   if (!workDirPath.isEmpty() && !keepWorkDir) {
     cleanupWorkDir(workDirPath);
+    chatAddLine("Disconnected", "");
   }
 
   audioConfigAction->setEnabled(true);
@@ -365,6 +370,35 @@ void MainWindow::LicenseCallback(const char *licensetext, bool *result)
   msgBox.setTextFormat(Qt::PlainText);
 
   *result = msgBox.exec() == QMessageBox::Ok ? TRUE : FALSE;
+}
+
+void MainWindow::ClientStatusChanged(int newStatus)
+{
+  QString errstr = QString::fromUtf8(client.GetErrorStr());
+  QString statusMessage;
+
+  if (newStatus == NJClient::NJC_STATUS_OK) {
+    clientMutex.lock();
+    QString host = QString::fromUtf8(client.GetHostName());
+    QString username = QString::fromUtf8(client.GetUserName());
+    clientMutex.unlock();
+
+    statusMessage = tr("Connected to %1 as %2").arg(host, username);
+  } else if (!errstr.isEmpty()) {
+    statusMessage = "Error: " + errstr;
+  } else if (newStatus == NJClient::NJC_STATUS_DISCONNECTED) {
+    statusMessage = tr("Error: unexpected disconnect");
+  } else if (newStatus == NJClient::NJC_STATUS_INVALIDAUTH) {
+    statusMessage = tr("Error: authentication failed");
+  } else if (newStatus == NJClient::NJC_STATUS_CANTCONNECT) {
+    statusMessage = tr("Error: connecting failed");
+  }
+
+  chatAddLine(statusMessage, "");
+
+  if (newStatus < 0) {
+    Disconnect();
+  }
 }
 
 /* Append line with bold formatted prefix to the chat widget */
