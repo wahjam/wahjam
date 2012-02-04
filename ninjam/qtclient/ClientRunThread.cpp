@@ -30,7 +30,12 @@ ClientRunThread::ClientRunThread(QMutex *mutex, NJClient *client, QObject *paren
 void ClientRunThread::run()
 {
   mutex->lock();
+
+  // Values that we watch for changes
   int lastStatus = client->GetStatus();
+  int lastBpm = 0;
+  int lastBpi = 0;
+
   running = true;
   while (running) {
     while (!client->Run());
@@ -43,6 +48,14 @@ void ClientRunThread::run()
     if (status != lastStatus) {
       emit statusChanged(status);
       lastStatus = status;
+    }
+
+    int bpm = client->GetActualBPM();
+    int bpi = client->GetBPI();
+    if (bpm != lastBpm || bpi != lastBpi) {
+      emit beatInfoChanged(bpm, bpi);
+      lastBpm = bpm;
+      lastBpi = bpi;
     }
 
     cond.wait(mutex, 20 /* milliseconds */);

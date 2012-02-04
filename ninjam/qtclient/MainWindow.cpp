@@ -22,6 +22,7 @@
 #include <QSplitter>
 #include <QMenuBar>
 #include <QMenu>
+#include <QStatusBar>
 #include <QSettings>
 #include <QDateTime>
 #include <QDir>
@@ -98,6 +99,8 @@ MainWindow::MainWindow(QWidget *parent)
   fileMenu->addAction(audioConfigAction);
   fileMenu->addAction(exitAction);
 
+  setupStatusBar();
+
   setWindowTitle(tr("Wahjam"));
 
   chatOutput = new QTextEdit(this);
@@ -157,6 +160,10 @@ MainWindow::MainWindow(QWidget *parent)
   connect(runThread, SIGNAL(statusChanged(int)),
           this, SLOT(ClientStatusChanged(int)));
 
+  /* Hook up an inter-thread signal for bpm/bpi changes */
+  connect(runThread, SIGNAL(beatInfoChanged(int, int)),
+          this, SLOT(BeatInfoChanged(int, int)));
+
   runThread->start();
 }
 
@@ -183,6 +190,17 @@ void MainWindow::setupChannelTree()
 
     channelTree->addLocalChannel(ch, QString::fromUtf8(name), mute, broadcast);
   }
+}
+
+void MainWindow::setupStatusBar()
+{
+  bpmLabel = new QLabel(this);
+  bpmLabel->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+  statusBar()->addPermanentWidget(bpmLabel);
+
+  bpiLabel = new QLabel(this);
+  bpiLabel->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+  statusBar()->addPermanentWidget(bpiLabel);
 }
 
 void MainWindow::Connect(const QString &host, const QString &user, const QString &pass)
@@ -398,6 +416,21 @@ void MainWindow::ClientStatusChanged(int newStatus)
 
   if (newStatus < 0) {
     Disconnect();
+  }
+}
+
+void MainWindow::BeatInfoChanged(int bpm, int bpi)
+{
+  if (bpm > 0) {
+    bpmLabel->setText(tr("BPM: %1").arg(bpm));
+  } else {
+    bpmLabel->setText(tr("BPM: N/A"));
+  }
+
+  if (bpi > 0) {
+    bpiLabel->setText(tr("BPI: %1").arg(bpi));
+  } else {
+    bpiLabel->setText(tr("BPI: N/A"));
   }
 }
 

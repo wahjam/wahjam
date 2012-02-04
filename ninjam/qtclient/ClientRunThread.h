@@ -46,6 +46,7 @@ signals:
   void chatMessageCallback(char **parms, int nparms);
   void userInfoChanged();
   void statusChanged(int newStatus);
+  void beatInfoChanged(int bpm, int bpi);
 
 private:
   bool running;

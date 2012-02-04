@@ -23,6 +23,7 @@
 #include <QWidget>
 #include <QTextEdit>
 #include <QLineEdit>
+#include <QLabel>
 #include <QMutex>
 #include <QAction>
 
@@ -55,6 +56,7 @@ private slots:
   void ChatInputReturnPressed();
   void UserInfoChanged();
   void ClientStatusChanged(int newStatus);
+  void BeatInfoChanged(int bpm, int bpi);
   void MetronomeMuteChanged(bool mute);
   void MetronomeBoostChanged(bool boost);
   void LocalChannelMuteChanged(int ch, bool mute);
@@ -75,8 +77,11 @@ private:
   QAction *connectAction;
   QAction *disconnectAction;
   QAction *audioConfigAction;
+  QLabel *bpmLabel;
+  QLabel *bpiLabel;
 
   void setupChannelTree();
+  void setupStatusBar();
   bool setupWorkDir();
   void cleanupWorkDir(const QString &path);
   void OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
