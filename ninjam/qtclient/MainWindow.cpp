@@ -26,6 +26,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QDesktopServices>
+#include <QUrl>
 
 #include "MainWindow.h"
 #include "ClientRunThread.h"
@@ -280,10 +281,13 @@ void MainWindow::cleanupWorkDir(const QString &path)
 
 void MainWindow::ShowConnectDialog()
 {
+  const QUrl url("http://autosong.ninjam.com/serverlist.php");
   ConnectDialog connectDialog;
   QSettings settings;
   QStringList hosts = settings.value("connect/hosts").toStringList();
 
+  connectDialog.resize(600, 500);
+  connectDialog.loadServerList(url);
   connectDialog.setRecentHostsList(hosts);
   connectDialog.setUser(settings.value("connect/user").toString());
   connectDialog.setIsPublicServer(settings.value("connect/public", true).toBool());

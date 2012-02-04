@@ -23,29 +23,36 @@
 #include <QLineEdit>
 #include <QCheckBox>
 #include <QComboBox>
+#include "ServerBrowser.h"
 
 class ConnectDialog : public QDialog
 {
   Q_OBJECT
-  Q_PROPERTY(QString host READ host)
+  Q_PROPERTY(QString host READ host WRITE setHost)
   Q_PROPERTY(QString user READ user WRITE setUser)
   Q_PROPERTY(bool isPublicServer READ isPublicServer WRITE setIsPublicServer)
   Q_PROPERTY(QString pass READ pass)
 
 public:
   ConnectDialog(QWidget *parent = 0);
-  void setRecentHostsList(const QStringList &hosts);
   QString host() const;
   QString user() const;
-  void setUser(const QString &user);
   bool isPublicServer() const;
-  void setIsPublicServer(bool isPublicServer);
   QString pass() const;
+
+public slots:
+  void setHost(const QString &host);
+  void setUser(const QString &user);
+  void setRecentHostsList(const QStringList &hosts);
+  void setIsPublicServer(bool isPublicServer);
+  void loadServerList(const QUrl &url);
 
 private slots:
   void publicServerStateChanged(int state);
+  void onServerSelected(const QString &host);
 
 private:
+  ServerBrowser *serverBrowser;
   QComboBox *hostEdit;
   QLineEdit *userEdit;
   QCheckBox *publicCheckbox;

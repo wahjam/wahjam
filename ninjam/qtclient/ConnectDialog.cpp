@@ -25,6 +25,12 @@
 ConnectDialog::ConnectDialog(QWidget *parent)
   : QDialog(parent)
 {
+  serverBrowser = new ServerBrowser(this);
+  connect(serverBrowser, SIGNAL(serverItemClicked(const QString &)),
+          this, SLOT(setHost(const QString &)));
+  connect(serverBrowser, SIGNAL(serverItemActivated(const QString &)),
+          this, SLOT(onServerSelected(const QString &)));
+
   hostEdit = new QComboBox;
   hostEdit->setEditable(true);
 
@@ -49,6 +55,7 @@ ConnectDialog::ConnectDialog(QWidget *parent)
 
   formLayout->addRow(tr("&Password:"), passEdit);
   form->setLayout(formLayout);
+  layout->addWidget(serverBrowser);
   layout->addWidget(form);
   layout->addWidget(connectButton);
   setLayout(layout);
@@ -69,6 +76,11 @@ void ConnectDialog::setRecentHostsList(const QStringList &hosts)
 QString ConnectDialog::host() const
 {
   return hostEdit->currentText();
+}
+
+void ConnectDialog::setHost(const QString &host)
+{
+  userEdit->setText(host);
 }
 
 QString ConnectDialog::user() const
@@ -101,3 +113,15 @@ void ConnectDialog::setIsPublicServer(bool isPublicServer)
     passEdit->setEnabled(true);
   }
 }
+
+void ConnectDialog::loadServerList(const QUrl &url)
+{
+  serverBrowser->loadServerList(url);
+}
+
+void ConnectDialog::onServerSelected(const QString &host)
+{
+  setHost(host);
+  accept();
+}
+
