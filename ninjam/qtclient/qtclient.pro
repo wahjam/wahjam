@@ -6,6 +6,7 @@ TEMPLATE = app
 TARGET = 
 DEPENDPATH += .
 INCLUDEPATH += .
+QT += network
 
 QMAKE_CXXFLAGS += -Wno-write-strings
 LIBS += -lm -lvorbisenc -lvorbis -logg
@@ -21,6 +22,7 @@ HEADERS += ConnectDialog.h
 HEADERS += ClientRunThread.h
 HEADERS += ChannelTreeWidget.h
 HEADERS += PortAudioConfigDialog.h
+HEADERS += ServerBrowser.h
 
 SOURCES += qtclient.cpp
 SOURCES += MainWindow.cpp
@@ -28,6 +30,7 @@ SOURCES += ConnectDialog.cpp
 SOURCES += ClientRunThread.cpp
 SOURCES += ChannelTreeWidget.cpp
 SOURCES += PortAudioConfigDialog.cpp
+SOURCES += ServerBrowser.cpp
 SOURCES += ../../WDL/jnetlib/asyncdns.cpp
 SOURCES += ../../WDL/jnetlib/connection.cpp
 SOURCES += ../../WDL/jnetlib/listen.cpp
