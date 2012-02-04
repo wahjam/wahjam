@@ -6,6 +6,7 @@ TEMPLATE = app
 TARGET = 
 DEPENDPATH += .
 INCLUDEPATH += .
+QT += network
 
 QMAKE_CXXFLAGS += -Wno-write-strings
 LIBS += -lm -lvorbisenc -lvorbis -logg
