@@ -211,6 +211,8 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
   connectAction->setEnabled(false);
   disconnectAction->setEnabled(true);
 
+  setWindowTitle(tr("Wahjam - %1").arg(host));
+
   client.Connect(host.toAscii().data(),
                  user.toUtf8().data(),
                  pass.toUtf8().data());
@@ -232,6 +234,8 @@ void MainWindow::Disconnect()
     cleanupWorkDir(workDirPath);
     chatAddLine("Disconnected", "");
   }
+
+  setWindowTitle(tr("Wahjam"));
 
   audioConfigAction->setEnabled(true);
   connectAction->setEnabled(true);
