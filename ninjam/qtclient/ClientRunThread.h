@@ -45,6 +45,7 @@ signals:
   void licenseCallback(const char *licensetext, bool *result);
   void chatMessageCallback(char **parms, int nparms);
   void userInfoChanged();
+  void statusChanged(int newStatus);
 
 private:
   bool running;

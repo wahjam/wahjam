@@ -54,6 +54,7 @@ private slots:
   void ChatMessageCallback(char **parms, int nparms);
   void ChatInputReturnPressed();
   void UserInfoChanged();
+  void ClientStatusChanged(int newStatus);
   void MetronomeMuteChanged(bool mute);
   void MetronomeBoostChanged(bool boost);
   void LocalChannelMuteChanged(int ch, bool mute);
