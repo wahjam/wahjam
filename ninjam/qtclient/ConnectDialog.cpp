@@ -80,7 +80,7 @@ QString ConnectDialog::host() const
 
 void ConnectDialog::setHost(const QString &host)
 {
-  userEdit->setText(host);
+  hostEdit->setEditText(host);
 }
 
 QString ConnectDialog::user() const
