@@ -141,6 +141,8 @@ MainWindow::MainWindow(QWidget *parent)
 
   setCentralWidget(splitter);
 
+  BeatInfoChanged(0, 0);
+
   runThread = new ClientRunThread(&clientMutex, &client);
 
   /* Hook up an inter-thread signal for the license agreement dialog */
@@ -258,6 +260,7 @@ void MainWindow::Disconnect()
   audioConfigAction->setEnabled(true);
   connectAction->setEnabled(true);
   disconnectAction->setEnabled(false);
+  BeatInfoChanged(0, 0);
 }
 
 bool MainWindow::setupWorkDir()
