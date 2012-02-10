@@ -33,8 +33,8 @@ void ClientRunThread::run()
 
   // Values that we watch for changes
   int lastStatus = client->GetStatus();
-  int lastBpm = 0;
-  int lastBpi = 0;
+  int lastBpm = -1;
+  int lastBpi = -1;
 
   running = true;
   while (running) {
@@ -48,14 +48,24 @@ void ClientRunThread::run()
     if (status != lastStatus) {
       emit statusChanged(status);
       lastStatus = status;
+
+      // Ensure we emit signals once client connects
+      lastBpm = -1;
+      lastBpi = -1;
     }
 
-    int bpm = client->GetActualBPM();
-    int bpi = client->GetBPI();
-    if (bpm != lastBpm || bpi != lastBpi) {
-      emit beatInfoChanged(bpm, bpi);
-      lastBpm = bpm;
-      lastBpi = bpi;
+    if (status == NJClient::NJC_STATUS_OK) {
+      int bpm = client->GetActualBPM();
+      if (bpm != lastBpm) {
+        emit beatsPerMinuteChanged(bpm);
+        lastBpm = bpm;
+      }
+
+      int bpi = client->GetBPI();
+      if (bpi != lastBpi) {
+        emit beatsPerIntervalChanged(bpi);
+        lastBpi = bpi;
+      }
     }
 
     cond.wait(mutex, 20 /* milliseconds */);

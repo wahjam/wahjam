@@ -56,7 +56,8 @@ private slots:
   void ChatInputReturnPressed();
   void UserInfoChanged();
   void ClientStatusChanged(int newStatus);
-  void BeatInfoChanged(int bpm, int bpi);
+  void BeatsPerIntervalChanged(int bpm);
+  void BeatsPerMinuteChanged(int bpi);
   void MetronomeMuteChanged(bool mute);
   void MetronomeBoostChanged(bool boost);
   void LocalChannelMuteChanged(int ch, bool mute);

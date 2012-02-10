@@ -141,6 +141,9 @@ MainWindow::MainWindow(QWidget *parent)
 
   setCentralWidget(splitter);
 
+  BeatsPerIntervalChanged(0);
+  BeatsPerMinuteChanged(0);
+
   runThread = new ClientRunThread(&clientMutex, &client);
 
   /* Hook up an inter-thread signal for the license agreement dialog */
@@ -161,9 +164,11 @@ MainWindow::MainWindow(QWidget *parent)
   connect(runThread, SIGNAL(statusChanged(int)),
           this, SLOT(ClientStatusChanged(int)));
 
-  /* Hook up an inter-thread signal for bpm/bpi changes */
-  connect(runThread, SIGNAL(beatInfoChanged(int, int)),
-          this, SLOT(BeatInfoChanged(int, int)));
+  /* Hook up inter-thread signals for bpm/bpi changes */
+  connect(runThread, SIGNAL(beatsPerMinuteChanged(int)),
+          this, SLOT(BeatsPerMinuteChanged(int)));
+  connect(runThread, SIGNAL(beatsPerIntervalChanged(int)),
+          this, SLOT(BeatsPerIntervalChanged(int)));
 
   runThread->start();
 }
@@ -258,6 +263,8 @@ void MainWindow::Disconnect()
   audioConfigAction->setEnabled(true);
   connectAction->setEnabled(true);
   disconnectAction->setEnabled(false);
+  BeatsPerMinuteChanged(0);
+  BeatsPerIntervalChanged(0);
 }
 
 bool MainWindow::setupWorkDir()
@@ -423,14 +430,17 @@ void MainWindow::ClientStatusChanged(int newStatus)
   }
 }
 
-void MainWindow::BeatInfoChanged(int bpm, int bpi)
+void MainWindow::BeatsPerMinuteChanged(int bpm)
 {
   if (bpm > 0) {
     bpmLabel->setText(tr("BPM: %1").arg(bpm));
   } else {
     bpmLabel->setText(tr("BPM: N/A"));
   }
+}
 
+void MainWindow::BeatsPerIntervalChanged(int bpi)
+{
   if (bpi > 0) {
     bpiLabel->setText(tr("BPI: %1").arg(bpi));
   } else {
