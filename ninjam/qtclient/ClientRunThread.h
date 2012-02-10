@@ -48,6 +48,7 @@ signals:
   void statusChanged(int newStatus);
   void beatsPerMinuteChanged(int bpi);
   void beatsPerIntervalChanged(int bpi);
+  void currentBeatChanged(int currentBeat);
 
 private:
   bool running;

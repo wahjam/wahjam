@@ -35,6 +35,7 @@ void ClientRunThread::run()
   int lastStatus = client->GetStatus();
   int lastBpm = -1;
   int lastBpi = -1;
+  int lastBeat = -1;
 
   running = true;
   while (running) {
@@ -52,6 +53,7 @@ void ClientRunThread::run()
       // Ensure we emit signals once client connects
       lastBpm = -1;
       lastBpi = -1;
+      lastBeat = -1;
     }
 
     if (status == NJClient::NJC_STATUS_OK) {
@@ -65,6 +67,14 @@ void ClientRunThread::run()
       if (bpi != lastBpi) {
         emit beatsPerIntervalChanged(bpi);
         lastBpi = bpi;
+      }
+
+      int pos, length; // in samples
+      client->GetPosition(&pos, &length);
+      int currentBeat = pos * bpi / length + 1;
+      if (currentBeat != lastBeat) {
+        lastBeat = currentBeat;
+        emit currentBeatChanged(currentBeat);
       }
     }
 
