@@ -126,12 +126,17 @@ MainWindow::MainWindow(QWidget *parent)
   connect(channelTree, SIGNAL(RemoteChannelMuteChanged(int, int, bool)),
           this, SLOT(RemoteChannelMuteChanged(int, int, bool)));
 
+  metronomeBar = new MetronomeBar(this);
+  connect(this, SIGNAL(Disconnected()),
+          metronomeBar, SLOT(reset()));
+
   QSplitter *splitter = new QSplitter(this);
   QWidget *content = new QWidget;
   QVBoxLayout *layout = new QVBoxLayout;
 
   layout->addWidget(chatOutput);
   layout->addWidget(chatInput);
+  layout->addWidget(metronomeBar);
   content->setLayout(layout);
   content->setTabOrder(chatInput, chatOutput);
 
@@ -169,6 +174,12 @@ MainWindow::MainWindow(QWidget *parent)
           this, SLOT(BeatsPerMinuteChanged(int)));
   connect(runThread, SIGNAL(beatsPerIntervalChanged(int)),
           this, SLOT(BeatsPerIntervalChanged(int)));
+
+  /* Hook up inter-thread signals for beat and interval changes */
+  connect(runThread, SIGNAL(beatsPerIntervalChanged(int)),
+          metronomeBar, SLOT(setBeatsPerInterval(int)));
+  connect(runThread, SIGNAL(currentBeatChanged(int)),
+          metronomeBar, SLOT(setCurrentBeat(int)));
 
   runThread->start();
 }
@@ -265,6 +276,7 @@ void MainWindow::Disconnect()
   disconnectAction->setEnabled(false);
   BeatsPerMinuteChanged(0);
   BeatsPerIntervalChanged(0);
+  emit Disconnected();
 }
 
 bool MainWindow::setupWorkDir()

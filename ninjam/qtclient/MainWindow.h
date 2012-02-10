@@ -28,6 +28,7 @@
 #include <QAction>
 
 #include "ChannelTreeWidget.h"
+#include "MetronomeBar.h"
 #include "../njclient.h"
 #include "../audiostream.h"
 
@@ -44,6 +45,9 @@ public:
   void Connect(const QString &host, const QString &user, const QString &pass);
 
   static MainWindow *GetInstance();
+
+signals:
+  void Disconnected();
 
 public slots:
   void ShowAudioConfigDialog();
@@ -80,6 +84,7 @@ private:
   QAction *audioConfigAction;
   QLabel *bpmLabel;
   QLabel *bpiLabel;
+  MetronomeBar *metronomeBar;
 
   void setupChannelTree();
   void setupStatusBar();
