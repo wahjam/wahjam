@@ -47,6 +47,7 @@ signals:
   void userInfoChanged();
   void statusChanged(int newStatus);
   void beatInfoChanged(int bpm, int bpi);
+  void currentBeatChanged(int currentBeat, int bpi);
 
 private:
   bool running;

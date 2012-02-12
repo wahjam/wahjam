@@ -24,6 +24,7 @@
 #include <QTextEdit>
 #include <QLineEdit>
 #include <QLabel>
+#include <QProgressBar>
 #include <QMutex>
 #include <QAction>
 
@@ -57,6 +58,7 @@ private slots:
   void UserInfoChanged();
   void ClientStatusChanged(int newStatus);
   void BeatInfoChanged(int bpm, int bpi);
+  void CurrentBeatChanged(int currentBeat, int bpi);
   void MetronomeMuteChanged(bool mute);
   void MetronomeBoostChanged(bool boost);
   void LocalChannelMuteChanged(int ch, bool mute);
@@ -79,6 +81,7 @@ private:
   QAction *audioConfigAction;
   QLabel *bpmLabel;
   QLabel *bpiLabel;
+  QProgressBar *beatBar;
 
   void setupChannelTree();
   void setupStatusBar();

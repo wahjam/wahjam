@@ -126,12 +126,16 @@ MainWindow::MainWindow(QWidget *parent)
   connect(channelTree, SIGNAL(RemoteChannelMuteChanged(int, int, bool)),
           this, SLOT(RemoteChannelMuteChanged(int, int, bool)));
 
+  beatBar = new QProgressBar(this);
+  beatBar->setTextVisible(false);
+
   QSplitter *splitter = new QSplitter(this);
   QWidget *content = new QWidget;
   QVBoxLayout *layout = new QVBoxLayout;
 
   layout->addWidget(chatOutput);
   layout->addWidget(chatInput);
+  layout->addWidget(beatBar);
   content->setLayout(layout);
   content->setTabOrder(chatInput, chatOutput);
 
@@ -140,6 +144,8 @@ MainWindow::MainWindow(QWidget *parent)
   splitter->setOrientation(Qt::Vertical);
 
   setCentralWidget(splitter);
+
+  BeatInfoChanged(0, 0);
 
   runThread = new ClientRunThread(&clientMutex, &client);
 
@@ -164,6 +170,10 @@ MainWindow::MainWindow(QWidget *parent)
   /* Hook up an inter-thread signal for bpm/bpi changes */
   connect(runThread, SIGNAL(beatInfoChanged(int, int)),
           this, SLOT(BeatInfoChanged(int, int)));
+
+  /* Hook up an inter-thread signal for beat in interval changes */
+  connect(runThread, SIGNAL(currentBeatChanged(int, int)),
+          this, SLOT(CurrentBeatChanged(int, int)));
 
   runThread->start();
 }
@@ -258,6 +268,7 @@ void MainWindow::Disconnect()
   audioConfigAction->setEnabled(true);
   connectAction->setEnabled(true);
   disconnectAction->setEnabled(false);
+  BeatInfoChanged(0, 0);
 }
 
 bool MainWindow::setupWorkDir()
@@ -425,6 +436,8 @@ void MainWindow::ClientStatusChanged(int newStatus)
 
 void MainWindow::BeatInfoChanged(int bpm, int bpi)
 {
+  beatBar->reset();
+
   if (bpm > 0) {
     bpmLabel->setText(tr("BPM: %1").arg(bpm));
   } else {
@@ -432,10 +445,16 @@ void MainWindow::BeatInfoChanged(int bpm, int bpi)
   }
 
   if (bpi > 0) {
+    beatBar->setMaximum(bpi);
     bpiLabel->setText(tr("BPI: %1").arg(bpi));
   } else {
     bpiLabel->setText(tr("BPI: N/A"));
   }
+}
+
+void MainWindow::CurrentBeatChanged(int currentBeat, int bpi)
+{
+  beatBar->setValue(currentBeat);
 }
 
 /* Append line with bold formatted prefix to the chat widget */
