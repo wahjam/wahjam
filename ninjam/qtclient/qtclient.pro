@@ -23,6 +23,7 @@ HEADERS += ClientRunThread.h
 HEADERS += ChannelTreeWidget.h
 HEADERS += PortAudioConfigDialog.h
 HEADERS += ServerBrowser.h
+HEADERS += MetronomeBar.h
 
 SOURCES += qtclient.cpp
 SOURCES += MainWindow.cpp
@@ -31,6 +32,7 @@ SOURCES += ClientRunThread.cpp
 SOURCES += ChannelTreeWidget.cpp
 SOURCES += PortAudioConfigDialog.cpp
 SOURCES += ServerBrowser.cpp
+SOURCES += MetronomeBar.cpp
 SOURCES += ../../WDL/jnetlib/asyncdns.cpp
 SOURCES += ../../WDL/jnetlib/connection.cpp
 SOURCES += ../../WDL/jnetlib/listen.cpp
