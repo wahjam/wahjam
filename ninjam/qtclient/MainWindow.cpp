@@ -100,6 +100,12 @@ MainWindow::MainWindow(QWidget *parent)
   fileMenu->addAction(audioConfigAction);
   fileMenu->addAction(exitAction);
 
+  QAction *aboutAction = new QAction(tr("&About..."), this);
+  connect(aboutAction, SIGNAL(triggered()), this, SLOT(ShowAboutDialog()));
+
+  QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
+  helpMenu->addAction(aboutAction);
+
   setupStatusBar();
 
   setWindowTitle(tr("Wahjam"));
@@ -353,6 +359,18 @@ void MainWindow::ShowAudioConfigDialog()
     settings.setValue("audio/inputDevice", audioDialog.inputDevice());
     settings.setValue("audio/outputDevice", audioDialog.outputDevice());
   }
+}
+
+void MainWindow::ShowAboutDialog()
+{
+  QMessageBox::about(this, tr("About Wahjam"),
+      tr("<h1>Wahjam version %1</h1>"
+         "<p><b>Website:</b> <a href=\"http://wahjam.org/\">http://wahjam.org/</a></p>"
+         "<p><b>Git commit:</b> <a href=\"http://github.com/wahjam/wahjam/commit/%2\">%2</a></p>"
+         "<p>Based on <a href=\"http://ninjam.com/\">NINJAM</a>.</p>"
+         "<p>Licensed under the GNU General Public License version 2, see "
+         "<a href=\"http://www.gnu.org/licenses/gpl-2.0.html\">"
+         "http://www.gnu.org/licenses/gpl-2.0.html</a> for details.</p>").arg(VERSION, COMMIT_ID));
 }
 
 void MainWindow::UserInfoChanged()

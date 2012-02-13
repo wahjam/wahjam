@@ -63,6 +63,7 @@ private slots:
   void LocalChannelBoostChanged(int ch, bool boost);
   void LocalChannelBroadcastChanged(int ch, bool broadcast);
   void RemoteChannelMuteChanged(int useridx, int channelidx, bool mute);
+  void ShowAboutDialog();
 
 private:
   static MainWindow *instance;
