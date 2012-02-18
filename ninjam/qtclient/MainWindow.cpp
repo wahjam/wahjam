@@ -28,6 +28,7 @@
 #include <QDir>
 #include <QDesktopServices>
 #include <QUrl>
+#include <QInputDialog>
 
 #include "MainWindow.h"
 #include "ClientRunThread.h"
@@ -99,6 +100,14 @@ MainWindow::MainWindow(QWidget *parent)
   fileMenu->addAction(disconnectAction);
   fileMenu->addAction(audioConfigAction);
   fileMenu->addAction(exitAction);
+
+  QMenu *voteMenu = menuBar()->addMenu(tr("&Vote"));
+  QAction *voteBPMAction = new QAction(tr("BPM"), this);
+  QAction *voteBPIAction = new QAction(tr("BPI"), this);
+  connect(voteBPMAction, SIGNAL(triggered()), this, SLOT(VoteBPMDialog()));
+  connect(voteBPIAction, SIGNAL(triggered()), this, SLOT(VoteBPIDialog()));
+  voteMenu->addAction(voteBPMAction);
+  voteMenu->addAction(voteBPIAction);
 
   QAction *aboutAction = new QAction(tr("&About..."), this);
   connect(aboutAction, SIGNAL(triggered()), this, SLOT(ShowAboutDialog()));
@@ -643,3 +652,26 @@ void MainWindow::RemoteChannelMuteChanged(int useridx, int channelidx, bool mute
   client.SetUserChannelState(useridx, channelidx, false, false, false, 0, false, 0, true, mute, false, false);
   clientMutex.unlock();
 }
+
+void MainWindow::VoteBPMDialog()
+{
+  bool ok;
+  int bpm = QInputDialog::getInt(this, tr("Vote BPM"),
+                                 tr("Tempo in beats per minute:"),
+                                 120, 40, 400, 1, &ok);
+  if (ok) {
+    SendChatMessage(QString("!vote bpm %1").arg(bpm));
+  }
+}
+
+void MainWindow::VoteBPIDialog()
+{
+  bool ok;
+  int bpi = QInputDialog::getInt(this, tr("Vote BPI"),
+                                 tr("Interval length in beats:"),
+                                 16, 4, 64, 1, &ok);
+  if (ok) {
+    SendChatMessage(QString("!vote bpi %1").arg(bpi));
+  }
+}
+
