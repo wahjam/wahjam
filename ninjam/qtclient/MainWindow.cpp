@@ -28,6 +28,8 @@
 #include <QDir>
 #include <QDesktopServices>
 #include <QUrl>
+#include <QInputDialog>
+#include <QDebug>
 
 #include "MainWindow.h"
 #include "ClientRunThread.h"
@@ -99,6 +101,14 @@ MainWindow::MainWindow(QWidget *parent)
   fileMenu->addAction(disconnectAction);
   fileMenu->addAction(audioConfigAction);
   fileMenu->addAction(exitAction);
+
+  QMenu *voteMenu = menuBar()->addMenu(tr("&Vote"));
+  QAction *voteBPMAction = new QAction(tr("BPM"), this);
+  QAction *voteBPIAction = new QAction(tr("BPI"), this);
+  connect(voteBPMAction, SIGNAL(triggered()), this, SLOT(VoteBPMDialog()));
+  connect(voteBPIAction, SIGNAL(triggered()), this, SLOT(VoteBPIDialog()));
+  voteMenu->addAction(voteBPMAction);
+  voteMenu->addAction(voteBPIAction);
 
   QAction *aboutAction = new QAction(tr("&About..."), this);
   connect(aboutAction, SIGNAL(triggered()), this, SLOT(ShowAboutDialog()));
@@ -639,3 +649,34 @@ void MainWindow::RemoteChannelMuteChanged(int useridx, int channelidx, bool mute
   client.SetUserChannelState(useridx, channelidx, false, false, false, 0, false, 0, true, mute, false, false);
   clientMutex.unlock();
 }
+
+void MainWindow::VoteBPMDialog()
+{
+  bool ok;
+  int bpm = QInputDialog::getInt(this, tr("Vote BPI"), tr(""),
+                                 120, 40, 400, 1, &ok);
+  if (!ok) return;
+
+  clientMutex.lock();
+  if (client.GetStatus() == NJClient::NJC_STATUS_OK) {
+    char *msg = QString("!vote bpm %1").arg(bpm).toUtf8().data();
+    client.ChatMessage_Send("MSG", msg);
+  }
+  clientMutex.unlock();
+}
+
+void MainWindow::VoteBPIDialog()
+{
+  bool ok;
+  int bpi = QInputDialog::getInt(this, tr("Vote BPI"), tr(""),
+                                 16, 4, 64, 1, &ok);
+  if (!ok) return;
+
+  clientMutex.lock();
+  if (client.GetStatus() == NJClient::NJC_STATUS_OK) {
+    char *msg = QString("!vote bpi %1").arg(bpi).toUtf8().data();
+    client.ChatMessage_Send("MSG", msg);
+  }
+  clientMutex.unlock();
+}
+
