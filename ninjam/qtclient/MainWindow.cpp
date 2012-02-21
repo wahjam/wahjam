@@ -16,6 +16,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <QApplication>
 #include <QMessageBox>
 #include <QVBoxLayout>
 #include <QPushButton>
@@ -29,6 +30,7 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QInputDialog>
+#include <QRegExp>
 
 #include "MainWindow.h"
 #include "ClientRunThread.h"
@@ -123,6 +125,8 @@ MainWindow::MainWindow(QWidget *parent)
   chatOutput->setReadOnly(true);
   chatOutput->setOpenLinks(false);
   chatOutput->setOpenExternalLinks(false);
+  chatOutput->connect(chatOutput, SIGNAL(anchorClicked(const QUrl&)),
+                      this, SLOT(ChatLinkClicked(const QUrl&)));
 
   chatInput = new QLineEdit(this);
   chatInput->connect(chatInput, SIGNAL(returnPressed()),
@@ -544,6 +548,32 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
     /* TODO set topic */
   } else if (parms[0] == "MSG") {
     chatAddMessage(parms[1], parms[2]);
+
+    // Add +1 vote link
+    if (parms[1].isEmpty() && parms[2].startsWith("[voting system]")) {
+
+      QRegExp re("\\[voting system\\] leading candidate: (\\d+)\\/\\d+ votes"
+                 " for (\\d+) (BPI|BPM) \\[each vote expires in \\d+s\\]");
+
+      if (re.exactMatch(parms[2]) && re.cap(1) == "1") {
+        QString href = QString("send-message:!vote %1 %2").arg(
+	                      re.cap(3).toLower(),re.cap(2));
+
+        QTextCharFormat defaultFormat;
+        QTextCharFormat linkFormat;
+        linkFormat.setAnchor(true);
+        linkFormat.setAnchorHref(href);
+        linkFormat.setFontWeight(QFont::Bold);
+        linkFormat.setForeground(QApplication::palette().link());
+        linkFormat.setUnderlineStyle(QTextCharFormat::SingleUnderline);
+
+        QTextCursor cursor = chatOutput->textCursor();
+        cursor.movePosition(QTextCursor::End);
+        cursor.insertText(" ", defaultFormat);
+        cursor.insertText("[+1]", linkFormat);
+        cursor.insertText(" ", defaultFormat);
+      }
+    }
   } else if (parms[0] == "PRIVMSG") {
     chatAddLine(QString("* %1 * ").arg(parms[1]), parms[2]);
   } else if (parms[0] == "JOIN") {
@@ -555,6 +585,13 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
     for (i = 0; i < nparms; i++) {
       chatOutput->append(QString("[%1] %2").arg(i).arg(parms[i]));
     }
+  }
+}
+
+void MainWindow::ChatLinkClicked(const QUrl &url)
+{
+  if (url.scheme() == "send-message") {
+    SendChatMessage(url.path());
   }
 }
 
