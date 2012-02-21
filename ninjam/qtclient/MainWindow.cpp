@@ -120,8 +120,10 @@ MainWindow::MainWindow(QWidget *parent)
 
   setWindowTitle(tr("Wahjam"));
 
-  chatOutput = new QTextEdit(this);
+  chatOutput = new QTextBrowser(this);
   chatOutput->setReadOnly(true);
+  chatOutput->setOpenLinks(false);
+  chatOutput->setOpenExternalLinks(false);
 
   chatInput = new QLineEdit(this);
   chatInput->connect(chatInput, SIGNAL(returnPressed()),

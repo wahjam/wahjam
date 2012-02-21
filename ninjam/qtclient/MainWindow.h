@@ -21,7 +21,7 @@
 
 #include <QMainWindow>
 #include <QWidget>
-#include <QTextEdit>
+#include <QTextBrowser>
 #include <QLineEdit>
 #include <QLabel>
 #include <QMutex>
@@ -79,7 +79,7 @@ private:
   audioStreamer *audio;
   QMutex clientMutex;
   ClientRunThread *runThread;
-  QTextEdit *chatOutput;
+  QTextBrowser *chatOutput;
   QLineEdit *chatInput;
   ChannelTreeWidget *channelTree;
   QAction *connectAction;
