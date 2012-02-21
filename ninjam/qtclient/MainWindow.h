@@ -26,6 +26,7 @@
 #include <QLabel>
 #include <QMutex>
 #include <QAction>
+#include <QUrl>
 
 #include "ChannelTreeWidget.h"
 #include "MetronomeBar.h"
@@ -58,6 +59,7 @@ private slots:
   void LicenseCallback(const char *licensetext, bool *result);
   void ChatMessageCallback(char **parms, int nparms);
   void ChatInputReturnPressed();
+  void ChatLinkClicked(const QUrl &url);
   void UserInfoChanged();
   void ClientStatusChanged(int newStatus);
   void BeatsPerIntervalChanged(int bpm);
