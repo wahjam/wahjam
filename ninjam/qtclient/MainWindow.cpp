@@ -28,6 +28,9 @@
 #include <QDir>
 #include <QDesktopServices>
 #include <QUrl>
+#include <QInputDialog>
+#include <QRegExp>
+#include <QDebug>
 
 #include "MainWindow.h"
 #include "ClientRunThread.h"
@@ -100,6 +103,14 @@ MainWindow::MainWindow(QWidget *parent)
   fileMenu->addAction(audioConfigAction);
   fileMenu->addAction(exitAction);
 
+  QMenu *voteMenu = menuBar()->addMenu(tr("&Vote"));
+  QAction *voteBPMAction = new QAction(tr("BPM"), this);
+  QAction *voteBPIAction = new QAction(tr("BPI"), this);
+  connect(voteBPMAction, SIGNAL(triggered()), this, SLOT(VoteBPMDialog()));
+  connect(voteBPIAction, SIGNAL(triggered()), this, SLOT(VoteBPIDialog()));
+  voteMenu->addAction(voteBPMAction);
+  voteMenu->addAction(voteBPIAction);
+
   QAction *aboutAction = new QAction(tr("&About..."), this);
   connect(aboutAction, SIGNAL(triggered()), this, SLOT(ShowAboutDialog()));
 
@@ -110,8 +121,12 @@ MainWindow::MainWindow(QWidget *parent)
 
   setWindowTitle(tr("Wahjam"));
 
-  chatOutput = new QTextEdit(this);
+  chatOutput = new QTextBrowser(this);
   chatOutput->setReadOnly(true);
+  chatOutput->setOpenLinks(false);
+  chatOutput->setOpenExternalLinks(false);
+  chatOutput->connect(chatOutput, SIGNAL(anchorClicked(const QUrl&)),
+                      this, SLOT(ChatLinkClicked(const QUrl&)));
 
   chatInput = new QLineEdit(this);
   chatInput->connect(chatInput, SIGNAL(returnPressed()),
@@ -532,6 +547,29 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
     /* TODO set topic */
   } else if (parms[0] == "MSG") {
     chatAddMessage(parms[1], parms[2]);
+
+    // Add +1 vote link
+    if (parms[1].isEmpty() && parms[2].startsWith("[voting system]")) {
+
+      QRegExp re("\\[voting system\\] leading candidate: (\\d+)\\/\\d+ votes"
+                 " for (\\d+) (BPI|BPM) \\[each vote expires in \\d+s\\]");
+
+      if (re.exactMatch(parms[2]) && re.cap(1) == "1") {
+        QString href = QString("send-message:!vote %1 %2").arg(
+	                      re.cap(3).toLower(),re.cap(2));
+
+        QTextCursor cursor = chatOutput->textCursor();
+        QTextCharFormat oldFormat = chatOutput->currentCharFormat();
+        QTextCharFormat linkFormat;
+        linkFormat.setAnchor(true);
+        linkFormat.setAnchorHref(href);
+        linkFormat.setUnderlineStyle(QTextCharFormat::SingleUnderline);
+        cursor.movePosition(QTextCursor::End);
+        cursor.insertText(" ");
+        cursor.insertText("+1", linkFormat);
+        cursor.insertText(" ", oldFormat);
+      }
+    }
   } else if (parms[0] == "PRIVMSG") {
     chatAddLine(QString("* %1 * ").arg(parms[1]), parms[2]);
   } else if (parms[0] == "JOIN") {
@@ -543,6 +581,18 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
     for (i = 0; i < nparms; i++) {
       chatOutput->append(QString("[%1] %2").arg(i).arg(parms[i]));
     }
+  }
+}
+
+void MainWindow::ChatLinkClicked(const QUrl &url)
+{
+  QStringList parms = url.toString().split(":");
+  if (parms[0] == "send-message") {
+    // XXX: This will clear current chatInput text.
+    chatInput->setText(parms[1]);
+    // Fix cursor position
+    chatOutput->moveCursor(QTextCursor::End);
+    ChatInputReturnPressed();
   }
 }
 
@@ -639,3 +689,34 @@ void MainWindow::RemoteChannelMuteChanged(int useridx, int channelidx, bool mute
   client.SetUserChannelState(useridx, channelidx, false, false, false, 0, false, 0, true, mute, false, false);
   clientMutex.unlock();
 }
+
+void MainWindow::VoteBPMDialog()
+{
+  bool ok;
+  int bpm = QInputDialog::getInt(this, tr("Vote BPI"), tr(""),
+                                 120, 40, 400, 1, &ok);
+  if (!ok) return;
+
+  clientMutex.lock();
+  if (client.GetStatus() == NJClient::NJC_STATUS_OK) {
+    char *msg = QString("!vote bpm %1").arg(bpm).toUtf8().data();
+    client.ChatMessage_Send("MSG", msg);
+  }
+  clientMutex.unlock();
+}
+
+void MainWindow::VoteBPIDialog()
+{
+  bool ok;
+  int bpi = QInputDialog::getInt(this, tr("Vote BPI"), tr(""),
+                                 16, 4, 64, 1, &ok);
+  if (!ok) return;
+
+  clientMutex.lock();
+  if (client.GetStatus() == NJClient::NJC_STATUS_OK) {
+    char *msg = QString("!vote bpi %1").arg(bpi).toUtf8().data();
+    client.ChatMessage_Send("MSG", msg);
+  }
+  clientMutex.unlock();
+}
+

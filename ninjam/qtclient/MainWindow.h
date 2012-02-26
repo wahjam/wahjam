@@ -21,11 +21,12 @@
 
 #include <QMainWindow>
 #include <QWidget>
-#include <QTextEdit>
+#include <QTextBrowser>
 #include <QLineEdit>
 #include <QLabel>
 #include <QMutex>
 #include <QAction>
+#include <QUrl>
 
 #include "ChannelTreeWidget.h"
 #include "MetronomeBar.h"
@@ -58,6 +59,7 @@ private slots:
   void LicenseCallback(const char *licensetext, bool *result);
   void ChatMessageCallback(char **parms, int nparms);
   void ChatInputReturnPressed();
+  void ChatLinkClicked(const QUrl &url);
   void UserInfoChanged();
   void ClientStatusChanged(int newStatus);
   void BeatsPerIntervalChanged(int bpm);
@@ -69,6 +71,8 @@ private slots:
   void LocalChannelBroadcastChanged(int ch, bool broadcast);
   void RemoteChannelMuteChanged(int useridx, int channelidx, bool mute);
   void ShowAboutDialog();
+  void VoteBPMDialog();
+  void VoteBPIDialog();
 
 private:
   static MainWindow *instance;
@@ -77,7 +81,7 @@ private:
   audioStreamer *audio;
   QMutex clientMutex;
   ClientRunThread *runThread;
-  QTextEdit *chatOutput;
+  QTextBrowser *chatOutput;
   QLineEdit *chatInput;
   ChannelTreeWidget *channelTree;
   QAction *connectAction;
