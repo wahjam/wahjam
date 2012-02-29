@@ -492,13 +492,14 @@ void MainWindow::BeatsPerIntervalChanged(int bpi)
 /* Append line with bold formatted prefix to the chat widget */
 void MainWindow::chatAddLine(const QString &prefix, const QString &content)
 {
-  QTextCharFormat oldFormat = chatOutput->currentCharFormat();
-  QTextCharFormat boldFormat = oldFormat;
+  QTextCharFormat defaultFormat;
+  QTextCharFormat boldFormat;
   boldFormat.setFontWeight(QFont::Bold);
 
+  chatOutput->moveCursor(QTextCursor::End);
   chatOutput->setCurrentCharFormat(boldFormat);
   chatOutput->append(prefix);
-  chatOutput->setCurrentCharFormat(oldFormat);
+  chatOutput->setCurrentCharFormat(defaultFormat);
   chatOutput->insertPlainText(content);
 }
 
