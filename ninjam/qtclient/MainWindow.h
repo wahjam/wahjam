@@ -53,6 +53,7 @@ public slots:
   void ShowAudioConfigDialog();
   void ShowConnectDialog();
   void Disconnect();
+  void SendChatMessage(const QString &line);
 
 private slots:
   void LicenseCallback(const char *licensetext, bool *result);

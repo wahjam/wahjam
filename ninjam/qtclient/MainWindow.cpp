@@ -550,7 +550,11 @@ void MainWindow::ChatInputReturnPressed()
 {
   QString line = chatInput->text();
   chatInput->clear();
+  SendChatMessage(line);
+}
 
+void MainWindow::SendChatMessage(const QString &line)
+{
   QString command, parm, msg;
   if (line.compare("/clear", Qt::CaseInsensitive) == 0) {
     chatOutput->clear();
