@@ -97,8 +97,10 @@ private:
   bool setupWorkDir();
   void cleanupWorkDir(const QString &path);
   void OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
-  void chatAddLine(const QString &prefix, const QString &content);
-  void chatAddMessage(const QString &src, const QString &msg);
+  void chatAddLine(const QString &prefix, const QString &content,
+                   const QString &href = "", const QString &linktext = "");
+  void chatAddMessage(const QString &src, const QString &msg,
+                      const QString &href = "", const QString &linktext = "");
   static void OnSamplesTrampoline(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
   static int LicenseCallbackTrampoline(int user32, char *licensetext);
   static void ChatMessageCallbackTrampoline(int user32, NJClient *inst, char **parms, int nparms);
