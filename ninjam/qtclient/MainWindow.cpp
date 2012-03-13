@@ -506,8 +506,14 @@ void MainWindow::BeatsPerIntervalChanged(int bpi)
   }
 }
 
-/* Append line with bold formatted prefix to the chat widget */
-void MainWindow::chatAddLine(const QString &prefix, const QString &content)
+/* Append line to the chat widget
+ *
+ * The prefix text is displayed in bold.
+ *
+ * The href and linktext end the line with a clickable link and are optional.
+ */
+void MainWindow::chatAddLine(const QString &prefix, const QString &content,
+                             const QString &href, const QString &linktext)
 {
   QTextCharFormat defaultFormat;
   QTextCharFormat boldFormat;
@@ -518,17 +524,32 @@ void MainWindow::chatAddLine(const QString &prefix, const QString &content)
   chatOutput->append(prefix);
   chatOutput->setCurrentCharFormat(defaultFormat);
   chatOutput->insertPlainText(content);
+
+  if (!href.isEmpty()) {
+    QTextCharFormat linkFormat;
+    linkFormat.setAnchor(true);
+    linkFormat.setAnchorHref(href);
+    linkFormat.setFontWeight(QFont::Bold);
+    linkFormat.setForeground(QApplication::palette().link());
+    linkFormat.setUnderlineStyle(QTextCharFormat::SingleUnderline);
+
+    chatOutput->insertPlainText(" ");
+    chatOutput->setCurrentCharFormat(linkFormat);
+    chatOutput->insertPlainText(linktext);
+    chatOutput->setCurrentCharFormat(defaultFormat);
+  }
 }
 
 /* Append a message from a given source to the chat widget */
-void MainWindow::chatAddMessage(const QString &src, const QString &msg)
+void MainWindow::chatAddMessage(const QString &src, const QString &msg,
+                                const QString &href, const QString &linktext)
 {
   if (src.isEmpty()) {
-    chatAddLine("*** ", msg);
+    chatAddLine("*** ", msg, href, linktext);
   } else if (msg.startsWith("/me ")) {
-    chatAddLine(QString("* %1 ").arg(src), msg.mid(4));
+    chatAddLine(QString("* %1 ").arg(src), msg.mid(4), href, linktext);
   } else {
-    chatAddLine(QString("<%1> ").arg(src), msg);
+    chatAddLine(QString("<%1> ").arg(src), msg, href, linktext);
   }
 }
 
@@ -560,7 +581,8 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
 
     /* TODO set topic */
   } else if (parms[0] == "MSG") {
-    chatAddMessage(parms[1], parms[2]);
+    QString href;
+    QString linktext;
 
     // Add +1 vote link
     if (parms[1].isEmpty() && parms[2].startsWith("[voting system]")) {
@@ -569,24 +591,13 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
                  " for (\\d+) (BPI|BPM) \\[each vote expires in \\d+s\\]");
 
       if (re.exactMatch(parms[2]) && re.cap(1) == "1") {
-        QString href = QString("send-message:!vote %1 %2").arg(
-	                      re.cap(3).toLower(),re.cap(2));
-
-        QTextCharFormat defaultFormat;
-        QTextCharFormat linkFormat;
-        linkFormat.setAnchor(true);
-        linkFormat.setAnchorHref(href);
-        linkFormat.setFontWeight(QFont::Bold);
-        linkFormat.setForeground(QApplication::palette().link());
-        linkFormat.setUnderlineStyle(QTextCharFormat::SingleUnderline);
-
-        QTextCursor cursor = chatOutput->textCursor();
-        cursor.movePosition(QTextCursor::End);
-        cursor.insertText(" ", defaultFormat);
-        cursor.insertText("[+1]", linkFormat);
-        cursor.insertText(" ", defaultFormat);
+        href = QString("send-message:!vote %1 %2").arg(
+	                     re.cap(3).toLower(),re.cap(2));
+        linktext = "[+1]";
       }
     }
+
+    chatAddMessage(parms[1], parms[2], href, linktext);
   } else if (parms[0] == "PRIVMSG") {
     chatAddLine(QString("* %1 * ").arg(parms[1]), parms[2]);
   } else if (parms[0] == "JOIN") {
