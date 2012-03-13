@@ -538,6 +538,9 @@ void MainWindow::chatAddLine(const QString &prefix, const QString &content,
     chatOutput->insertPlainText(linktext);
     chatOutput->setCurrentCharFormat(defaultFormat);
   }
+
+  /* Autoscroll to bottom of chat */
+  chatOutput->moveCursor(QTextCursor::End);
 }
 
 /* Append a message from a given source to the chat widget */
