@@ -28,6 +28,7 @@
 #include <QAction>
 #include <QUrl>
 
+#include "qtclient.h"
 #include "ChannelTreeWidget.h"
 #include "MetronomeBar.h"
 #include "../njclient.h"
