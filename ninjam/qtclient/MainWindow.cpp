@@ -103,13 +103,14 @@ MainWindow::MainWindow(QWidget *parent)
   fileMenu->addAction(audioConfigAction);
   fileMenu->addAction(exitAction);
 
-  QMenu *voteMenu = menuBar()->addMenu(tr("&Vote"));
+  voteMenu = menuBar()->addMenu(tr("&Vote"));
   QAction *voteBPMAction = new QAction(tr("BPM"), this);
   QAction *voteBPIAction = new QAction(tr("BPI"), this);
   connect(voteBPMAction, SIGNAL(triggered()), this, SLOT(VoteBPMDialog()));
   connect(voteBPIAction, SIGNAL(triggered()), this, SLOT(VoteBPIDialog()));
   voteMenu->addAction(voteBPMAction);
   voteMenu->addAction(voteBPIAction);
+  voteMenu->setEnabled(false);
 
   QAction *aboutAction = new QAction(tr("&About..."), this);
   connect(aboutAction, SIGNAL(triggered()), this, SLOT(ShowAboutDialog()));
@@ -265,6 +266,7 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
   audioConfigAction->setEnabled(false);
   connectAction->setEnabled(false);
   disconnectAction->setEnabled(true);
+  voteMenu->setEnabled(true);
 
   setWindowTitle(tr("Wahjam - %1").arg(host));
 
@@ -295,6 +297,7 @@ void MainWindow::Disconnect()
   audioConfigAction->setEnabled(true);
   connectAction->setEnabled(true);
   disconnectAction->setEnabled(false);
+  voteMenu->setEnabled(false);
   BeatsPerMinuteChanged(0);
   BeatsPerIntervalChanged(0);
   emit Disconnected();

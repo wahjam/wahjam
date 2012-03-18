@@ -88,6 +88,7 @@ private:
   QAction *connectAction;
   QAction *disconnectAction;
   QAction *audioConfigAction;
+  QMenu *voteMenu;
   QLabel *bpmLabel;
   QLabel *bpiLabel;
   MetronomeBar *metronomeBar;
