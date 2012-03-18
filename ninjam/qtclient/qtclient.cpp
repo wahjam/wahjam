@@ -22,6 +22,8 @@
 
 #include "MainWindow.h"
 
+QSettings *settings;
+
 static void portAudioCleanup()
 {
   Pa_Terminate();
@@ -35,6 +37,9 @@ int main(int argc, char *argv[])
   app.setOrganizationName("Wahjam Project");
   app.setOrganizationDomain("wahjam.org");
   app.setApplicationName("Wahjam");
+
+  /* Instantiate QSettings now that application information has been set */
+  settings = new QSettings(&app);
 
   /* Initialize PortAudio once for the whole application */
   PaError error = Pa_Initialize();

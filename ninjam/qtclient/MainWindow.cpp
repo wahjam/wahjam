@@ -24,7 +24,6 @@
 #include <QMenuBar>
 #include <QMenu>
 #include <QStatusBar>
-#include <QSettings>
 #include <QDateTime>
 #include <QDir>
 #include <QDesktopServices>
@@ -271,10 +270,9 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
     return;
   }
 
-  QSettings settings;
-  QString hostAPI = settings.value("audio/hostAPI").toString();
-  QString inputDevice = settings.value("audio/inputDevice").toString();
-  QString outputDevice = settings.value("audio/outputDevice").toString();
+  QString hostAPI = settings->value("audio/hostAPI").toString();
+  QString inputDevice = settings->value("audio/inputDevice").toString();
+  QString outputDevice = settings->value("audio/outputDevice").toString();
   audio = create_audioStreamer_PortAudio(hostAPI.toLocal8Bit().data(),
                                          inputDevice.toLocal8Bit().data(),
                                          outputDevice.toLocal8Bit().data(),
@@ -366,14 +364,13 @@ void MainWindow::ShowConnectDialog()
 {
   const QUrl url("http://autosong.ninjam.com/serverlist.php");
   ConnectDialog connectDialog;
-  QSettings settings;
-  QStringList hosts = settings.value("connect/hosts").toStringList();
+  QStringList hosts = settings->value("connect/hosts").toStringList();
 
   connectDialog.resize(600, 500);
   connectDialog.loadServerList(url);
   connectDialog.setRecentHostsList(hosts);
-  connectDialog.setUser(settings.value("connect/user").toString());
-  connectDialog.setIsPublicServer(settings.value("connect/public", true).toBool());
+  connectDialog.setUser(settings->value("connect/user").toString());
+  connectDialog.setIsPublicServer(settings->value("connect/public", true).toBool());
 
   if (connectDialog.exec() != QDialog::Accepted) {
     return;
@@ -383,9 +380,9 @@ void MainWindow::ShowConnectDialog()
   hosts.removeDuplicates();
   hosts = hosts.mid(0, 16); /* limit maximum number of elements */
 
-  settings.setValue("connect/hosts", hosts);
-  settings.setValue("connect/user", connectDialog.user());
-  settings.setValue("connect/public", connectDialog.isPublicServer());
+  settings->setValue("connect/hosts", hosts);
+  settings->setValue("connect/user", connectDialog.user());
+  settings->setValue("connect/public", connectDialog.isPublicServer());
 
   QString user = connectDialog.user();
   if (connectDialog.isPublicServer()) {
@@ -398,16 +395,15 @@ void MainWindow::ShowConnectDialog()
 void MainWindow::ShowAudioConfigDialog()
 {
   PortAudioConfigDialog audioDialog;
-  QSettings settings;
 
-  audioDialog.setHostAPI(settings.value("audio/hostAPI").toString());
-  audioDialog.setInputDevice(settings.value("audio/inputDevice").toString());
-  audioDialog.setOutputDevice(settings.value("audio/outputDevice").toString());
+  audioDialog.setHostAPI(settings->value("audio/hostAPI").toString());
+  audioDialog.setInputDevice(settings->value("audio/inputDevice").toString());
+  audioDialog.setOutputDevice(settings->value("audio/outputDevice").toString());
 
   if (audioDialog.exec() == QDialog::Accepted) {
-    settings.setValue("audio/hostAPI", audioDialog.hostAPI());
-    settings.setValue("audio/inputDevice", audioDialog.inputDevice());
-    settings.setValue("audio/outputDevice", audioDialog.outputDevice());
+    settings->setValue("audio/hostAPI", audioDialog.hostAPI());
+    settings->setValue("audio/inputDevice", audioDialog.inputDevice());
+    settings->setValue("audio/outputDevice", audioDialog.outputDevice());
   }
 }
 
