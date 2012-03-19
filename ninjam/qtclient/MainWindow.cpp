@@ -171,6 +171,28 @@ MainWindow::MainWindow(QWidget *parent)
   BeatsPerIntervalChanged(0);
   BeatsPerMinuteChanged(0);
 
+  /* Connection State */
+  connectionStateMachine = new QStateMachine(this);
+  connectedState = new QState(connectionStateMachine);
+  disconnectedState = new QState(connectionStateMachine);
+
+  connectedState->assignProperty(voteMenu, "enabled", true);
+  connectedState->assignProperty(connectAction, "enabled", false);
+  connectedState->assignProperty(disconnectAction, "enabled", true);
+  connectedState->assignProperty(audioConfigAction, "enabled", false);
+  disconnectedState->assignProperty(voteMenu, "enabled", false);
+  disconnectedState->assignProperty(connectAction, "enabled", true);
+  disconnectedState->assignProperty(disconnectAction, "enabled", false);
+  disconnectedState->assignProperty(audioConfigAction, "enabled", true);
+
+  connectedState->addTransition(this, SIGNAL(Disconnected()), disconnectedState);
+  disconnectedState->addTransition(this, SIGNAL(Connected()), connectedState);
+
+  connectionStateMachine->setInitialState(disconnectedState);
+  connectionStateMachine->setErrorState(disconnectedState);
+  connectionStateMachine->start();
+
+
   runThread = new ClientRunThread(&clientMutex, &client);
 
   /* Hook up an inter-thread signal for the license agreement dialog */
@@ -263,11 +285,6 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
     exit(1);
   }
 
-  audioConfigAction->setEnabled(false);
-  connectAction->setEnabled(false);
-  disconnectAction->setEnabled(true);
-  voteMenu->setEnabled(true);
-
   setWindowTitle(tr("Wahjam - %1").arg(host));
 
   client.Connect(host.toAscii().data(),
@@ -294,10 +311,6 @@ void MainWindow::Disconnect()
 
   setWindowTitle(tr("Wahjam"));
 
-  audioConfigAction->setEnabled(true);
-  connectAction->setEnabled(true);
-  disconnectAction->setEnabled(false);
-  voteMenu->setEnabled(false);
   BeatsPerMinuteChanged(0);
   BeatsPerIntervalChanged(0);
   emit Disconnected();
@@ -461,6 +474,7 @@ void MainWindow::ClientStatusChanged(int newStatus)
     clientMutex.unlock();
 
     statusMessage = tr("Connected to %1 as %2").arg(host, username);
+    emit Connected();
   } else if (!errstr.isEmpty()) {
     statusMessage = "Error: " + errstr;
   } else if (newStatus == NJClient::NJC_STATUS_DISCONNECTED) {

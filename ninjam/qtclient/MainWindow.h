@@ -27,6 +27,8 @@
 #include <QMutex>
 #include <QAction>
 #include <QUrl>
+#include <QStateMachine>
+#include <QState>
 
 #include "ChannelTreeWidget.h"
 #include "MetronomeBar.h"
@@ -48,6 +50,7 @@ public:
   static MainWindow *GetInstance();
 
 signals:
+  void Connected();
   void Disconnected();
 
 public slots:
@@ -92,6 +95,9 @@ private:
   QLabel *bpmLabel;
   QLabel *bpiLabel;
   MetronomeBar *metronomeBar;
+  QStateMachine *connectionStateMachine;
+  QState *connectedState;
+  QState *disconnectedState;
 
   void setupChannelTree();
   void setupStatusBar();
