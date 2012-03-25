@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2012 tea <Ikkei.Shimomura@gmail.com>
+    Copyright (C) 2012 Ikkei Shimomura (tea) <Ikkei.Shimomura@gmail.com>
 
     Wahjam is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

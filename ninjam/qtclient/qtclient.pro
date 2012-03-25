@@ -29,6 +29,7 @@ HEADERS += ChannelTreeWidget.h
 HEADERS += PortAudioConfigDialog.h
 HEADERS += ServerBrowser.h
 HEADERS += MetronomeBar.h
+HEADERS += ChatOutput.h
 
 SOURCES += qtclient.cpp
 SOURCES += MainWindow.cpp
@@ -38,6 +39,7 @@ SOURCES += ChannelTreeWidget.cpp
 SOURCES += PortAudioConfigDialog.cpp
 SOURCES += ServerBrowser.cpp
 SOURCES += MetronomeBar.cpp
+SOURCES += ChatOutput.cpp
 SOURCES += ../../WDL/rng.cpp
 SOURCES += ../../WDL/sha.cpp
 SOURCES += ../mpb.cpp

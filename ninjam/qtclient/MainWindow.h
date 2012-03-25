@@ -21,7 +21,6 @@
 
 #include <QMainWindow>
 #include <QWidget>
-#include <QTextBrowser>
 #include <QLineEdit>
 #include <QLabel>
 #include <QMutex>
@@ -33,6 +32,7 @@
 #include "qtclient.h"
 #include "ChannelTreeWidget.h"
 #include "MetronomeBar.h"
+#include "ChatOutput.h"
 #include "../njclient.h"
 #include "../audiostream.h"
 
@@ -86,7 +86,7 @@ private:
   audioStreamer *audio;
   QMutex clientMutex;
   ClientRunThread *runThread;
-  QTextBrowser *chatOutput;
+  ChatOutput *chatOutput;
   QLineEdit *chatInput;
   ChannelTreeWidget *channelTree;
   QAction *connectAction;
