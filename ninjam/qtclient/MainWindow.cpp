@@ -121,10 +121,7 @@ MainWindow::MainWindow(QWidget *parent)
 
   setWindowTitle(tr("Wahjam"));
 
-  chatOutput = new QTextBrowser(this);
-  chatOutput->setReadOnly(true);
-  chatOutput->setOpenLinks(false);
-  chatOutput->setOpenExternalLinks(false);
+  chatOutput = new ChatOutput(this);
   chatOutput->connect(chatOutput, SIGNAL(anchorClicked(const QUrl&)),
                       this, SLOT(ChatLinkClicked(const QUrl&)));
 
@@ -244,7 +241,7 @@ void MainWindow::setupStatusBar()
 void MainWindow::Connect(const QString &host, const QString &user, const QString &pass)
 {
   if (!setupWorkDir()) {
-    chatAddLine("Unable to create work directory.", "");
+    chatOutput->addInfoMessage(tr("Unable to create work directory."));
     return;
   }
 
@@ -287,7 +284,7 @@ void MainWindow::Disconnect()
 
   if (!workDirPath.isEmpty() && !keepWorkDir) {
     cleanupWorkDir(workDirPath);
-    chatAddLine("Disconnected", "");
+    chatOutput->addInfoMessage(tr("Disconnected"));
   }
 
   setWindowTitle(tr("Wahjam"));
@@ -468,7 +465,7 @@ void MainWindow::ClientStatusChanged(int newStatus)
     statusMessage = tr("Error: connecting failed");
   }
 
-  chatAddLine(statusMessage, "");
+  chatOutput->addInfoMessage(statusMessage);
 
   if (newStatus < 0) {
     Disconnect();
@@ -493,56 +490,6 @@ void MainWindow::BeatsPerIntervalChanged(int bpi)
   }
 }
 
-/* Append line to the chat widget
- *
- * The prefix text is displayed in bold.
- *
- * The href and linktext end the line with a clickable link and are optional.
- */
-void MainWindow::chatAddLine(const QString &prefix, const QString &content,
-                             const QString &href, const QString &linktext)
-{
-  QTextCharFormat defaultFormat;
-  QTextCharFormat boldFormat;
-  boldFormat.setFontWeight(QFont::Bold);
-
-  chatOutput->moveCursor(QTextCursor::End);
-  chatOutput->setCurrentCharFormat(boldFormat);
-  chatOutput->append(prefix);
-  chatOutput->setCurrentCharFormat(defaultFormat);
-  chatOutput->insertPlainText(content);
-
-  if (!href.isEmpty()) {
-    QTextCharFormat linkFormat;
-    linkFormat.setAnchor(true);
-    linkFormat.setAnchorHref(href);
-    linkFormat.setFontWeight(QFont::Bold);
-    linkFormat.setForeground(QApplication::palette().link());
-    linkFormat.setUnderlineStyle(QTextCharFormat::SingleUnderline);
-
-    chatOutput->insertPlainText(" ");
-    chatOutput->setCurrentCharFormat(linkFormat);
-    chatOutput->insertPlainText(linktext);
-    chatOutput->setCurrentCharFormat(defaultFormat);
-  }
-
-  /* Autoscroll to bottom of chat */
-  chatOutput->moveCursor(QTextCursor::End);
-}
-
-/* Append a message from a given source to the chat widget */
-void MainWindow::chatAddMessage(const QString &src, const QString &msg,
-                                const QString &href, const QString &linktext)
-{
-  if (src.isEmpty()) {
-    chatAddLine("*** ", msg, href, linktext);
-  } else if (msg.startsWith("/me ")) {
-    chatAddLine(QString("* %1 ").arg(src), msg.mid(4), href, linktext);
-  } else {
-    chatAddLine(QString("<%1> ").arg(src), msg, href, linktext);
-  }
-}
-
 void MainWindow::ChatMessageCallback(char **charparms, int nparms)
 {
   QString parms[nparms];
@@ -557,15 +504,16 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
   if (parms[0] == "TOPIC") {
     if (parms[1].isEmpty()) {
       if (parms[2].isEmpty()) {
-        chatAddLine("No topic is set.", "");
+        chatOutput->addInfoMessage(tr("No topic is set."));
       } else {
-        chatAddLine(QString("Topic is: "), parms[2]);
+        chatOutput->addInfoMessage(tr("Topic is: %1").arg(parms[2]));
       }
     } else {
       if (parms[2].isEmpty()) {
-        chatAddLine(QString("%1 removes topic.").arg(parms[1]), "");
+        chatOutput->addInfoMessage(tr("%1 removes topic.").arg(parms[1]));
       } else {
-        chatAddLine(QString("%1 sets topic to: ").arg(parms[1]), parms[2]);
+        chatOutput->addInfoMessage(
+	  tr("%1 sets topic to: %2").arg(parms[1], parms[2]));
       }
     }
 
@@ -587,17 +535,27 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
       }
     }
 
-    chatAddMessage(parms[1], parms[2], href, linktext);
+    if (! href.isEmpty() && ! linktext.isEmpty()) {
+      chatOutput->addMessage(parms[1], parms[2]);
+      chatOutput->addLink(href, linktext);
+    } else {
+      if (parms[2].startsWith("/me ")) {
+        chatOutput->addActionMessage(parms[1], parms[2]);
+      }
+      else {
+        chatOutput->addMessage(parms[1], parms[2]);
+      }
+    }
   } else if (parms[0] == "PRIVMSG") {
-    chatAddLine(QString("* %1 * ").arg(parms[1]), parms[2]);
+    chatOutput->addPrivateMessage(parms[1], parms[2]);
   } else if (parms[0] == "JOIN") {
-    chatAddLine(QString("%1 has joined the server").arg(parms[1]), "");
+    chatOutput->addInfoMessage(tr("%1 has joined the server").arg(parms[1]));
   } else if (parms[0] == "PART") {
-    chatAddLine(QString("%1 has left the server").arg(parms[1]), "");
+    chatOutput->addInfoMessage(tr("%1 has left the server").arg(parms[1]));
   } else {
-    chatOutput->append("Unrecognized command:");
+    chatOutput->addInfoMessage(tr("Unrecognized command:"));
     for (i = 0; i < nparms; i++) {
-      chatOutput->append(QString("[%1] %2").arg(i).arg(parms[i]));
+      chatOutput->addLine(QString("[%1]").arg(i), parms[i]);
     }
   }
 }
@@ -613,7 +571,9 @@ void MainWindow::ChatInputReturnPressed()
 {
   QString line = chatInput->text();
   chatInput->clear();
-  SendChatMessage(line);
+  if (! line.isEmpty()) {
+    SendChatMessage(line);
+  }
 }
 
 void MainWindow::SendChatMessage(const QString &line)
@@ -639,10 +599,10 @@ void MainWindow::SendChatMessage(const QString &line)
     parm = line.section(' ', 1, 1, QString::SectionSkipEmpty);
     msg = line.section(' ', 2, -1, QString::SectionSkipEmpty);
     if (msg.isEmpty()) {
-      chatAddLine("error: /msg requires a username and a message.", "");
+      chatOutput->addErrorMessage(tr("/msg requires a username and a message."));
       return;
     }
-    chatAddLine(QString("-> *%1* ").arg(parm), msg);
+    chatOutput->addLine(tr("-> *%1* ").arg(parm), msg);
   } else {
     command = "MSG";
     parm = line;
@@ -660,7 +620,7 @@ void MainWindow::SendChatMessage(const QString &line)
   clientMutex.unlock();
 
   if (!connected) {
-    chatAddLine("error: not connected to a server.", "");
+    chatOutput->addErrorMessage("not connected to a server.");
   }
 }
 
