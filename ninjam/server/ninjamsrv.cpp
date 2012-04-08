@@ -28,6 +28,7 @@
 
 
 #ifdef _WIN32
+#include <ctype.h>
 #include <windows.h>
 #include <conio.h>
 #else
