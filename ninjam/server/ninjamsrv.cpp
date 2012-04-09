@@ -56,16 +56,6 @@
 
 const char *startupmessage="Wahjam Server " VERSION " built on " __DATE__ " at " __TIME__ " starting up...\n" "Copyright (C) 2005-2007, Cockos, Inc.\n";
 
-int g_set_uid=-1;
-int g_default_bpm,g_default_bpi;
-FILE *g_logfp;
-WDL_String g_pidfilename;
-WDL_String g_logfilename;
-WDL_String g_status_pass,g_status_user;
-User_Group *m_group;
-JNL_Listen *m_listener;
-void onConfigChange(int argc, char **argv);
-
 class UserPassEntry
 {
 public:
@@ -75,6 +65,42 @@ public:
   unsigned int priv_flag;
 };
 
+/* Server configuration variables */
+struct ServerConfig
+{
+  bool allowAnonChat;
+  bool allowAnonymous;
+  bool allowAnonymousMulti;
+  bool anonymousMaskIP;
+  bool allowHiddenUsers;
+  int setuid;
+  int defaultBPM;
+  int defaultBPI;
+  int port;
+  int keepAlive;
+  int maxUsers;
+  int maxchAnon;
+  int maxchUser;
+  int logSessionLen;
+  int votingThreshold;
+  int votingTimeout;
+  WDL_String logPath;
+  WDL_String pidFilename;
+  WDL_String logFilename;
+  WDL_String statusPass;
+  WDL_String statusUser;
+  WDL_String license;
+  WDL_String defaultTopic;
+  WDL_HeapBuf acllist;
+  WDL_PtrList<UserPassEntry> userlist;
+};
+
+FILE *g_logfp;
+User_Group *m_group;
+JNL_Listen *m_listener;
+ServerConfig g_config;
+
+void onConfigChange(ServerConfig *config, int argc, char **argv);
 
 #define ACL_FLAG_DENY 1
 #define ACL_FLAG_RESERVE 2
@@ -86,23 +112,12 @@ typedef struct
 } ACLEntry;
 
 
-WDL_HeapBuf g_acllist;
-void aclAdd(unsigned long addr, unsigned long mask, int flags)
-{
-  addr=ntohl(addr);
-//  printf("adding acl entry for %08x + %08x\n",addr,mask);
-  ACLEntry f={addr,mask,flags};
-  int os=g_acllist.GetSize();
-  g_acllist.Resize(os+sizeof(f));
-  memcpy((char *)g_acllist.Get()+os,&f,sizeof(f));
-}
-
 int aclGet(unsigned long addr)
 {
   addr=ntohl(addr);
 
-  ACLEntry *p=(ACLEntry *)g_acllist.Get();
-  int x=g_acllist.GetSize()/sizeof(ACLEntry);
+  ACLEntry *p = (ACLEntry *)g_config.acllist.Get();
+  int x = g_config.acllist.GetSize() / sizeof(ACLEntry);
   while (x--)
   {
   //  printf("comparing %08x to %08x\n",addr,p->addr);
@@ -113,20 +128,7 @@ int aclGet(unsigned long addr)
 }
 
 
-WDL_PtrList<UserPassEntry> g_userlist;
-int g_config_allow_anonchat;
-int g_config_port;
-bool g_config_allowanonymous;
-bool g_config_allowanonymous_multi;
-bool g_config_anonymous_mask_ip;
-int g_config_maxch_anon;
-int g_config_maxch_user;
-WDL_String g_config_logpath;
-int g_config_log_sessionlen;
-
 time_t next_session_update_time;
-
-WDL_String g_config_license;
 
 class localUserInfoLookup : public IUserInfoLookup
 {
@@ -147,8 +149,8 @@ public:
 
     if (!strncmp(username.Get(),"anonymous",9) && (!username.Get()[9] || username.Get()[9] == ':'))
     {
-      logText("got anonymous request (%s)\n",g_config_allowanonymous?"allowing":"denying");
-      if (!g_config_allowanonymous) return 1;
+      logText("got anonymous request (%s)\n",g_config.allowAnonymous?"allowing":"denying");
+      if (!g_config.allowAnonymous) return 1;
 
       user_valid=1;
       reqpass=0;
@@ -177,7 +179,7 @@ public:
       username.Append("@");
       username.Append(hostmask.Get());
 
-      if (g_config_anonymous_mask_ip)
+      if (g_config.anonymousMaskIP)
       {
         char *p=username.Get();
         while (*p) p++;
@@ -189,14 +191,14 @@ public:
         }
       }
 
-      privs=(g_config_allow_anonchat?PRIV_CHATSEND:0) | (g_config_allowanonymous_multi?PRIV_ALLOWMULTI:0) | PRIV_VOTE;
-      max_channels=g_config_maxch_anon;
+      privs=(g_config.allowAnonChat?PRIV_CHATSEND:0) | (g_config.allowAnonymousMulti?PRIV_ALLOWMULTI:0) | PRIV_VOTE;
+      max_channels=g_config.maxchAnon;
     }
     else
     {
       int x;
       logText("got login request for '%s'\n",username.Get());
-      if (g_status_user.Get()[0] && !strcmp(username.Get(),g_status_user.Get()))
+      if (g_config.statusUser.Get()[0] && !strcmp(username.Get(), g_config.statusUser.Get()))
       {
         user_valid=1;
         reqpass=1;
@@ -207,18 +209,18 @@ public:
         WDL_SHA1 shatmp;
         shatmp.add(username.Get(),strlen(username.Get()));
         shatmp.add(":",1);
-        shatmp.add(g_status_pass.Get(),strlen(g_status_pass.Get()));
+        shatmp.add(g_config.statusPass.Get(), strlen(g_config.statusPass.Get()));
 
         shatmp.result(sha1buf_user);
       }
-      else for (x = 0; x < g_userlist.GetSize(); x ++)
+      else for (x = 0; x < g_config.userlist.GetSize(); x ++)
       {
-        if (!strcmp(username.Get(),g_userlist.Get(x)->name.Get()))
+        if (!strcmp(username.Get(), g_config.userlist.Get(x)->name.Get()))
         {
           user_valid=1;
           reqpass=1;
 
-          char *pass=g_userlist.Get(x)->pass.Get();
+          char *pass = g_config.userlist.Get(x)->pass.Get();
           WDL_SHA1 shatmp;
           shatmp.add(username.Get(),strlen(username.Get()));
           shatmp.add(":",1);
@@ -226,8 +228,8 @@ public:
 
           shatmp.result(sha1buf_user);
 
-          privs=g_userlist.Get(x)->priv_flag; 
-          max_channels=g_config_maxch_user;
+          privs = g_config.userlist.Get(x)->priv_flag;
+          max_channels=g_config.maxchUser;
           break;
         }
       }
@@ -247,7 +249,7 @@ static IUserInfoLookup *myCreateUserLookup(char *username)
 
 
 
-static int ConfigOnToken(LineParser *lp)
+static int ConfigOnToken(ServerConfig *config, LineParser *lp)
 {
   const char *t=lp->gettoken_str(0);
   if (!stricmp(t,"Port"))
@@ -255,84 +257,93 @@ static int ConfigOnToken(LineParser *lp)
     if (lp->getnumtokens() != 2) return -1;
     int p=lp->gettoken_int(1);
     if (!p) return -2;
-    g_config_port=p;
+    config->port=p;
   }
   else if (!stricmp(t,"StatusUserPass"))
   {
     if (lp->getnumtokens() != 3) return -1;
-    g_status_user.Set(lp->gettoken_str(1));
-    g_status_pass.Set(lp->gettoken_str(2));
+    config->statusUser.Set(lp->gettoken_str(1));
+    config->statusPass.Set(lp->gettoken_str(2));
   }
   else if (!stricmp(t,"MaxUsers"))
   {
     if (lp->getnumtokens() != 2) return -1;
     int p=lp->gettoken_int(1);
-    m_group->m_max_users=p;
-  }  
+    config->maxUsers=p;
+  }
   else if (!stricmp(t,"PIDFile"))
   {
     if (lp->getnumtokens() != 2) return -1;
-    g_pidfilename.Set(lp->gettoken_str(1));    
+    config->pidFilename.Set(lp->gettoken_str(1));
   }
   else if (!stricmp(t,"LogFile"))
   {
     if (lp->getnumtokens() != 2) return -1;
-    g_logfilename.Set(lp->gettoken_str(1));    
+    config->logFilename.Set(lp->gettoken_str(1));
   }
   else if (!stricmp(t,"SessionArchive"))
   {
     if (lp->getnumtokens() != 3) return -1;
-    g_config_logpath.Set(lp->gettoken_str(1));    
-    g_config_log_sessionlen = lp->gettoken_int(2);
+    config->logPath.Set(lp->gettoken_str(1));
+    config->logSessionLen = lp->gettoken_int(2);
   }
   else if (!stricmp(t,"SetUID"))
   {
     if (lp->getnumtokens() != 2) return -1;
-    g_set_uid = lp->gettoken_int(1);
+    config->setuid = lp->gettoken_int(1);
   }
   else if (!stricmp(t,"DefaultBPI"))
   {
     if (lp->getnumtokens() != 2) return -1;
-    g_default_bpi=lp->gettoken_int(1);
-    if (g_default_bpi<MIN_BPI) g_default_bpi=MIN_BPI;
-    else if (g_default_bpi > MAX_BPI) g_default_bpi=MAX_BPI;
+    int p = lp->gettoken_int(1);
+    if (p < MIN_BPI) {
+      p = MIN_BPI;
+    } else if (p > MAX_BPI) {
+      p = MAX_BPI;
+    }
+    config->defaultBPI=lp->gettoken_int(1);
   }
   else if (!stricmp(t,"DefaultBPM"))
   {
     if (lp->getnumtokens() != 2) return -1;
-    g_default_bpm=lp->gettoken_int(1);
-    if (g_default_bpm<MIN_BPM) g_default_bpm=MIN_BPM;
-    else if (g_default_bpm > MAX_BPM) g_default_bpm=MAX_BPM;
+    int p = lp->gettoken_int(1);
+    if (p < MIN_BPM) {
+      p = MIN_BPM;
+    } else if (p > MAX_BPM) {
+      p = MAX_BPM;
+    }
+    config->defaultBPM = p;
   }
   else if (!stricmp(t,"DefaultTopic"))
   {
     if (lp->getnumtokens() != 2) return -1;
-    if (!m_group->m_topictext.Get()[0])
-      m_group->m_topictext.Set(lp->gettoken_str(1));    
+    config->defaultTopic.Set(lp->gettoken_str(1));
   }
   else if (!stricmp(t,"MaxChannels"))
   {
     if (lp->getnumtokens() != 2 && lp->getnumtokens() != 3) return -1;
-    
-    g_config_maxch_user=lp->gettoken_int(1);
-    g_config_maxch_anon=lp->gettoken_int(lp->getnumtokens()>2?2:1);
+
+    config->maxchUser=lp->gettoken_int(1);
+    config->maxchAnon=lp->gettoken_int(lp->getnumtokens()>2?2:1);
   }
   else if (!stricmp(t,"SetKeepAlive"))
   {
     if (lp->getnumtokens() != 2) return -1;
-    m_group->m_keepalive=lp->gettoken_int(1);
-    if (m_group->m_keepalive < 0 || m_group->m_keepalive > 255)
-      m_group->m_keepalive=0;
+    int p = lp->gettoken_int(1);
+    if (p < 0 || p > 255) {
+      p = 0;
+    }
+    config->keepAlive = p;
   }
   else if (!stricmp(t,"SetVotingThreshold"))
   {
     if (lp->getnumtokens() != 2) return -1;
-    m_group->m_voting_threshold=lp->gettoken_int(1);
+    config->votingThreshold = lp->gettoken_int(1);
   }
   else if (!stricmp(t,"SetVotingVoteTimeout"))
   {
     if (lp->getnumtokens() != 2) return -1;
-    m_group->m_voting_timeout=lp->gettoken_int(1);
+    config->votingTimeout = lp->gettoken_int(1);
   }
   else if (!stricmp(t,"ServerLicense"))
   {
@@ -345,14 +356,14 @@ static int ConfigOnToken(LineParser *lp)
         logText("Error opening license file %s\n",lp->gettoken_str(1));
       return -2;
     }
-    g_config_license.Set("");
+    config->license.Set("");
     for (;;)
     {
       char buf[1024];
       buf[0]=0;
       fgets(buf,sizeof(buf),fp);
       if (!buf[0]) break;
-      g_config_license.Append(buf);
+      config->license.Append(buf);
     }
 
     fclose(fp);
@@ -378,7 +389,11 @@ static int ConfigOnToken(LineParser *lp)
           {
             suc=1;
             unsigned long mask=~(0xffffffff>>maskbits);
-            aclAdd(addr,mask,flag);
+            addr = ntohl(addr);
+            ACLEntry f = {addr, mask, flag};
+            int os = config->acllist.GetSize();
+            config->acllist.Resize(os + sizeof(f));
+            memcpy((char *)config->acllist.Get() + os, &f, sizeof(f));
           }
         }
       }
@@ -422,7 +437,7 @@ static int ConfigOnToken(LineParser *lp)
       }
     }
     else p->priv_flag=PRIV_CHATSEND|PRIV_VOTE;// default privs
-    g_userlist.Add(p);
+    config->userlist.Add(p);
   }
   else if (!stricmp(t,"AllowHiddenUsers"))
   {
@@ -433,7 +448,7 @@ static int ConfigOnToken(LineParser *lp)
     {
       return -2;
     }
-    m_group->m_allow_hidden_users=!!x;
+    config->allowHiddenUsers = x;
   }
   else if (!stricmp(t,"AnonymousUsers"))
   {
@@ -444,8 +459,8 @@ static int ConfigOnToken(LineParser *lp)
     {
       return -2;
     }
-    g_config_allowanonymous=!!x;
-    g_config_allowanonymous_multi=x==2;
+    config->allowAnonymous = x;
+    config->allowAnonymousMulti = x == 2;
   }
   else if (!stricmp(t,"AnonymousMaskIP"))
   {
@@ -456,7 +471,7 @@ static int ConfigOnToken(LineParser *lp)
     {
       return -2;
     }
-    g_config_anonymous_mask_ip=!!x;
+    config->anonymousMaskIP = x;
   }
   else if (!stricmp(t,"AnonymousUsers"))
   {
@@ -467,8 +482,8 @@ static int ConfigOnToken(LineParser *lp)
     {
       return -2;
     }
-    g_config_allowanonymous=!!x;
-  }  
+    config->allowAnonymous = x;
+  }
   else if (!stricmp(t,"AnonymousUsersCanChat"))
   {
     if (lp->getnumtokens() != 2) return -1;
@@ -478,50 +493,58 @@ static int ConfigOnToken(LineParser *lp)
     {
       return -2;
     }
-    g_config_allow_anonchat=!!x;
-  }  
+    config->allowAnonChat = x;
+  }
   else return -3;
   return 0;
+}
 
-};
 
-
-static int ReadConfig(char *configfile)
+static int ReadConfig(ServerConfig *config, char *configfile)
 {
   bool comment_state=0;
   int linecnt=0;
   WDL_String linebuild;
-  if (g_logfp) logText("[config] reloading configuration file\n");
+  if (g_logfp) logText("[config] reloading configuration file\n"); // TODO move this elsewhere
   FILE *fp=strcmp(configfile,"-")?fopen(configfile,"rt"):stdin; 
   if (!fp)
   {
     printf("[config] error opening configfile '%s'\n",configfile);
-    if (g_logfp) logText("[config] error opening config file (console request)\n");
+    if (g_logfp) logText("[config] error opening config file (console request)\n"); // TODO move this elsewhere
     return -1;
   }
 
-  // clear user list, etc
-  g_config_port=2049;
-  g_config_allow_anonchat=1;
-  g_config_allowanonymous=0;
-  g_config_allowanonymous_multi=0;
-  g_config_anonymous_mask_ip=0;
-  g_config_maxch_anon=2;
-  g_config_maxch_user=32;
-  g_default_bpi=8;
-  g_default_bpm=120;
+  config->allowAnonChat = true;
+  config->allowAnonymous = false;
+  config->allowAnonymousMulti = false;
+  config->anonymousMaskIP = false;
+  config->allowHiddenUsers = false;
+  config->setuid = -1;
+  config->defaultBPM = 120;
+  config->defaultBPI = 8;
+  config->port = 2049;
+  config->keepAlive = 0;
+  config->maxUsers = 0; // unlimited users
+  config->maxchAnon = 2;
+  config->maxchUser = 32;
+  config->logSessionLen = 10; // ten minute default, tho the user will need to specify the path anyway
+  config->votingThreshold = 110;
+  config->votingTimeout = 120;
+  config->logPath.Set("");
+  config->pidFilename.Set("");
+  config->logFilename.Set("");
+  config->statusPass.Set("");
+  config->statusUser.Set("");
+  config->license.Set("");
+  config->defaultTopic.Set("");
+  config->acllist.Resize(0);
 
-  g_config_log_sessionlen=10; // ten minute default, tho the user will need to specify the path anyway
-
-  m_group->m_max_users=0; // unlimited users
-  g_acllist.Resize(0);
-  g_config_license.Set("");
   int x;
-  for(x=0;x<g_userlist.GetSize(); x++)
+  for(x=0; x < config->userlist.GetSize(); x++)
   {
-    delete g_userlist.Get(x);
+    delete config->userlist.Get(x);
   }
-  g_userlist.Empty();
+  config->userlist.Empty();
 
   for (;;)
   {
@@ -565,7 +588,7 @@ static int ReadConfig(char *configfile)
 
       if (lp.getnumtokens()>0)
       {
-        int err=ConfigOnToken(&lp);
+        int err = ConfigOnToken(config, &lp);
         if (err)
         {
           if (err == -1)
@@ -669,7 +692,6 @@ void logText(const char *s, ...)
 
 int main(int argc, char **argv)
 {
-
   if (argc < 2)
   {
     usage(argv[0]);
@@ -677,44 +699,43 @@ int main(int argc, char **argv)
 
   m_group=new User_Group;
 
-  printf("%s",startupmessage);
-  if (ReadConfig(argv[1]))
+  printf("%s", startupmessage);
+  if (ReadConfig(&g_config, argv[1]))
   {
     printf("Error loading config file!\n");
     exit(1);
   }
+
   int p;
   for (p = 2; p < argc; p ++)
   {
       if (!strcmp(argv[p],"-pidfile"))
       {
         if (++p >= argc) usage(argv[0]);
-        g_pidfilename.Set(argv[p]);
+        g_config.pidFilename.Set(argv[p]);
       }
       else if (!strcmp(argv[p],"-logfile"))
       {
         if (++p >= argc) usage(argv[0]);
-        g_logfilename.Set(argv[p]);
+        g_config.logFilename.Set(argv[p]);
       }
       else if (!strcmp(argv[p],"-archive"))
       {
         if (++p >= argc) usage(argv[0]);
-        g_config_logpath.Set(argv[p]);
+        g_config.logPath.Set(argv[p]);
       }
       else if (!strcmp(argv[p],"-setuid"))
       {
         if (++p >= argc) usage(argv[0]);
-        g_set_uid=atoi(argv[p]);
+        g_config.setuid=atoi(argv[p]);
       }
       else if (!strcmp(argv[p],"-port"))
       {
         if (++p >= argc) usage(argv[0]);
-        g_config_port=atoi(argv[p]);
+        g_config.port=atoi(argv[p]);
       }
       else usage(argv[0]);
-
   }
-
 
 #ifdef _WIN32
   DWORD v=GetTickCount();
@@ -723,22 +744,22 @@ int main(int argc, char **argv)
   WDL_RNG_addentropy(&v,sizeof(v));
 #else
 
-  if (g_set_uid != -1) setuid(g_set_uid);
+  if (g_config.setuid != -1) setuid(g_config.setuid);
 
   time_t v=time(NULL);
   WDL_RNG_addentropy(&v,sizeof(v));
   int pid=getpid();
   WDL_RNG_addentropy(&pid,sizeof(pid));
 
-  if (g_pidfilename.Get()[0])
+  if (g_config.pidFilename.Get()[0])
   {
-    FILE *fp=fopen(g_pidfilename.Get(),"w");
+    FILE *fp=fopen(g_config.pidFilename.Get(),"w");
     if (fp)
     {
       fprintf(fp,"%d\n",pid);
       fclose(fp);
     }
-    else printf("Error opening PID file '%s'\n",g_pidfilename.Get());
+    else printf("Error opening PID file '%s'\n", g_config.pidFilename.Get());
   }
 
 
@@ -749,11 +770,11 @@ int main(int argc, char **argv)
   signal(SIGINT,sighandler);
 
 
-  if (g_logfilename.Get()[0])
+  if (g_config.logFilename.Get()[0])
   {
-    g_logfp=fopen(g_logfilename.Get(),"at");
+    g_logfp=fopen(g_config.logFilename.Get(),"at");
     if (!g_logfp)
-      printf("Error opening log file '%s'\n",g_logfilename.Get());
+      printf("Error opening log file '%s'\n",g_config.logFilename.Get());
     else
       logText("Opened log. Wahjam Server %s built on %s at %s\n",VERSION,__DATE__,__TIME__);
 
@@ -764,19 +785,31 @@ int main(int argc, char **argv)
   JNL::open_socketlib();
 
   {
-    logText("Port: %d\n",g_config_port);    
-    m_listener = new JNL_Listen(g_config_port);
+    logText("Port: %d\n", g_config.port);
+    m_listener = new JNL_Listen(g_config.port);
     if (m_listener->is_error()) 
     {
-      logText("Error listening on port %d!\n",g_config_port);
+      logText("Error listening on port %d!\n", g_config.port);
     }
 
     m_group->CreateUserLookup=myCreateUserLookup;
 
-    logText("Using defaults %d BPM %d BPI\n",g_default_bpm,g_default_bpi);
-    m_group->SetConfig(g_default_bpi,g_default_bpm);    
+    /* Initialize UserGroup configuration variables.  This can be unified with
+     * onConfigChange() in the future.
+     */
+    m_group->m_max_users = g_config.maxUsers;
+    if (!m_group->m_topictext.Get()[0]) {
+        m_group->m_topictext.Set(g_config.defaultTopic.Get());
+    }
+    m_group->m_keepalive = g_config.keepAlive;
+    m_group->m_voting_threshold = g_config.votingThreshold;
+    m_group->m_voting_timeout = g_config.votingTimeout;
+    m_group->m_allow_hidden_users = g_config.allowHiddenUsers;
 
-    m_group->SetLicenseText(g_config_license.Get());
+    logText("Using defaults %d BPM %d BPI\n", g_config.defaultBPM, g_config.defaultBPI);
+    m_group->SetConfig(g_config.defaultBPI, g_config.defaultBPM);
+
+    m_group->SetLicenseText(g_config.license.Get());
 
 #ifdef _WIN32
     int needprompt=2;
@@ -880,16 +913,16 @@ int main(int argc, char **argv)
           }
           else if (c == 'R')
           {
-            if (!strcmp(argv[1],"-") || ReadConfig(argv[1]))
+            if (!strcmp(argv[1],"-") || ReadConfig(&g_config, argv[1]))
             {
               if (g_logfp) logText("Error opening config file\n");
               printf("Error opening config file!\n");
             }
             else
             {
-//              printf("Listening on port %d...",g_config_port);    
+//              printf("Listening on port %d...",g_config.port);
 
-              onConfigChange(argc,argv);
+              onConfigChange(&g_config, argc, argv);
             }
             needprompt=1;
           }
@@ -907,8 +940,8 @@ int main(int argc, char **argv)
         {
           g_reloadconfig=0;
 
-          if (!ReadConfig(argv[1]))
-            onConfigChange(argc,argv);
+          if (!ReadConfig(&g_config, argv[1]))
+            onConfigChange(&g_config, argc, argv);
         }
 
         time_t now;
@@ -919,7 +952,7 @@ int main(int argc, char **argv)
 
           int len=30; // check every 30 seconds if we aren't logging       
 
-          if (g_config_logpath.Get()[0])
+          if (g_config.logPath.Get()[0])
           {
             int x;
             for (x = 0; x < m_group->m_users.GetSize() && m_group->m_users.Get(x)->m_auth_state < 1; x ++);
@@ -938,7 +971,7 @@ int main(int argc, char **argv)
                   wsprintf(buf+strlen(buf),"_%d",cnt);
                 strcat(buf,".wahjam");
 
-                tmp.Set(g_config_logpath.Get());
+                tmp.Set(g_config.logPath.Get());
                 tmp.Append(buf);
 
                 #ifdef _WIN32
@@ -960,7 +993,7 @@ int main(int argc, char **argv)
                 logText("Error creating a session archive directory! Gave up after '%s' failed!\n",tmp.Get());
               }
               // if we succeded, don't check until configured time
-              len=g_config_log_sessionlen*60;
+              len=g_config.logSessionLen*60;
               if (len < 60) len=30;
             }
 
@@ -988,13 +1021,21 @@ int main(int argc, char **argv)
 }
 
 
-void onConfigChange(int argc, char **argv)
+void onConfigChange(ServerConfig *config, int argc, char **argv)
 {
   logText("reloading config...\n");
 
+  m_group->m_max_users = config->maxUsers;
+  if (!m_group->m_topictext.Get()[0]) {
+      m_group->m_topictext.Set(config->defaultTopic.Get());
+  }
+  m_group->m_keepalive = config->keepAlive;
+  m_group->m_voting_threshold = config->votingThreshold;
+  m_group->m_voting_timeout = config->votingTimeout;
+  m_group->m_allow_hidden_users = config->allowHiddenUsers;
   //m_group->SetConfig(g_config_bpi,g_config_bpm);
   enforceACL();
-  m_group->SetLicenseText(g_config_license.Get());
+  m_group->SetLicenseText(config->license.Get());
 
   int p;
   for (p = 2; p < argc; p ++)
@@ -1012,7 +1053,7 @@ void onConfigChange(int argc, char **argv)
       else if (!strcmp(argv[p],"-archive"))
       {
         if (++p >= argc) break;
-        g_config_logpath.Set(argv[p]);
+        config->logPath.Set(argv[p]);
       }
       else if (!strcmp(argv[p],"-setuid"))
       {
@@ -1022,12 +1063,12 @@ void onConfigChange(int argc, char **argv)
       else if (!strcmp(argv[p],"-port"))
       {
         if (++p >= argc) break;
-        g_config_port=atoi(argv[p]);
+        config->port=atoi(argv[p]);
       }
   }
 
   delete m_listener;
-  m_listener = new JNL_Listen(g_config_port);
+  m_listener = new JNL_Listen(config->port);
 
 }
 
