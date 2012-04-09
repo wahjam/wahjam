@@ -690,20 +690,14 @@ void logText(const char *s, ...)
     va_end(ap);
 }
 
-int main(int argc, char **argv)
+bool reloadConfig(int argc, char **argv, bool firstTime)
 {
-  if (argc < 2)
-  {
-    usage(argv[0]);
+  if (!firstTime) {
+    logText("reloading config...\n");
   }
 
-  m_group=new User_Group;
-
-  printf("%s", startupmessage);
-  if (ReadConfig(&g_config, argv[1]))
-  {
-    printf("Error loading config file!\n");
-    exit(1);
+  if (ReadConfig(&g_config, argv[1]) != 0) {
+    return false;
   }
 
   int p;
@@ -735,6 +729,53 @@ int main(int argc, char **argv)
         g_config.port=atoi(argv[p]);
       }
       else usage(argv[0]);
+  }
+
+  m_group->m_max_users = g_config.maxUsers;
+  if (!m_group->m_topictext.Get()[0]) {
+      m_group->m_topictext.Set(g_config.defaultTopic.Get());
+  }
+  m_group->m_keepalive = g_config.keepAlive;
+  m_group->m_voting_threshold = g_config.votingThreshold;
+  m_group->m_voting_timeout = g_config.votingTimeout;
+  m_group->m_allow_hidden_users = g_config.allowHiddenUsers;
+
+  /* Do not change back to default BPM/BPI if already running */
+  if (firstTime) {
+    m_group->SetConfig(g_config.defaultBPI, g_config.defaultBPM);
+  }
+
+  enforceACL();
+  m_group->SetLicenseText(g_config.license.Get());
+
+  delete m_listener;
+  m_listener = new JNL_Listen(g_config.port);
+  if (m_listener->is_error()) {
+    logText("Error listening on port %d!\n", g_config.port);
+    return false;
+  }
+
+  logText("Port: %d\n", g_config.port);
+  return true;
+}
+
+int main(int argc, char **argv)
+{
+  if (argc < 2)
+  {
+    usage(argv[0]);
+  }
+
+  JNL::open_socketlib();
+
+  m_group=new User_Group;
+  m_group->CreateUserLookup=myCreateUserLookup;
+
+  printf("%s", startupmessage);
+
+  if (!reloadConfig(argc, argv, true)) {
+    printf("Error loading config file!\n");
+    exit(1);
   }
 
 #ifdef _WIN32
@@ -782,35 +823,7 @@ int main(int argc, char **argv)
 
   logText("Server starting up...\n");
 
-  JNL::open_socketlib();
-
   {
-    logText("Port: %d\n", g_config.port);
-    m_listener = new JNL_Listen(g_config.port);
-    if (m_listener->is_error()) 
-    {
-      logText("Error listening on port %d!\n", g_config.port);
-    }
-
-    m_group->CreateUserLookup=myCreateUserLookup;
-
-    /* Initialize UserGroup configuration variables.  This can be unified with
-     * onConfigChange() in the future.
-     */
-    m_group->m_max_users = g_config.maxUsers;
-    if (!m_group->m_topictext.Get()[0]) {
-        m_group->m_topictext.Set(g_config.defaultTopic.Get());
-    }
-    m_group->m_keepalive = g_config.keepAlive;
-    m_group->m_voting_threshold = g_config.votingThreshold;
-    m_group->m_voting_timeout = g_config.votingTimeout;
-    m_group->m_allow_hidden_users = g_config.allowHiddenUsers;
-
-    logText("Using defaults %d BPM %d BPI\n", g_config.defaultBPM, g_config.defaultBPI);
-    m_group->SetConfig(g_config.defaultBPI, g_config.defaultBPM);
-
-    m_group->SetLicenseText(g_config.license.Get());
-
 #ifdef _WIN32
     int needprompt=2;
     int esc_state=0;
@@ -913,16 +926,8 @@ int main(int argc, char **argv)
           }
           else if (c == 'R')
           {
-            if (!strcmp(argv[1],"-") || ReadConfig(&g_config, argv[1]))
-            {
-              if (g_logfp) logText("Error opening config file\n");
-              printf("Error opening config file!\n");
-            }
-            else
-            {
-//              printf("Listening on port %d...",g_config.port);
-
-              onConfigChange(&g_config, argc, argv);
+            if (strcmp(argv[1], "-")) {
+              reloadConfig(argc, argv, false);
             }
             needprompt=1;
           }
@@ -939,9 +944,7 @@ int main(int argc, char **argv)
         if (g_reloadconfig && strcmp(argv[1],"-"))
         {
           g_reloadconfig=0;
-
-          if (!ReadConfig(&g_config, argv[1]))
-            onConfigChange(&g_config, argc, argv);
+          reloadConfig(argc, argv, false);
         }
 
         time_t now;
@@ -1019,56 +1022,3 @@ int main(int argc, char **argv)
   JNL::close_socketlib();
 	return 0;
 }
-
-
-void onConfigChange(ServerConfig *config, int argc, char **argv)
-{
-  logText("reloading config...\n");
-
-  m_group->m_max_users = config->maxUsers;
-  if (!m_group->m_topictext.Get()[0]) {
-      m_group->m_topictext.Set(config->defaultTopic.Get());
-  }
-  m_group->m_keepalive = config->keepAlive;
-  m_group->m_voting_threshold = config->votingThreshold;
-  m_group->m_voting_timeout = config->votingTimeout;
-  m_group->m_allow_hidden_users = config->allowHiddenUsers;
-  //m_group->SetConfig(g_config_bpi,g_config_bpm);
-  enforceACL();
-  m_group->SetLicenseText(config->license.Get());
-
-  int p;
-  for (p = 2; p < argc; p ++)
-  {
-      if (!strcmp(argv[p],"-pidfile"))
-      {
-        if (++p >= argc) break;
-      //  g_pidfilename.Set(argv[p]);
-      }
-      else if (!strcmp(argv[p],"-logfile"))
-      {
-        if (++p >= argc) break;
-//        g_logfilename.Set(argv[p]);
-      }
-      else if (!strcmp(argv[p],"-archive"))
-      {
-        if (++p >= argc) break;
-        config->logPath.Set(argv[p]);
-      }
-      else if (!strcmp(argv[p],"-setuid"))
-      {
-        if (++p >= argc) break;
-  //      g_set_uid=atoi(argv[p]);
-      }
-      else if (!strcmp(argv[p],"-port"))
-      {
-        if (++p >= argc) break;
-        config->port=atoi(argv[p]);
-      }
-  }
-
-  delete m_listener;
-  m_listener = new JNL_Listen(config->port);
-
-}
-
