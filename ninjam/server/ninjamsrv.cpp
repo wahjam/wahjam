@@ -824,10 +824,6 @@ int main(int argc, char **argv)
   logText("Server starting up...\n");
 
   {
-#ifdef _WIN32
-    int needprompt=2;
-    int esc_state=0;
-#endif
     while (!g_done)
     {
       JNL_Connection *con=m_listener->get_connect(2*65536,65536);
@@ -852,89 +848,6 @@ int main(int argc, char **argv)
       if (m_group->Run()) 
       {
 #ifdef _WIN32
-        if (needprompt)
-        {
-          if (needprompt>1) printf("\nKeys:\n"
-               "  [S]how user table\n"
-               "  [R]eload config file\n"
-               "  [K]ill user\n"
-               "  [Q]uit server\n");
-          printf(": ");
-          needprompt=0;
-        }
-        if (kbhit())
-        {
-          int c=toupper(getch());
-          printf("%c\n",isalpha(c)?c:'?');
-          if (esc_state)
-          {
-            if (c == 'Y') break;
-            printf("Exit aborted\n");
-            needprompt=2;
-            esc_state=0;
-          }
-          else if (c == 'Q')
-          {
-            if (!esc_state)
-            {
-              esc_state++;
-              printf("Q pressed -- hit Y to exit, any other key to continue\n");
-              needprompt=1;
-            }
-          }
-          else if (c == 'K')
-          {
-            printf("(be quick, server is paused while you type!!!)\nKill username: ");
-            char buf[512];
-            fgets(buf,sizeof(buf),stdin);
-            if (buf[0] && buf[strlen(buf)-1]=='\n') buf[strlen(buf)-1]=0;
-            if (buf[0])
-            {
-              int x;
-              int killcnt=0;
-              for (x = 0; x < m_group->m_users.GetSize(); x ++)
-              {
-                User_Connection *c=m_group->m_users.Get(x);
-                if (!strcmp(c->m_username.Get(),buf))
-                {
-                  char str[512];
-                  JNL::addr_to_ipstr(c->m_netcon.GetConnection()->get_remote(),str,sizeof(str));
-                  printf("Killing user %s on %s\n",c->m_username.Get(),str);
-                  c->m_netcon.Kill();
-                  killcnt++;
-                }
-              }
-              if (!killcnt)
-              {
-                printf("User %s not found!\n",buf);
-              }
-            }
-            else printf("Kill aborted with no input\n");
-            needprompt=1;
-          }
-          else if (c == 'S')
-          {
-            needprompt=1;
-            int x;
-            for (x = 0; x < m_group->m_users.GetSize(); x ++)
-            {
-              User_Connection *c=m_group->m_users.Get(x);
-              char str[512];
-              JNL::addr_to_ipstr(c->m_netcon.GetConnection()->get_remote(),str,sizeof(str));
-              printf("%s:%s\n",c->m_auth_state>0?c->m_username.Get():"<unauthorized>",str);
-            }
-          }
-          else if (c == 'R')
-          {
-            if (strcmp(argv[1], "-")) {
-              reloadConfig(argc, argv, false);
-            }
-            needprompt=1;
-          }
-          else needprompt=2;
-         
-
-        }
         Sleep(1);
 #else
 	      struct timespec ts={0,1*1000*1000};
