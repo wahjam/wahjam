@@ -89,7 +89,7 @@ static void type_to_string(unsigned int t, char *out)
 
 
 
-extern void logText(char *s, ...);
+extern void logText(const char *s, ...);
 
 #define MAX_NICK_LEN 128 // not including null term
 
