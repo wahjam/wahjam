@@ -13,6 +13,7 @@ win32:DEFINES -= UNICODE
 
 # Input
 HEADERS += usercon.h \
+           Server.h \
            ninjamsrv.h \
            ../../WDL/jnetlib/jnetlib.h \
            ../../WDL/jnetlib/netinc.h \
@@ -33,6 +34,7 @@ HEADERS += usercon.h \
            ../../WDL/lineparse.h
 SOURCES += ninjamsrv.cpp \
            usercon.cpp \
+           Server.cpp \
            ../../WDL/jnetlib/util.cpp \
            ../../WDL/jnetlib/asyncdns.cpp \
            ../../WDL/jnetlib/connection.cpp \

@@ -18,10 +18,10 @@
 
 /*
 
-  This file does the setup and configuration file management for the server. 
-  Note that the kernel of the server is basically in usercon.cpp/.h, which 
-  includes a User_Connection class (manages a user) and a User_Group class 
-  (manages a jam).
+  This file does the setup and configuration file management for the server.
+  Note that the kernel of the server is in Server.cpp/.h and usercon.cpp/.h,
+  which includes a Server class (high-level server object), User_Connection
+  class (manages a user), and a User_Group class (manages a jam).
 
 */
 
@@ -44,91 +44,22 @@
 #include "../netmsg.h"
 #include "../mpb.h"
 #include "usercon.h"
-#include "ninjamsrv.h"
 
 #include "../../WDL/rng.h"
 #include "../../WDL/sha.h"
 #include "../../WDL/lineparse.h"
-#include "../../WDL/ptrlist.h"
 #include "../../WDL/string.h"
+
+#include "Server.h"
+#include "ninjamsrv.h"
 
 #define VERSION "v0.06"
 
-const char *startupmessage="Wahjam Server " VERSION " built on " __DATE__ " at " __TIME__ " starting up...\n" "Copyright (C) 2005-2007, Cockos, Inc.\n";
+static const char *startupmessage = "Wahjam Server " VERSION " built on " __DATE__ " at " __TIME__ " starting up...\n" "Copyright (C) 2005-2007, Cockos, Inc.\n";
 
-class UserPassEntry
-{
-public:
-  UserPassEntry() {priv_flag=0;} 
-  ~UserPassEntry() {} 
-  WDL_String name, pass;
-  unsigned int priv_flag;
-};
-
-/* Server configuration variables */
-struct ServerConfig
-{
-  bool allowAnonChat;
-  bool allowAnonymous;
-  bool allowAnonymousMulti;
-  bool anonymousMaskIP;
-  bool allowHiddenUsers;
-  int setuid;
-  int defaultBPM;
-  int defaultBPI;
-  int port;
-  int keepAlive;
-  int maxUsers;
-  int maxchAnon;
-  int maxchUser;
-  int logSessionLen;
-  int votingThreshold;
-  int votingTimeout;
-  WDL_String logPath;
-  WDL_String pidFilename;
-  WDL_String logFilename;
-  WDL_String statusPass;
-  WDL_String statusUser;
-  WDL_String license;
-  WDL_String defaultTopic;
-  WDL_HeapBuf acllist;
-  WDL_PtrList<UserPassEntry> userlist;
-};
-
-FILE *g_logfp;
-User_Group *m_group;
-JNL_Listen *m_listener;
-ServerConfig g_config;
-
-void onConfigChange(ServerConfig *config, int argc, char **argv);
-
-#define ACL_FLAG_DENY 1
-#define ACL_FLAG_RESERVE 2
-typedef struct
-{
-  unsigned long addr;
-  unsigned long mask;
-  int flags;
-} ACLEntry;
-
-
-int aclGet(unsigned long addr)
-{
-  addr=ntohl(addr);
-
-  ACLEntry *p = (ACLEntry *)g_config.acllist.Get();
-  int x = g_config.acllist.GetSize() / sizeof(ACLEntry);
-  while (x--)
-  {
-  //  printf("comparing %08x to %08x\n",addr,p->addr);
-    if ((addr & p->mask) == p->addr) return p->flags;
-    p++;
-  }
-  return 0;
-}
-
-
-time_t next_session_update_time;
+static FILE *g_logfp;
+static ServerConfig g_config;
+static Server *g_server;
 
 class localUserInfoLookup : public IUserInfoLookup
 {
@@ -389,11 +320,7 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
           {
             suc=1;
             unsigned long mask=~(0xffffffff>>maskbits);
-            addr = ntohl(addr);
-            ACLEntry f = {addr, mask, flag};
-            int os = config->acllist.GetSize();
-            config->acllist.Resize(os + sizeof(f));
-            memcpy((char *)config->acllist.Get() + os, &f, sizeof(f));
+            config->acl.add(addr, mask, flag);
           }
         }
       }
@@ -537,7 +464,7 @@ static int ReadConfig(ServerConfig *config, char *configfile)
   config->statusUser.Set("");
   config->license.Set("");
   config->defaultTopic.Set("");
-  config->acllist.Resize(0);
+  config->acl.clear();
 
   int x;
   for(x=0; x < config->userlist.GetSize(); x++)
@@ -617,8 +544,8 @@ static int ReadConfig(ServerConfig *config, char *configfile)
   return 0;
 }
 
-int g_reloadconfig;
-int g_done;
+static int g_reloadconfig;
+static int g_done;
 
 
 void sighandler(int sig)
@@ -634,23 +561,6 @@ void sighandler(int sig)
   }
 #endif
 }
-
-void enforceACL()
-{
-  int x;
-  int killcnt=0;
-  for (x = 0; x < m_group->m_users.GetSize(); x ++)
-  {
-    User_Connection *c=m_group->m_users.Get(x);
-    if (aclGet(c->m_netcon.GetConnection()->get_remote()) == ACL_FLAG_DENY)
-    {
-      c->m_netcon.Kill();
-      killcnt++;
-    }
-  }
-  if (killcnt) logText("killed %d users by enforcing ACL\n",killcnt);
-}
-
 
 void usage(const char *progname)
 {
@@ -731,32 +641,7 @@ bool reloadConfig(int argc, char **argv, bool firstTime)
       else usage(argv[0]);
   }
 
-  m_group->m_max_users = g_config.maxUsers;
-  if (!m_group->m_topictext.Get()[0]) {
-      m_group->m_topictext.Set(g_config.defaultTopic.Get());
-  }
-  m_group->m_keepalive = g_config.keepAlive;
-  m_group->m_voting_threshold = g_config.votingThreshold;
-  m_group->m_voting_timeout = g_config.votingTimeout;
-  m_group->m_allow_hidden_users = g_config.allowHiddenUsers;
-
-  /* Do not change back to default BPM/BPI if already running */
-  if (firstTime) {
-    m_group->SetConfig(g_config.defaultBPI, g_config.defaultBPM);
-  }
-
-  enforceACL();
-  m_group->SetLicenseText(g_config.license.Get());
-
-  delete m_listener;
-  m_listener = new JNL_Listen(g_config.port);
-  if (m_listener->is_error()) {
-    logText("Error listening on port %d!\n", g_config.port);
-    return false;
-  }
-
-  logText("Port: %d\n", g_config.port);
-  return true;
+  return g_server->setConfig(&g_config);
 }
 
 int main(int argc, char **argv)
@@ -768,8 +653,10 @@ int main(int argc, char **argv)
 
   JNL::open_socketlib();
 
-  m_group=new User_Group;
-  m_group->CreateUserLookup=myCreateUserLookup;
+  User_Group *group = new User_Group;
+  group->CreateUserLookup=myCreateUserLookup;
+
+  g_server = new Server(group);
 
   printf("%s", startupmessage);
 
@@ -784,13 +671,12 @@ int main(int argc, char **argv)
   v=(DWORD)time(NULL);
   WDL_RNG_addentropy(&v,sizeof(v));
 #else
-
-  if (g_config.setuid != -1) setuid(g_config.setuid);
-
   time_t v=time(NULL);
   WDL_RNG_addentropy(&v,sizeof(v));
   int pid=getpid();
   WDL_RNG_addentropy(&pid,sizeof(pid));
+
+  if (g_config.setuid != -1) setuid(g_config.setuid);
 
   if (g_config.pidFilename.Get()[0])
   {
@@ -823,108 +709,28 @@ int main(int argc, char **argv)
 
   logText("Server starting up...\n");
 
+  while (!g_done)
   {
-    while (!g_done)
+    if (g_server->run())
     {
-      JNL_Connection *con=m_listener->get_connect(2*65536,65536);
-      if (con) 
-      {
-        char str[512];
-        int flag=aclGet(con->get_remote());
-        JNL::addr_to_ipstr(con->get_remote(),str,sizeof(str));
-        logText("Incoming connection from %s!\n",str);
-
-        if (flag == ACL_FLAG_DENY)
-        {
-          logText("Denying connection (via ACL)\n");
-          delete con;
-        }
-        else
-        {
-          m_group->AddConnection(con,flag == ACL_FLAG_RESERVE);
-        }
-      }
-
-      if (m_group->Run()) 
-      {
 #ifdef _WIN32
-        Sleep(1);
+      Sleep(1);
 #else
-	      struct timespec ts={0,1*1000*1000};
-	      nanosleep(&ts,NULL);
+      struct timespec ts={0,1*1000*1000};
+      nanosleep(&ts,NULL);
 #endif
 
-        if (g_reloadconfig && strcmp(argv[1],"-"))
-        {
-          g_reloadconfig=0;
-          reloadConfig(argc, argv, false);
-        }
-
-        time_t now;
-        time(&now);
-        if (now >= next_session_update_time)
-        {
-          m_group->SetLogDir(NULL);
-
-          int len=30; // check every 30 seconds if we aren't logging       
-
-          if (g_config.logPath.Get()[0])
-          {
-            int x;
-            for (x = 0; x < m_group->m_users.GetSize() && m_group->m_users.Get(x)->m_auth_state < 1; x ++);
-           
-            if (x < m_group->m_users.GetSize())
-            {
-              WDL_String tmp;
-    
-              int cnt=0;
-              while (cnt < 16)
-              {
-                char buf[512];
-                struct tm *t=localtime(&now);
-                sprintf(buf,"/%04d%02d%02d_%02d%02d",t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min);
-                if (cnt)
-                  wsprintf(buf+strlen(buf),"_%d",cnt);
-                strcat(buf,".wahjam");
-
-                tmp.Set(g_config.logPath.Get());
-                tmp.Append(buf);
-
-                #ifdef _WIN32
-                if (CreateDirectory(tmp.Get(),NULL)) break;
-                #else
-                if (!mkdir(tmp.Get(),0755)) break;
-                #endif
-
-                cnt++;
-              }
-    
-              if (cnt < 16 )
-              {
-                logText("Archiving session '%s'\n",tmp.Get());
-                m_group->SetLogDir(tmp.Get());
-              }
-              else
-              {
-                logText("Error creating a session archive directory! Gave up after '%s' failed!\n",tmp.Get());
-              }
-              // if we succeded, don't check until configured time
-              len=g_config.logSessionLen*60;
-              if (len < 60) len=30;
-            }
-
-          }
-          next_session_update_time=now+len;
-
-        }
+      if (g_reloadconfig && strcmp(argv[1],"-"))
+      {
+        g_reloadconfig=0;
+        reloadConfig(argc, argv, false);
       }
     }
   }
 
   logText("Shutting down server\n");
 
-  delete m_group;
-  delete m_listener;
+  delete g_server;
 
   if (g_logfp)
   {
