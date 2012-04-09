@@ -33,6 +33,7 @@
 
 #include <ctype.h>
 
+#include "ninjamsrv.h"
 #include "usercon.h"
 #include "../mpb.h"
 
@@ -88,8 +89,6 @@ static void type_to_string(unsigned int t, char *out)
 }
 
 
-
-extern void logText(const char *s, ...);
 
 #define MAX_NICK_LEN 128 // not including null term
 

@@ -44,6 +44,7 @@
 #include "../netmsg.h"
 #include "../mpb.h"
 #include "usercon.h"
+#include "ninjamsrv.h"
 
 #include "../../WDL/rng.h"
 #include "../../WDL/sha.h"
@@ -64,7 +65,6 @@ WDL_String g_status_pass,g_status_user;
 User_Group *m_group;
 JNL_Listen *m_listener;
 void onConfigChange(int argc, char **argv);
-void logText(const char *s, ...);
 
 class UserPassEntry
 {

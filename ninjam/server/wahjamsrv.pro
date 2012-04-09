@@ -13,6 +13,7 @@ win32:DEFINES -= UNICODE
 
 # Input
 HEADERS += usercon.h \
+           ninjamsrv.h \
            ../../WDL/jnetlib/jnetlib.h \
            ../../WDL/jnetlib/netinc.h \
            ../../WDL/jnetlib/util.h \
