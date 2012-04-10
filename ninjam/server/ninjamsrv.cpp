@@ -39,6 +39,8 @@
 #include <signal.h>
 #include <stdarg.h>
 
+#include <QCoreApplication>
+
 #include "../../WDL/jnetlib/jnetlib.h"
 #include "../../WDL/jnetlib/httpget.h"
 #include "../netmsg.h"
@@ -646,6 +648,8 @@ bool reloadConfig(int argc, char **argv, bool firstTime)
 
 int main(int argc, char **argv)
 {
+  QCoreApplication app(argc, argv);
+
   if (argc < 2)
   {
     usage(argv[0]);
@@ -713,12 +717,7 @@ int main(int argc, char **argv)
   {
     if (g_server->run())
     {
-#ifdef _WIN32
-      Sleep(1);
-#else
-      struct timespec ts={0,1*1000*1000};
-      nanosleep(&ts,NULL);
-#endif
+      app.processEvents(QEventLoop::AllEvents, 1 /* milliseconds */);
 
       if (g_reloadconfig && strcmp(argv[1],"-"))
       {
