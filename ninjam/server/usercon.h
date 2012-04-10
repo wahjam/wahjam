@@ -31,7 +31,6 @@
 #ifndef _USERCON_H_
 #define _USERCON_H_
 
-
 #include "../netmsg.h"
 #include "../../WDL/string.h"
 #include "../../WDL/sha.h"

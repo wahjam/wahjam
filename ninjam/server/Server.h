@@ -20,9 +20,10 @@
 #ifndef _SERVER_H_
 #define _SERVER_H_
 
+#include <QTcpServer>
+
 #include "../../WDL/string.h"
 #include "../../WDL/ptrlist.h"
-#include "../../WDL/jnetlib/jnetlib.h"
 #include "usercon.h"
 
 class UserPassEntry
@@ -84,18 +85,23 @@ struct ServerConfig
   WDL_PtrList<UserPassEntry> userlist;
 };
 
-class Server
+class Server : public QObject
 {
+  Q_OBJECT
+
 public:
   Server(User_Group *group);
   ~Server();
   bool setConfig(ServerConfig *config);
   bool run();
 
+private slots:
+  void acceptNewConnection();
+
 private:
   ServerConfig *config;
   User_Group *group;
-  JNL_Listen *listener;
+  QTcpServer listener;
   time_t nextSessionUpdateTime;
 
   void enforceACL();

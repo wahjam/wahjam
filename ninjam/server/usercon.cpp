@@ -33,6 +33,8 @@
 
 #include <ctype.h>
 
+#include <QHostAddress>
+
 #include "ninjamsrv.h"
 #include "usercon.h"
 #include "../mpb.h"
@@ -971,7 +973,7 @@ void User_Group::SetConfig(int bpi, int bpm)
 
 void User_Group::AddConnection(JNL_Connection *con, int isres)
 {
-  User_Connection *p=new User_Connection(con,this);
+  User_Connection *p = new User_Connection(con, this);
   if (isres) p->m_reserved=1;
   m_users.Add(p);
 }

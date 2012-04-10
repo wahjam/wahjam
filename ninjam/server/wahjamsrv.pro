@@ -7,6 +7,7 @@ TARGET =
 DEPENDPATH += .
 INCLUDEPATH += .
 QT -= gui
+QT += network
 
 # Core ninjam/ code does not use wide characters
 win32:DEFINES -= UNICODE

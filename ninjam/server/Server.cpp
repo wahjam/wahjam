@@ -17,19 +17,26 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#ifdef _WIN32
+#include <io.h>
+#endif
+
+#include <QTcpSocket>
+
 #include "ninjamsrv.h"
 #include "Server.h"
 
 /* Takes ownership of group_ */
 Server::Server(User_Group *group_)
-  : group(group_), listener(0), nextSessionUpdateTime(0)
+  : group(group_), nextSessionUpdateTime(0)
 {
+  connect(&listener, SIGNAL(newConnection()),
+          this, SLOT(acceptNewConnection()));
 }
 
 Server::~Server()
 {
   delete group;
-  delete listener;
 }
 
 void AccessControlList::add(unsigned long addr, unsigned long mask, int flags)
@@ -93,16 +100,15 @@ bool Server::setConfig(ServerConfig *config_)
   group->m_allow_hidden_users = config->allowHiddenUsers;
 
   /* Do not change back to default BPM/BPI if already running */
-  if (!listener) {
+  if (!listener.isListening()) {
     group->SetConfig(config->defaultBPI, config->defaultBPM);
   }
 
   enforceACL();
   group->SetLicenseText(config->license.Get());
 
-  delete listener;
-  listener = new JNL_Listen(config->port);
-  if (listener->is_error()) {
+  listener.close();
+  if (!listener.listen(QHostAddress::Any, config->port)) {
     logText("Error listening on port %d!\n", config->port);
     return false;
   }
@@ -111,30 +117,49 @@ bool Server::setConfig(ServerConfig *config_)
   return true;
 }
 
+void Server::acceptNewConnection()
+{
+  QTcpSocket *sock = listener.nextPendingConnection();
+  if (!sock) {
+    return;
+  }
+
+  uint32_t addr = htonl(sock->peerAddress().toIPv4Address());
+
+  int flag = config->acl.lookup(addr);
+  QString ipstr = sock->peerAddress().toString();
+  logText("Incoming connection from %s!\n", ipstr.toLocal8Bit().constData());
+
+  if (flag == ACL_FLAG_DENY)
+  {
+    logText("Denying connection (via ACL)\n");
+    delete sock;
+    return;
+  }
+
+  JNL_Connection *con = new JNL_Connection(JNL_CONNECTION_AUTODNS, 2*65536, 65536);
+
+  struct sockaddr_in sa;
+  sa.sin_family = AF_INET;
+  sa.sin_port = htons(sock->peerPort());
+  sa.sin_addr.s_addr = htonl(sock->peerAddress().toIPv4Address());
+
+  /* Clone the file descriptor so the QTcpSocket can be safely closed.  This is
+   * necessary so the QTcpSocket does not read incoming data and interfere with
+   * the JNL_Connection.
+   */
+  con->connect(dup(sock->socketDescriptor()), &sa);
+  delete sock;
+
+  group->AddConnection(con, flag == ACL_FLAG_RESERVE);
+}
+
 /* Run an iteration of the main loop
  *
  * Return true if the main loop should sleep.
  */
 bool Server::run()
 {
-  JNL_Connection *con=listener->get_connect(2*65536,65536);
-  if (con) {
-    char str[512];
-    int flag = config->acl.lookup(con->get_remote());
-    JNL::addr_to_ipstr(con->get_remote(),str,sizeof(str));
-    logText("Incoming connection from %s!\n",str);
-
-    if (flag == ACL_FLAG_DENY)
-    {
-      logText("Denying connection (via ACL)\n");
-      delete con;
-    }
-    else
-    {
-      group->AddConnection(con,flag == ACL_FLAG_RESERVE);
-    }
-  }
-
   bool wantSleep = group->Run();
 
   time_t now;
