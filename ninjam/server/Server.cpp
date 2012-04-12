@@ -17,10 +17,12 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifdef _WIN32
-#include <io.h>
+#ifndef _WIN32
+#include <arpa/inet.h>
 #endif
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <QTcpSocket>
 
 #include "ninjamsrv.h"
@@ -41,7 +43,6 @@ Server::~Server()
 
 void AccessControlList::add(unsigned long addr, unsigned long mask, int flags)
 {
-  addr = ntohl(addr);
   ACLEntry f = {addr, mask, flags};
   int os = list.GetSize();
   list.Resize(os + sizeof(f));
@@ -55,8 +56,6 @@ void AccessControlList::clear()
 
 int AccessControlList::lookup(unsigned long addr)
 {
-  addr = ntohl(addr);
-
   ACLEntry *p = (ACLEntry *)list.Get();
   int x = list.GetSize() / sizeof(ACLEntry);
   while (x--)
@@ -76,7 +75,8 @@ void Server::enforceACL()
   for (x = 0; x < group->m_users.GetSize(); x ++)
   {
     User_Connection *c=group->m_users.Get(x);
-    if (config->acl.lookup(c->m_netcon.GetConnection()->get_remote()) == ACL_FLAG_DENY)
+    uint32_t addr = c->m_netcon.GetRemoteAddr().toIPv4Address();
+    if (config->acl.lookup(addr) == ACL_FLAG_DENY)
     {
       c->m_netcon.Kill();
       killcnt++;
@@ -124,7 +124,7 @@ void Server::acceptNewConnection()
     return;
   }
 
-  uint32_t addr = htonl(sock->peerAddress().toIPv4Address());
+  uint32_t addr = sock->peerAddress().toIPv4Address();
 
   int flag = config->acl.lookup(addr);
   QString ipstr = sock->peerAddress().toString();
@@ -137,21 +137,7 @@ void Server::acceptNewConnection()
     return;
   }
 
-  JNL_Connection *con = new JNL_Connection(JNL_CONNECTION_AUTODNS, 2*65536, 65536);
-
-  struct sockaddr_in sa;
-  sa.sin_family = AF_INET;
-  sa.sin_port = htons(sock->peerPort());
-  sa.sin_addr.s_addr = htonl(sock->peerAddress().toIPv4Address());
-
-  /* Clone the file descriptor so the QTcpSocket can be safely closed.  This is
-   * necessary so the QTcpSocket does not read incoming data and interfere with
-   * the JNL_Connection.
-   */
-  con->connect(dup(sock->socketDescriptor()), &sa);
-  delete sock;
-
-  group->AddConnection(con, flag == ACL_FLAG_RESERVE);
+  group->AddConnection(sock, flag == ACL_FLAG_RESERVE);
 }
 
 /* Run an iteration of the main loop

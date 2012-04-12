@@ -26,6 +26,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include "njclient.h"
 #include "mpb.h"
 #include "../WDL/pcmfmtcvt.h"
@@ -639,10 +641,10 @@ void NJClient::Connect(char *host, char *user, char *pass)
     port=atoi(++p);
     if (!port) port=NJ_PORT;
   }
-  JNL_Connection *c=new JNL_Connection(JNL_CONNECTION_AUTODNS,65536,65536);
-  c->connect(tmp.Get(),port);
-  m_netcon = new Net_Connection;
-  m_netcon->attach(c);
+
+  QTcpSocket *sock = new QTcpSocket;
+  sock->connectToHost(tmp.Get(), port);
+  m_netcon = new Net_Connection(sock);
 
   m_status=0;
 }

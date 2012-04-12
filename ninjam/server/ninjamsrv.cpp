@@ -311,8 +311,8 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
     if (t)
     {
       *t++=0;
-      unsigned long addr=JNL::ipstr_to_addr(v);
-      if (addr != INADDR_NONE)
+      QHostAddress hostaddr(v);
+      if (hostaddr != QHostAddress::Null)
       {
         int maskbits=atoi(t);
         if (maskbits >= 0 && maskbits <= 32)
@@ -321,8 +321,8 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
           if (flag >= 0)
           {
             suc=1;
-            unsigned long mask=~(0xffffffff>>maskbits);
-            config->acl.add(addr, mask, flag);
+            unsigned long mask = 0xffffffff << maskbits;
+            config->acl.add(hostaddr.toIPv4Address(), mask, flag);
           }
         }
       }

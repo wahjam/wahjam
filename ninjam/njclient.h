@@ -67,7 +67,6 @@
 #include <time.h>
 #include "../WDL/string.h"
 #include "../WDL/ptrlist.h"
-#include "../WDL/jnetlib/jnetlib.h"
 #include "../WDL/sha.h"
 #include "../WDL/rng.h"
 #include "../WDL/mutex.h"
