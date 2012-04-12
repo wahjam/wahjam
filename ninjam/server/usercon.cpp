@@ -50,7 +50,7 @@
 static void guidtostr(unsigned char *guid, char *str)
 {
   int x;
-  for (x = 0; x < 16; x ++) wsprintf(str+x*2,"%02x",guid[x]);
+  for (x = 0; x < 16; x ++) sprintf(str+x*2,"%02x",guid[x]);
 }
 
 
