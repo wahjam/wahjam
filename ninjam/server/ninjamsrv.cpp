@@ -184,48 +184,48 @@ static IUserInfoLookup *myCreateUserLookup(char *username)
 
 static int ConfigOnToken(ServerConfig *config, LineParser *lp)
 {
-  const char *t=lp->gettoken_str(0);
-  if (!stricmp(t,"Port"))
+  QString token = QString(lp->gettoken_str(0)).toLower();
+  if (token == QString("Port").toLower())
   {
     if (lp->getnumtokens() != 2) return -1;
     int p=lp->gettoken_int(1);
     if (!p) return -2;
     config->port=p;
   }
-  else if (!stricmp(t,"StatusUserPass"))
+  else if (token == QString("StatusUserPass").toLower())
   {
     if (lp->getnumtokens() != 3) return -1;
     config->statusUser.Set(lp->gettoken_str(1));
     config->statusPass.Set(lp->gettoken_str(2));
   }
-  else if (!stricmp(t,"MaxUsers"))
+  else if (token == QString("MaxUsers").toLower())
   {
     if (lp->getnumtokens() != 2) return -1;
     int p=lp->gettoken_int(1);
     config->maxUsers=p;
   }
-  else if (!stricmp(t,"PIDFile"))
+  else if (token == QString("PIDFile").toLower())
   {
     if (lp->getnumtokens() != 2) return -1;
     config->pidFilename.Set(lp->gettoken_str(1));
   }
-  else if (!stricmp(t,"LogFile"))
+  else if (token == QString("LogFile").toLower())
   {
     if (lp->getnumtokens() != 2) return -1;
     config->logFilename.Set(lp->gettoken_str(1));
   }
-  else if (!stricmp(t,"SessionArchive"))
+  else if (token == QString("SessionArchive").toLower())
   {
     if (lp->getnumtokens() != 3) return -1;
     config->logPath.Set(lp->gettoken_str(1));
     config->logSessionLen = lp->gettoken_int(2);
   }
-  else if (!stricmp(t,"SetUID"))
+  else if (token == QString("SetUID").toLower())
   {
     if (lp->getnumtokens() != 2) return -1;
     config->setuid = lp->gettoken_int(1);
   }
-  else if (!stricmp(t,"DefaultBPI"))
+  else if (token == QString("DefaultBPI").toLower())
   {
     if (lp->getnumtokens() != 2) return -1;
     int p = lp->gettoken_int(1);
@@ -236,7 +236,7 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
     }
     config->defaultBPI=lp->gettoken_int(1);
   }
-  else if (!stricmp(t,"DefaultBPM"))
+  else if (token == QString("DefaultBPM").toLower())
   {
     if (lp->getnumtokens() != 2) return -1;
     int p = lp->gettoken_int(1);
@@ -247,19 +247,19 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
     }
     config->defaultBPM = p;
   }
-  else if (!stricmp(t,"DefaultTopic"))
+  else if (token == QString("DefaultTopic").toLower())
   {
     if (lp->getnumtokens() != 2) return -1;
     config->defaultTopic.Set(lp->gettoken_str(1));
   }
-  else if (!stricmp(t,"MaxChannels"))
+  else if (token == QString("MaxChannels").toLower())
   {
     if (lp->getnumtokens() != 2 && lp->getnumtokens() != 3) return -1;
 
     config->maxchUser=lp->gettoken_int(1);
     config->maxchAnon=lp->gettoken_int(lp->getnumtokens()>2?2:1);
   }
-  else if (!stricmp(t,"SetKeepAlive"))
+  else if (token == QString("SetKeepAlive").toLower())
   {
     if (lp->getnumtokens() != 2) return -1;
     int p = lp->gettoken_int(1);
@@ -268,17 +268,17 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
     }
     config->keepAlive = p;
   }
-  else if (!stricmp(t,"SetVotingThreshold"))
+  else if (token == QString("SetVotingThreshold").toLower())
   {
     if (lp->getnumtokens() != 2) return -1;
     config->votingThreshold = lp->gettoken_int(1);
   }
-  else if (!stricmp(t,"SetVotingVoteTimeout"))
+  else if (token == QString("SetVotingVoteTimeout").toLower())
   {
     if (lp->getnumtokens() != 2) return -1;
     config->votingTimeout = lp->gettoken_int(1);
   }
-  else if (!stricmp(t,"ServerLicense"))
+  else if (token == QString("ServerLicense").toLower())
   {
     if (lp->getnumtokens() != 2) return -1;
     FILE *fp=fopen(lp->gettoken_str(1),"rt");
@@ -302,7 +302,7 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
     fclose(fp);
     
   }
-  else if (!stricmp(t,"ACL"))
+  else if (token == QString("ACL").toLower())
   {
     if (lp->getnumtokens() != 3) return -1;
     int suc=0;
@@ -336,7 +336,7 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
       return -2;
     }
   }
-  else if (!stricmp(t,"User"))
+  else if (token == QString("User").toLower())
   {
     if (lp->getnumtokens() != 3 && lp->getnumtokens() != 4) return -1;
     UserPassEntry *p=new UserPassEntry;
@@ -368,7 +368,7 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
     else p->priv_flag=PRIV_CHATSEND|PRIV_VOTE;// default privs
     config->userlist.Add(p);
   }
-  else if (!stricmp(t,"AllowHiddenUsers"))
+  else if (token == QString("AllowHiddenUsers").toLower())
   {
     if (lp->getnumtokens() != 2) return -1;
 
@@ -379,7 +379,7 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
     }
     config->allowHiddenUsers = x;
   }
-  else if (!stricmp(t,"AnonymousUsers"))
+  else if (token == QString("AnonymousUsers").toLower())
   {
     if (lp->getnumtokens() != 2) return -1;
 
@@ -391,7 +391,7 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
     config->allowAnonymous = x;
     config->allowAnonymousMulti = x == 2;
   }
-  else if (!stricmp(t,"AnonymousMaskIP"))
+  else if (token == QString("AnonymousMaskIP").toLower())
   {
     if (lp->getnumtokens() != 2) return -1;
 
@@ -402,7 +402,7 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
     }
     config->anonymousMaskIP = x;
   }
-  else if (!stricmp(t,"AnonymousUsers"))
+  else if (token == QString("AnonymousUsers").toLower())
   {
     if (lp->getnumtokens() != 2) return -1;
 
@@ -413,7 +413,7 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
     }
     config->allowAnonymous = x;
   }
-  else if (!stricmp(t,"AnonymousUsersCanChat"))
+  else if (token == QString("AnonymousUsersCanChat").toLower())
   {
     if (lp->getnumtokens() != 2) return -1;
 
