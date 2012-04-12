@@ -34,15 +34,13 @@
 #else
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #endif
+#include <time.h>
 #include <signal.h>
 #include <stdarg.h>
 
 #include <QCoreApplication>
 
-#include "../../WDL/jnetlib/jnetlib.h"
-#include "../../WDL/jnetlib/httpget.h"
 #include "../netmsg.h"
 #include "../mpb.h"
 #include "usercon.h"
@@ -655,8 +653,6 @@ int main(int argc, char **argv)
     usage(argv[0]);
   }
 
-  JNL::open_socketlib();
-
   User_Group *group = new User_Group;
   group->CreateUserLookup=myCreateUserLookup;
 
@@ -737,6 +733,5 @@ int main(int argc, char **argv)
     g_logfp=0;
   }
 
-  JNL::close_socketlib();
 	return 0;
 }

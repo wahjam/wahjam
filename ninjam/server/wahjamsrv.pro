@@ -16,14 +16,6 @@ win32:DEFINES -= UNICODE
 HEADERS += usercon.h \
            Server.h \
            ninjamsrv.h \
-           ../../WDL/jnetlib/jnetlib.h \
-           ../../WDL/jnetlib/netinc.h \
-           ../../WDL/jnetlib/util.h \
-           ../../WDL/jnetlib/asyncdns.h \
-           ../../WDL/jnetlib/connection.h \
-           ../../WDL/jnetlib/httpget.h \
-           ../../WDL/jnetlib/httpserv.h \
-           ../../WDL/jnetlib/listen.h \
            ../netmsg.h \
            ../../WDL/queue.h \
            ../../WDL/heapbuf.h \
@@ -36,12 +28,6 @@ HEADERS += usercon.h \
 SOURCES += ninjamsrv.cpp \
            usercon.cpp \
            Server.cpp \
-           ../../WDL/jnetlib/util.cpp \
-           ../../WDL/jnetlib/asyncdns.cpp \
-           ../../WDL/jnetlib/connection.cpp \
-           ../../WDL/jnetlib/httpget.cpp \
-           ../../WDL/jnetlib/httpserv.cpp \
-           ../../WDL/jnetlib/listen.cpp \
            ../netmsg.cpp \
            ../mpb.cpp \
            ../../WDL/sha.cpp \

@@ -36,7 +36,6 @@
 #endif
 
 #include <time.h>
-
 #include "../netmsg.h"
 #include "../../WDL/string.h"
 #include "../../WDL/sha.h"

@@ -29,7 +29,6 @@
 #define _NETMSG_H_
 
 #include <time.h>
-
 #include <QTcpSocket>
 #include <QHostAddress>
 
