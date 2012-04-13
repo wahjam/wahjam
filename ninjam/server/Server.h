@@ -21,6 +21,7 @@
 #define _SERVER_H_
 
 #include <QTcpServer>
+#include <QTimer>
 
 #include "../../WDL/string.h"
 #include "../../WDL/ptrlist.h"
@@ -97,14 +98,17 @@ public:
 
 private slots:
   void acceptNewConnection();
+  void updateNextSession();
 
 private:
   ServerConfig *config;
   User_Group *group;
   QTcpServer listener;
-  time_t nextSessionUpdateTime;
+  QTimer sessionUpdateTimer;
 
   void enforceACL();
+  void setIdleSessionUpdateTimer();
+  void setActiveSessionUpdateTimer();
 };
 
 #endif /* _SERVER_H_ */

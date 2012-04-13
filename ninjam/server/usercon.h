@@ -100,7 +100,7 @@ class User_Group
     void Broadcast(Net_Message *msg, User_Connection *nosend=0);
 
 
-    void SetLogDir(char *path); // NULL to not log
+    void SetLogDir(const char *path); // NULL to not log
 
     // sends a message to the people subscribing to a channel of a user
     void BroadcastToSubs(Net_Message *msg, User_Connection *src, int channel);
@@ -108,7 +108,8 @@ class User_Group
     IUserInfoLookup *(*CreateUserLookup)(char *username);
 
     void onChatMessage(User_Connection *con, mpb_chat_message *msg);
-    
+
+    bool hasAuthenticatedUsers();
 
     WDL_PtrList<User_Connection> m_users;
 

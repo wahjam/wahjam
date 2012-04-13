@@ -804,7 +804,7 @@ User_Group::~User_Group()
 }
 
 
-void User_Group::SetLogDir(char *path) // NULL to not log
+void User_Group::SetLogDir(const char *path) // NULL to not log
 {
   m_loopcnt=0;
   if (!path || !*path)
@@ -1362,4 +1362,15 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
   else // unknown message
   {
   }
+}
+
+bool User_Group::hasAuthenticatedUsers()
+{
+  int x;
+  for (x = 0; x < m_users.GetSize(); x++) {
+    if (m_users.Get(x)->m_auth_state >= 1) {
+      return true;
+    }
+  }
+  return false;
 }
