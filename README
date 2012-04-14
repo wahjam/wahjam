@@ -46,6 +46,28 @@ To build a particular target change into its directory and run make(1).  For
 the Mac OS X cocoaclient an Xcode project is available.  For the Windows
 winclient a Visual Studio project is available.
 
+How to build the Windows client with Visual Studio
+--------------------------------------------------
+
+The .dsp and .dsw project files included are from the original Ninjam source code
+from 2005 . These project files are now obsolete and will not build with VS2010.
+In order to compile this program using VS2010 you must first import the .dsp into
+VS2008 and save in the new format. You should be able to open the newly created
+.sln file in VS2010. Even then the winclient will not compile out of the box.
+The following steps must be taken first:
+  * Open the project properties dialog and browse to
+      Configuration Properties -> C/C++ -> General
+      then add . to Additional Include Directories
+  * Browse to Configuration Properties -> Linker -> General and add the path to the
+      DirectX SDK (e.g. C:\Program Files\Microsoft DirectX SDK (June 2010)\Lib\x86)
+      to Additional Library Directories
+  * Open winclient.rc in th editor and delete all the appstudio stuff at the beginning
+      and end of the file (unless you have afxres.h) and #include <windows.h> instead
+  * Copy the Ogg/Vorbis SDK into the /sdks folder (e.g. oggvorbis-win32sdk-1.0.1)
+  * Lastly, stdint.h is included with VS2010 but not VS2008, so if you prefer to use
+      VS2008 rather than converting a second time to VS2010, you will need to put
+      a copy of it in C:\Program Files\Microsoft Visual Studio 9.0\VC\include
+
 Cross-compiling the Qt client for Windows
 -----------------------------------------
 
