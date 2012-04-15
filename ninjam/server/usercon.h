@@ -31,10 +31,6 @@
 #ifndef _USERCON_H_
 #define _USERCON_H_
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 #include <time.h>
 #include "../netmsg.h"
 #include "../../WDL/string.h"
@@ -121,8 +117,6 @@ class User_Group
     int m_voting_threshold; // can be 1-100, or >100 to disable
     int m_voting_timeout; // seconds
 
-    int m_loopcnt;
-
     unsigned int m_run_robin;
 
     int m_allow_hidden_users;
@@ -132,12 +126,6 @@ class User_Group
 
     WDL_String m_logdir;
     FILE *m_logfp;
-
-#ifdef _WIN32
-    DWORD m_next_loop_time;
-#else
-    struct timeval m_next_loop_time;
-#endif
 };
 
 

@@ -785,10 +785,9 @@ int User_Connection::Run(User_Group *group, int *wantsleep)
 
 User_Group::User_Group() : m_max_users(0), m_last_bpm(120), m_last_bpi(32), m_keepalive(0), 
   m_voting_threshold(110), m_voting_timeout(120),
-  m_loopcnt(0), m_run_robin(0), m_allow_hidden_users(0), m_logfp(0)
+  m_run_robin(0), m_allow_hidden_users(0), m_logfp(0)
 {
   CreateUserLookup=0;
-  memset(&m_next_loop_time,0,sizeof(m_next_loop_time));
 }
 
 User_Group::~User_Group()
@@ -806,7 +805,6 @@ User_Group::~User_Group()
 
 void User_Group::SetLogDir(const char *path) // NULL to not log
 {
-  m_loopcnt=0;
   if (!path || !*path)
   {
     if (m_logfp) fclose(m_logfp);
@@ -867,39 +865,6 @@ int User_Group::Run()
 {
     int wantsleep=1;
     int x;
-
-    // track bpm/bpi stuff
-#ifdef _WIN32
-    DWORD now=GetTickCount();
-    if (now >= m_next_loop_time)
-    {
-      m_next_loop_time = now + (60*1000*m_last_bpi) / (m_last_bpm?m_last_bpm:120);
-#else
-    struct timeval now;
-    gettimeofday(&now,NULL);
-    if (now.tv_sec > m_next_loop_time.tv_sec || 
-        (now.tv_sec == m_next_loop_time.tv_sec && now.tv_usec >= m_next_loop_time.tv_usec))
-    {
-      int len_ms = ((60*1000*m_last_bpi) / (m_last_bpm?m_last_bpm:120));
-      int len_s = len_ms/1000;
-      len_ms %= 1000;
-      m_next_loop_time.tv_sec = now.tv_sec + len_s;
-      m_next_loop_time.tv_usec = now.tv_usec + len_ms*1000;
-      if (m_next_loop_time.tv_usec >= 1000000)
-      {
-        m_next_loop_time.tv_sec += 1;
-        m_next_loop_time.tv_usec -= 1000000;
-      }
-#endif
-
-      m_loopcnt++;
-      if (m_logfp) 
-      {
-        fprintf(m_logfp,"interval %d %d %d\n",m_loopcnt,m_last_bpm,m_last_bpi);
-        fflush(m_logfp);
-      }
-    }
-
 
     for (x = 0; x < m_users.GetSize(); x ++)
     {
