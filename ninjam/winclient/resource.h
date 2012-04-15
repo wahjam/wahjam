@@ -51,7 +51,7 @@
 #define IDC_CHATDIV                     1011
 #define IDC_MASTERPANLBL                1011
 #define IDC_DIV2                        1012
-#define IDC_CHECK1                      1013
+
 #define IDC_MASTERMUTE                  1013
 #define IDC_ANON                        1013
 #define IDC_SAVEWAVE                    1013
@@ -104,6 +104,10 @@
 #define IDC_LABEL2                      1060
 #define IDC_PASSREMEMBER                1060
 #define IDC_DIV                         1062
+
+#define IDC_AGREE						2000
+#define IDC_AGREE_ALWAYS	            2001
+
 #define ID_FILE_CONNECT                 40001
 #define ID_FILE_DISCONNECT              40002
 #define ID_FILE_QUIT                    40003
@@ -111,14 +115,3 @@
 #define ID_OPTIONS_PREFERENCES          40005
 #define ID_OPTIONS_ALWAYSONTOP          40006
 #define ID_OPTIONS_AUDIOCONFIGURATION   40007
-
-// Next default values for new objects
-// 
-#ifdef APSTUDIO_INVOKED
-#ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        122
-#define _APS_NEXT_COMMAND_VALUE         40008
-#define _APS_NEXT_CONTROL_VALUE         1063
-#define _APS_NEXT_SYMED_VALUE           101
-#endif
-#endif

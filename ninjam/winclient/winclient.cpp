@@ -47,7 +47,6 @@
 
 #define CONFSEC "wahjam"
 
-
 WDL_String g_ini_file;
 WDL_Mutex g_client_mutex;
 audioStreamer *g_audio;
@@ -744,7 +743,7 @@ static BOOL WINAPI MainProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
               ChanMixer *newa=NULL;
               if (ch >= 0 && ch <= MAX_LOCAL_CHANNELS) for (n = 1; n < lp.getnumtokens()-1; n += 2)
               {
-                switch (lp.gettoken_enum(n,"source\0bc\0mute\0solo\0volume\0pan\0jesus\0name\0"))
+                switch (lp.gettoken_enum(n,"source\0bc\0mute\0solo\0volume\0pan\0fx\0name\0"))
                 {
                   case 0: // source 
                     {
@@ -778,7 +777,7 @@ static BOOL WINAPI MainProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
                   case 5: //pan
                     g_client->SetLocalChannelMonitoring(ch,false,false,true,(float)lp.gettoken_float(n+1),false,false,false,false);
                   break;
-                  case 6: //jesus
+                  case 6: //fx (not implemented)
                   break;
                   case 7: //name
                     g_client->SetLocalChannelInfo(ch,name=lp.gettoken_str(n+1),false,false,false,0,false,false);
@@ -1285,7 +1284,8 @@ static BOOL WINAPI MainProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
             sstr.Set(buf);           
           }
           
-          sprintf(buf,"%d source '%s' bc %d mute %d solo %d volume %f pan %f jesus 0 name `%s`",a,sstr.Get(),bc,m,s,v,p,lcn);
+// NOTE: fx is not implemented
+          sprintf(buf,"%d source '%s' bc %d mute %d solo %d volume %f pan %f fx 0 name `%s`",a,sstr.Get(),bc,m,s,v,p,lcn);
           char specbuf[64];
           sprintf(specbuf,"lc_%d",cnt++);
           WritePrivateProfileString(CONFSEC,specbuf,buf,g_ini_file.Get());
@@ -1371,6 +1371,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdPa
   }
 
   // read config file
+
   {
     char buf[512];
     GetPrivateProfileString(CONFSEC,"host","",buf,sizeof(buf),g_ini_file.Get());
