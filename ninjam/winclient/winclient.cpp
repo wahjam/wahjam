@@ -47,7 +47,6 @@
 
 #define CONFSEC "wahjam"
 
-
 WDL_String g_ini_file;
 WDL_Mutex g_client_mutex;
 audioStreamer *g_audio;
@@ -66,6 +65,51 @@ static WDL_String g_connect_user,g_connect_pass,g_connect_host;
 static int g_connect_passremember, g_connect_anon;
 static RECT g_last_wndpos;
 static int g_last_wndpos_state;
+
+
+// chat colors
+COLORREF m_chat_colors[N_CHAT_COLORS] =
+	{	0x00dddddd , 0x000000ff , 0x000088ff , 0x0000ffff , 0x0000ff00 , 0x00ffff00 , 0x00ff0000 , 0x00ff00ff , 0x00aaaaaa ,
+		0x00555555 , 0x00000088 , 0x00004488 , 0x00008888 , 0x00008800 , 0x00888800 , 0x00880000 , 0x00880088 , 0x00222222 } ;
+int m_color_btn_ids[N_CHAT_COLORS] =
+	{	IDC_COLORDKWHITE , IDC_COLORRED , IDC_COLORORANGE , IDC_COLORYELLOW ,
+		IDC_COLORGREEN , IDC_COLORAQUA , IDC_COLORBLUE , IDC_COLORPURPLE , IDC_COLORGREY ,
+		IDC_COLORDKGREY , IDC_COLORDKRED , IDC_COLORDKORANGE , IDC_COLORDKYELLOW ,
+		IDC_COLORDKGREEN , IDC_COLORDKAQUA , IDC_COLORDKBLUE , IDC_COLORDKPURPLE , IDC_COLORLTBLACK } ;
+static HWND m_chat_display , m_horiz_split , m_vert_split ;
+static HWND m_color_picker_toggle , m_color_picker , m_color_btn_hwnds[N_CHAT_COLORS] ;
+
+
+// chat functions
+void SendChatMessage(char* chatMsg) { g_client->ChatMessage_Send("MSG" , chatMsg) ; }
+
+void SendChatPvtMessage(char* destFullUserName , char* chatMsg) { g_client->ChatMessage_Send("PRIVMSG" , destFullUserName , chatMsg) ; }
+BOOL WINAPI ColorPickerProc(HWND hwndDlg , UINT uMsg , WPARAM wParam , LPARAM lParam)
+{
+	switch (uMsg)
+	{
+		case WM_CTLCOLORBTN:
+		{
+			HWND hwnd = (HWND)lParam ;
+			int btnIdx = 0 ; while (btnIdx < N_CHAT_COLORS && m_color_btn_hwnds[btnIdx] != hwnd) ++btnIdx ;
+			if (btnIdx != N_CHAT_COLORS) return (INT_PTR)CreateSolidBrush(m_chat_colors[btnIdx]) ;
+		}
+		break ;
+
+		case WM_COMMAND:
+		{
+			int btnId = LOWORD(wParam) ;
+			int btnIdx = 0 ; while (btnIdx < N_CHAT_COLORS && m_color_btn_ids[btnIdx] != btnId) ++btnIdx ;
+			if (btnIdx != N_CHAT_COLORS) TeamStream::SetChatColorIdx(USERID_LOCAL , btnIdx) ;
+			ShowWindow(hwndDlg , SW_HIDE) ;
+		}
+		break ;
+	}
+
+	return 0 ;
+}
+
+COLORREF getChatColor(int idx) { return m_chat_colors[idx] ; }
 
 static BOOL WINAPI AboutProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -647,10 +691,10 @@ static BOOL WINAPI MainProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
         
         float chat_ratio=0.0f;
 
-        resize.init_item(IDC_CHATGRP,     chat_ratio, 0.0f,  1.0f,  1.0f);
-
-        resize.init_item(IDC_CHATDISP,     chat_ratio, 0.0f,  1.0f,  1.0f);
-        resize.init_item(IDC_CHATENT,      chat_ratio, 1.0f,  1.0f,  1.0f);
+				resize.init_item(IDC_CHATGRP ,			chat_ratio ,	0.0f ,			1.0f,			1.0f) ;
+				resize.init_item(IDC_CHATDISP ,			chat_ratio ,	0.0f ,			1.0f,			1.0f) ;
+				resize.init_item(IDC_CHATENT ,			chat_ratio ,	1.0f ,			1.0f,			1.0f) ;
+				resize.init_item(IDC_COLORTOGGLE ,	1.0f ,			1.0f ,			1.0f,			1.0f) ;
         
         float loc_ratio = 0.5f;
 
@@ -709,7 +753,28 @@ static BOOL WINAPI MainProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
         m_locwnd=CreateDialog(g_hInst,MAKEINTRESOURCE(IDD_EMPTY_SCROLL),hwndDlg,LocalOuterChannelListProc);
         m_remwnd=CreateDialog(g_hInst,MAKEINTRESOURCE(IDD_EMPTY_SCROLL),hwndDlg,RemoteOuterChannelListProc);
         
-     
+				m_chat_display = GetDlgItem(hwndDlg , IDC_CHATDISP) ;
+				m_color_picker_toggle = GetDlgItem(hwndDlg , IDC_COLORTOGGLE) ;
+				m_color_picker = CreateDialog(g_hInst , MAKEINTRESOURCE(IDD_COLORPICKER) , hwndDlg , ColorPickerProc) ;
+				m_color_btn_hwnds[0] = GetDlgItem(m_color_picker , IDC_COLORDKWHITE) ;
+				m_color_btn_hwnds[1] = GetDlgItem(m_color_picker , IDC_COLORRED) ;
+				m_color_btn_hwnds[2] = GetDlgItem(m_color_picker , IDC_COLORORANGE) ;
+				m_color_btn_hwnds[3] = GetDlgItem(m_color_picker , IDC_COLORYELLOW) ;
+				m_color_btn_hwnds[4] = GetDlgItem(m_color_picker , IDC_COLORGREEN) ;
+				m_color_btn_hwnds[5] = GetDlgItem(m_color_picker , IDC_COLORAQUA) ;
+				m_color_btn_hwnds[6] = GetDlgItem(m_color_picker , IDC_COLORBLUE) ;
+				m_color_btn_hwnds[7] = GetDlgItem(m_color_picker , IDC_COLORPURPLE) ;
+				m_color_btn_hwnds[8] = GetDlgItem(m_color_picker , IDC_COLORGREY) ;
+				m_color_btn_hwnds[9] = GetDlgItem(m_color_picker , IDC_COLORDKGREY) ;
+				m_color_btn_hwnds[10] = GetDlgItem(m_color_picker , IDC_COLORDKRED) ;
+				m_color_btn_hwnds[11] = GetDlgItem(m_color_picker , IDC_COLORDKORANGE) ;
+				m_color_btn_hwnds[12] = GetDlgItem(m_color_picker , IDC_COLORDKYELLOW) ;
+				m_color_btn_hwnds[13] = GetDlgItem(m_color_picker , IDC_COLORDKGREEN) ;
+				m_color_btn_hwnds[14] = GetDlgItem(m_color_picker , IDC_COLORDKAQUA) ;
+				m_color_btn_hwnds[15] = GetDlgItem(m_color_picker , IDC_COLORDKBLUE) ;
+				m_color_btn_hwnds[16] = GetDlgItem(m_color_picker , IDC_COLORDKPURPLE) ;
+				m_color_btn_hwnds[17] = GetDlgItem(m_color_picker , IDC_COLORLTBLACK) ;
+
         // initialize local channels from config
         {
           int cnt=GetPrivateProfileInt(CONFSEC,"lc_cnt",-1,g_ini_file.Get());
@@ -744,7 +809,7 @@ static BOOL WINAPI MainProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
               ChanMixer *newa=NULL;
               if (ch >= 0 && ch <= MAX_LOCAL_CHANNELS) for (n = 1; n < lp.getnumtokens()-1; n += 2)
               {
-                switch (lp.gettoken_enum(n,"source\0bc\0mute\0solo\0volume\0pan\0jesus\0name\0"))
+                switch (lp.gettoken_enum(n,"source\0bc\0mute\0solo\0volume\0pan\0fx\0name\0"))
                 {
                   case 0: // source 
                     {
@@ -778,7 +843,7 @@ static BOOL WINAPI MainProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
                   case 5: //pan
                     g_client->SetLocalChannelMonitoring(ch,false,false,true,(float)lp.gettoken_float(n+1),false,false,false,false);
                   break;
-                  case 6: //jesus
+                  case 6: //fx (not implemented)
                   break;
                   case 7: //name
                     g_client->SetLocalChannelInfo(ch,name=lp.gettoken_str(n+1),false,false,false,0,false,false);
@@ -831,6 +896,7 @@ static BOOL WINAPI MainProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
         DWORD id;
         g_hThread=CreateThread(NULL,0,ThreadFunc,0,0,&id);
 
+				TeamStream::InitTeamStream() ;
       }
     return 0;
     case WM_TIMER:
@@ -1230,8 +1296,42 @@ static BOOL WINAPI MainProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
             SetFocus(GetDlgItem(hwndDlg,IDC_CHATENT));
           }
         break;
+
+				case IDC_COLORTOGGLE:
+				{
+//					if (!TeamStream::IsLocalTeamStreamUserExist()) break ;
+
+					if (ShowWindow(m_color_picker , SW_SHOW)) ShowWindow(m_color_picker , SW_HIDE) ;
+					RECT toggleRect ; GetWindowRect(m_color_picker_toggle , &toggleRect) ;
+					int x = toggleRect.left - 144 ; int y = toggleRect.bottom - 26 ;
+					SetWindowPos(m_color_picker , NULL , x , y , 0 , 0 , SWP_NOSIZE) ;
+				}
+				break ;
       }
     break;
+
+		case WM_NOTIFY:
+		{
+			LPNMHDR hdr = (LPNMHDR)lParam ;
+			if (hdr->code == EN_LINK)
+			{
+				// chat web link clicked
+				ENLINK* enlink = (ENLINK*)hdr ;
+				if (enlink->msg == WM_LBUTTONDOWN)
+				{
+					CHARRANGE charRange = enlink->chrg ; LONG cpMin , cpMax ; char url[256] ;
+					SendMessage(m_chat_display , EM_GETSEL , (WPARAM)&cpMin , (LPARAM)&cpMax) ;
+					if (cpMax - cpMin > 255) break ;
+
+					SendMessage(m_chat_display , EM_SETSEL , (WPARAM)charRange.cpMin , (LPARAM)charRange.cpMax) ;
+					SendMessage(m_chat_display , EM_GETSELTEXT , 0 , (LPARAM)&url) ;
+					SendMessage(m_chat_display , EM_SETSEL , (WPARAM)&cpMin , (LPARAM)&cpMax) ;
+					ShellExecute(NULL , "open" , url , NULL , NULL , SW_SHOWNORMAL) ;
+				}
+			}
+		}
+		break ;
+
     case WM_CLOSE:
       if (1) DestroyWindow(hwndDlg);
     break;  
@@ -1285,7 +1385,8 @@ static BOOL WINAPI MainProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
             sstr.Set(buf);           
           }
           
-          sprintf(buf,"%d source '%s' bc %d mute %d solo %d volume %f pan %f jesus 0 name `%s`",a,sstr.Get(),bc,m,s,v,p,lcn);
+// NOTE: fx is not implemented
+          sprintf(buf,"%d source '%s' bc %d mute %d solo %d volume %f pan %f fx 0 name `%s`",a,sstr.Get(),bc,m,s,v,p,lcn);
           char specbuf[64];
           sprintf(specbuf,"lc_%d",cnt++);
           WritePrivateProfileString(CONFSEC,specbuf,buf,g_ini_file.Get());
@@ -1413,6 +1514,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdPa
   g_client->ChannelMixer=CustomChannelMixer;
   g_client->LicenseAgreementCallback = licensecallback;
   g_client->ChatMessage_Callback = chatmsg_cb;
+
+	// GUI delegates
+	TeamStream::Get_Chat_Color = getChatColor ;
+	TeamStream::Send_Chat_Message = SendChatMessage ;
+	TeamStream::Send_Chat_Pvt_Message = SendChatPvtMessage ;
 
   HACCEL hAccel=LoadAccelerators(g_hInst,MAKEINTRESOURCE(IDR_ACCELERATOR1));
 

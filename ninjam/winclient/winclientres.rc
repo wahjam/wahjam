@@ -1,51 +1,5 @@
-//Microsoft Developer Studio generated resource script.
-//
+#include <windows.h>
 #include "resource.h"
-
-#define APSTUDIO_READONLY_SYMBOLS
-/////////////////////////////////////////////////////////////////////////////
-//
-// Generated from the TEXTINCLUDE 2 resource.
-//
-#include "afxres.h"
-
-/////////////////////////////////////////////////////////////////////////////
-#undef APSTUDIO_READONLY_SYMBOLS
-
-/////////////////////////////////////////////////////////////////////////////
-// English (U.S.) resources
-
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
-#ifdef _WIN32
-LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
-#pragma code_page(1252)
-#endif //_WIN32
-
-#ifdef APSTUDIO_INVOKED
-/////////////////////////////////////////////////////////////////////////////
-//
-// TEXTINCLUDE
-//
-
-1 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "resource.h\0"
-END
-
-2 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "#include ""afxres.h""\r\n"
-    "\0"
-END
-
-3 TEXTINCLUDE DISCARDABLE 
-BEGIN
-    "\r\n"
-    "\0"
-END
-
-#endif    // APSTUDIO_INVOKED
-
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -165,7 +119,7 @@ BEGIN
     CONTROL         "",IDC_CHATDISP,"RichEdit20A",WS_BORDER | WS_VSCROLL | 
                     WS_TABSTOP | 0x2804,351,66,96,123
     CONTROL         "",IDC_CHATENT,"RichEdit20A",WS_BORDER | WS_TABSTOP | 
-                    0xc4,351,193,96,14
+                    0xc4,351,194,84,12
     CONTROL         "",IDC_LOCRECT,"Static",SS_BLACKRECT | NOT WS_VISIBLE,13,
                     66,327,56
     CONTROL         "",IDC_REMOTERECT,"Static",SS_BLACKRECT | NOT WS_VISIBLE,
@@ -180,6 +134,31 @@ BEGIN
     CONTROL         "",IDC_DIV3,"Static",SS_ETCHEDHORZ,7,51,445,1
     LTEXT           "center",IDC_MASTERPANLBL,244,9,23,11,SS_NOTIFY
     LTEXT           "center",IDC_METROPANLBL,244,34,23,11,SS_NOTIFY
+		PUSHBUTTON      "", IDC_COLORTOGGLE, 435, 194, 12, 12, SS_NOTIFY //535, 195, 12, 12, SS_NOTIFY
+END
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+IDD_COLORPICKER DIALOG 0, 0, 72, 16
+STYLE DS_CONTROL | WS_POPUPWINDOW
+BEGIN
+		PUSHBUTTON      "", IDC_COLORDKWHITE, 0, 0, 8, 8, BS_OWNERDRAW
+		PUSHBUTTON      "", IDC_COLORRED, 8, 0, 8, 8, BS_OWNERDRAW
+		PUSHBUTTON      "", IDC_COLORORANGE, 16, 0, 8, 8, BS_OWNERDRAW
+		PUSHBUTTON      "", IDC_COLORYELLOW, 24, 0, 8, 8, BS_OWNERDRAW
+		PUSHBUTTON      "", IDC_COLORGREEN, 32, 0, 8, 8, BS_OWNERDRAW
+		PUSHBUTTON      "", IDC_COLORAQUA, 40, 0, 8, 8, BS_OWNERDRAW
+		PUSHBUTTON      "", IDC_COLORBLUE, 48, 0, 8, 8, BS_OWNERDRAW
+		PUSHBUTTON      "", IDC_COLORPURPLE, 56, 0, 8, 8, BS_OWNERDRAW
+		PUSHBUTTON      "", IDC_COLORGREY, 64, 0, 8, 8, BS_OWNERDRAW
+		PUSHBUTTON      "", IDC_COLORDKGREY, 0, 8, 8, 8, BS_OWNERDRAW
+		PUSHBUTTON      "", IDC_COLORDKRED, 8, 8, 8, 8, BS_OWNERDRAW
+		PUSHBUTTON      "", IDC_COLORDKORANGE, 16, 8, 8, 8, BS_OWNERDRAW
+		PUSHBUTTON      "", IDC_COLORDKYELLOW, 24, 8, 8, 8, BS_OWNERDRAW
+		PUSHBUTTON      "", IDC_COLORDKGREEN, 32, 8, 8, 8, BS_OWNERDRAW
+		PUSHBUTTON      "", IDC_COLORDKAQUA, 40, 8, 8, 8, BS_OWNERDRAW
+		PUSHBUTTON      "", IDC_COLORDKBLUE, 48, 8, 8, 8, BS_OWNERDRAW
+		PUSHBUTTON      "", IDC_COLORDKPURPLE, 56, 8, 8, 8, BS_OWNERDRAW
+		PUSHBUTTON      "", IDC_COLORLTBLACK, 64, 8, 8, 8, BS_OWNERDRAW
 END
 
 IDD_CONNECT DIALOG DISCARDABLE  0, 0, 225, 119
@@ -209,8 +188,8 @@ STYLE DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Wahjam Server License Agreement"
 FONT 8, "MS Sans Serif"
 BEGIN
-    CONTROL         "I &agree to the above license terms",IDC_CHECK1,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,82,195,119,10
+    AUTOCHECKBOX    "&I agree", IDC_AGREE, 7, 197, 40, 10
+    AUTOCHECKBOX    "Please read the license &agreement", IDC_AGREE_ALWAYS, 51, 197, 120, 10, WS_DISABLED
     PUSHBUTTON      "Accept",IDOK,206,194,50,14,WS_DISABLED
     PUSHBUTTON      "Decline",IDCANCEL,259,194,50,14
     CONTROL         "",IDC_LICENSETEXT,"RichEdit20A",WS_BORDER | WS_VSCROLL | 
@@ -525,19 +504,4 @@ BEGIN
     "P",            ID_OPTIONS_PREFERENCES, VIRTKEY, CONTROL, NOINVERT
     "Q",            ID_FILE_QUIT,           VIRTKEY, CONTROL, NOINVERT
 END
-
-#endif    // English (U.S.) resources
-/////////////////////////////////////////////////////////////////////////////
-
-
-
-#ifndef APSTUDIO_INVOKED
-/////////////////////////////////////////////////////////////////////////////
-//
-// Generated from the TEXTINCLUDE 3 resource.
-//
-
-
-/////////////////////////////////////////////////////////////////////////////
-#endif    // not APSTUDIO_INVOKED
 

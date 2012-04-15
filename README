@@ -8,6 +8,7 @@ This code is licensed GPL v2 or later:
 
   http://www.gnu.org/licenses/gpl-2.0.html
 
+
 Source tree layout
 ------------------
 
@@ -19,6 +20,7 @@ Source tree layout
     server/         Server
   WDL/              Common library
   sdks/             Third-party source libraries (Windows only)
+
 
 How to build the Qt client
 --------------------------
@@ -39,12 +41,37 @@ then use the Qt build environment to compile qtclient.  You may need to add the
 MSYS include/ and lib/ paths as QMAKE_CXXFLAGS -I and LIBS -L flags in
 ninjam/qtclient/qtclient.pro.
 
+
 How to build the other software
 -------------------------------
 
 To build a particular target change into its directory and run make(1).  For
 the Mac OS X cocoaclient an Xcode project is available.  For the Windows
 winclient a Visual Studio project is available.
+
+
+How to build the Windows client with Visual Studio
+--------------------------------------------------
+
+The .dsp and .dsw project files included are from the original Ninjam source code
+from 2005 . These project files are now obsolete and will not build with VS2010.
+In order to compile this program using VS2010 you must first import the .dsp into
+VS2008 and save in the new format. Be sure to save the .sln file to the winclient
+folder. You should be able to open the newly created .sln file in VS2010. Even then
+the winclient will not compile out of the box. The following steps must be taken:
+
+  * Download and install the DirectX SDK (June 2010 release works well)
+  * Copy dsound.h from the DirectX SDK to sdks/dxsdk/include/
+  * Copy dsound.lib from the DirectX SDK to sdks/dxsdk/lib/x86/
+  * Open the project properties dialog and browse to
+      Configuration Properties -> Linker -> General and add
+	  ../../sdks/dxsdk/lib/x86/ to Additional Library Directories
+  * Copy the Ogg/Vorbis SDK into sdks/ (e.g. sdks/oggvorbis-win32sdk-1.0.1/)
+  * Lastly, stdint.h is included with VS2010 but not VS2008, so if you prefer to use
+      VS2008 rather than converting a second time to VS2010, you will need to put
+      a copy of it in C:\Program Files\Microsoft Visual Studio 9.0\VC\include
+  * Hit F7 and watch the deprecation warnings fly :) then you're ready to jam
+
 
 Cross-compiling the Qt client for Windows
 -----------------------------------------
@@ -73,7 +100,9 @@ mercurial repository.
 For example, try disabling SQL drivers and DBUS on the ./configure line in
 mingw-cross-env/src/qt.mk.
 
-NINJAM fork information:
+
+NINJAM fork information
+------------------------
 
 The original source trees were taken from http://www.ninjam.com/.  The files
 were:

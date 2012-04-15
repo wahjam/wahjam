@@ -35,7 +35,6 @@
 #include "../../WDL/mutex.h"
 #include "../../WDL/string.h"
 
-
 extern WDL_Mutex g_client_mutex;
 extern WDL_String g_ini_file;
 extern audioStreamer *g_audio;
@@ -45,6 +44,9 @@ extern int g_done;
 extern WDL_String g_topic;
 
 #define IS_CMIX(x) (x < -1024 || x > 1024)
+
+#include "../teamstream.h"
+
 
 // audioconfig.cpp
 audioStreamer *CreateConfiguredStreamer(char *inifile, int showcfg, HWND hwndParent);

@@ -1,7 +1,5 @@
-//{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
-// Used by winclientres.rc
-//
+#define IDC_STATIC -1 // defined in afxres.h but MFC support is not required
+
 #define IDD_MAIN                        101
 #define IDD_CONFIG                      102
 #define IDR_MENU1                       102
@@ -53,7 +51,7 @@
 #define IDC_CHATDIV                     1011
 #define IDC_MASTERPANLBL                1011
 #define IDC_DIV2                        1012
-#define IDC_CHECK1                      1013
+
 #define IDC_MASTERMUTE                  1013
 #define IDC_ANON                        1013
 #define IDC_SAVEWAVE                    1013
@@ -106,6 +104,33 @@
 #define IDC_LABEL2                      1060
 #define IDC_PASSREMEMBER                1060
 #define IDC_DIV                         1062
+
+// chat color picker
+#define IDC_COLORTOGGLE													2000
+#define IDD_COLORPICKER													2001
+#define IDC_COLORDKWHITE												2002
+#define IDC_COLORRED														2003
+#define IDC_COLORORANGE													2004
+#define IDC_COLORYELLOW													2005
+#define IDC_COLORGREEN													2006
+#define IDC_COLORAQUA														2007
+#define IDC_COLORBLUE														2008
+#define IDC_COLORPURPLE													2009
+#define IDC_COLORGREY														2010
+#define IDC_COLORDKGREY													2011
+#define IDC_COLORDKRED													2012
+#define IDC_COLORDKORANGE												2013
+#define IDC_COLORDKYELLOW												2014
+#define IDC_COLORDKGREEN												2015
+#define IDC_COLORDKAQUA													2016
+#define IDC_COLORDKBLUE													2017
+#define IDC_COLORDKPURPLE												2018
+#define IDC_COLORLTBLACK												2019
+
+// license
+#define IDC_AGREE																2020
+#define IDC_AGREE_ALWAYS	            					2021
+
 #define ID_FILE_CONNECT                 40001
 #define ID_FILE_DISCONNECT              40002
 #define ID_FILE_QUIT                    40003
@@ -113,14 +138,3 @@
 #define ID_OPTIONS_PREFERENCES          40005
 #define ID_OPTIONS_ALWAYSONTOP          40006
 #define ID_OPTIONS_AUDIOCONFIGURATION   40007
-
-// Next default values for new objects
-// 
-#ifdef APSTUDIO_INVOKED
-#ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        122
-#define _APS_NEXT_COMMAND_VALUE         40008
-#define _APS_NEXT_CONTROL_VALUE         1063
-#define _APS_NEXT_SYMED_VALUE           101
-#endif
-#endif
