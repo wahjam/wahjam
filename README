@@ -58,7 +58,7 @@ from 2005 . These project files are now obsolete and will not build with VS2010.
 In order to compile this program using VS2010 you must first import the .dsp into
 VS2008 and save in the new format. Be sure to save the .sln file to the winclient
 folder. You should be able to open the newly created .sln file in VS2010. Even then
-the winclient will not compile out of the box. The following steps must be taken first:
+the winclient will not compile out of the box. The following steps must be taken:
 
   * Download and install the DirectX SDK (June 2010 release works well)
   * Copy dsound.h from the DirectX SDK to sdks/dxsdk/include/
@@ -66,7 +66,7 @@ the winclient will not compile out of the box. The following steps must be taken
   * Open the project properties dialog and browse to
       Configuration Properties -> Linker -> General and add
 	  ../../sdks/dxsdk/lib/x86/ to Additional Library Directories
-  * Copy the Ogg/Vorbis SDK into the sdks/ folder (e.g. sdks/oggvorbis-win32sdk-1.0.1/)
+  * Copy the Ogg/Vorbis SDK into sdks/ (e.g. sdks/oggvorbis-win32sdk-1.0.1/)
   * If you are using the VS Express or you are not planning to use MFC,
       open winclient.rc in the editor and delete lines 529-542 and 5-47 and
 	  #include <windows.h> instead. Then open resource.h in the editor and
