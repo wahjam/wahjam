@@ -86,8 +86,9 @@ class Net_Message
 class Net_Connection
 {
   public:
-    Net_Connection(QTcpSocket *sock) : m_error(0), m_recvstate(0), m_recvmsg(0), m_sock(sock)
+    Net_Connection(QTcpSocket *sock) : m_error(0), m_recvstate(0), m_recvmsg(0), m_sock(sock), lastmsgIdx(0)
     {
+      memset(lastmsgs, 0, sizeof(lastmsgs));
       SetKeepAlive(0);
     }
     ~Net_Connection();
@@ -114,6 +115,8 @@ class Net_Connection
     int m_recvstate;
     Net_Message *m_recvmsg;
     QTcpSocket *m_sock;
+    Net_Message *lastmsgs[5];
+    unsigned int lastmsgIdx;
 };
 
 

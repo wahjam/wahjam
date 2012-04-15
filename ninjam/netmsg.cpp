@@ -23,6 +23,8 @@
 
 */
 
+#include <stdint.h>
+
 
 #ifdef _WIN32
 #include <windows.h>
@@ -60,7 +62,17 @@ int Net_Message::parseMessageHeader(void *data, int len) // returns bytes used, 
   size |= ((int)*dp++)<<16; 
   size |= ((int)*dp++)<<24; 
   len -= 5;
-  if (type == MESSAGE_INVALID || size < 0 || size > NET_MESSAGE_MAX_SIZE) return -1;
+  if (type == MESSAGE_INVALID || size < 0 || size > NET_MESSAGE_MAX_SIZE) {
+    fprintf(stderr, "len = %d\n", len);
+    for (int i = 0; i < len; i += 16) {
+      for (int j = 0; j < 16; j++) {
+        fprintf(stderr, "%02x ", ((uint8_t*)data)[i + j]);
+      }
+      fprintf(stderr, "\n");
+    }
+    fprintf(stderr, "\n");
+    return -1;
+  }
 
   m_type=type;
   set_size(size);
@@ -113,6 +125,7 @@ Net_Message *Net_Connection::Run(int *wantsleep)
   while (!retv && m_sock->bytesAvailable())
   {
     char buf[8192];
+    char buf2[8192];
     int buflen = m_sock->peek(buf, sizeof(buf));
     int a = 0;
 
@@ -131,7 +144,13 @@ Net_Message *Net_Connection::Run(int *wantsleep)
     }
     int b2 = m_recvmsg->parseAddBytes(buf + a, buflen - a);
 
-    m_sock->read(buf, b2 + a); // dump our bytes that we used
+    int nread = m_sock->read(buf2, b2 + a); // dump our bytes that we used
+    if (nread != b2 + a) {
+      fprintf(stderr, "m_sock->read() nread %d b2 + a %d\n", nread, b2 + a);
+    }
+    if (memcmp((const void*)buf, (const void*)buf2, nread) != 0) {
+      fprintf(stderr, "peek and read buffer mismatch!  race condition?\n");
+    }
 
     if (m_recvmsg->parseBytesNeeded() < 1)
     {
@@ -146,6 +165,13 @@ Net_Message *Net_Connection::Run(int *wantsleep)
 
   if (retv)
   {
+    if (lastmsgs[lastmsgIdx]) {
+      lastmsgs[lastmsgIdx]->releaseRef();
+    }
+    retv->addRef();
+    lastmsgs[lastmsgIdx] = retv;
+    lastmsgIdx = (lastmsgIdx + 1) % 5;
+
     m_last_recv = now;
   }
   else if (now > m_last_recv + m_keepalive * 3)
@@ -179,10 +205,17 @@ int Net_Connection::Send(Net_Message *msg)
 int Net_Connection::GetStatus()
 {
   if (m_error) {
+    fprintf(stderr, "m_error %d!\n", m_error);
     return m_error;
   }
   if (!m_sock || !m_sock->isOpen()) {
+    fprintf(stderr, "socket closed!\n");
     return 1;
+  }
+  static int last_state;
+  if (last_state != m_sock->state()) {
+    fprintf(stderr, "last_state %d state %d\n", last_state, m_sock->state());
+    last_state = m_sock->state();
   }
   switch (m_sock->state()) {
   case QAbstractSocket::HostLookupState:
@@ -202,6 +235,12 @@ QHostAddress Net_Connection::GetRemoteAddr()
 
 Net_Connection::~Net_Connection()
 {
+  for (int i = 0; i < 5; i++) {
+    if (lastmsgs[i]) {
+      lastmsgs[i]->releaseRef();
+    }
+  }
+
   delete m_recvmsg;
   delete m_sock;
 }
