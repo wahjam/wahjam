@@ -66,7 +66,7 @@ void initLicense(HWND hwndDlg , char* licenseText)
 	if (licenseFileIn.is_open())
 	{
 		while (licenseFileIn.good()) { getline(licenseFileIn , line) ; prevLicenseText += line ; }
-		licenseFileIn.close();
+		licenseFileIn.close() ;
 	}
 
 	// auto-accept or force re-acceptance if license has changed

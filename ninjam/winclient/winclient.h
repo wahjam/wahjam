@@ -45,7 +45,7 @@ extern WDL_String g_topic;
 
 #define IS_CMIX(x) (x < -1024 || x > 1024)
 
-#include "teamstream.h"
+#include "../teamstream.h"
 
 
 // audioconfig.cpp
