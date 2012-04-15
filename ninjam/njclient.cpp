@@ -487,9 +487,11 @@ void NJClient::updateBPMinfo(int bpm, int bpi)
 
 
 void NJClient::GetPosition(int *pos, int *length)  // positions in samples
-{ 
-  if (length) *length=m_interval_length; 
+{
+  m_misc_cs.Enter();
+  if (length) *length=m_interval_length;
   if (pos && (*pos=m_interval_pos)<0) *pos=0;
+  m_misc_cs.Leave();
 }
 
 unsigned int NJClient::GetSessionPosition()// returns milliseconds
@@ -498,6 +500,46 @@ unsigned int NJClient::GetSessionPosition()// returns milliseconds
   if (m_srate)
     a+=(m_session_pos_samples*1000)/m_srate;
   return a;
+}
+
+// Called from the audio thread
+void NJClient::updateInterval(int nsamples)
+{
+  // Most of the time we can update without taking the lock.  This assumes we
+  // are the only writer to this variable.
+  if (m_interval_pos >= 0 && m_interval_pos + nsamples < m_interval_length) {
+    m_interval_pos += nsamples;
+    return;
+  }
+
+  // Lock so GetSessionPosition() sees a consistent update when interval length
+  // and interval position are set together.
+  m_misc_cs.Enter();
+  if (m_beatinfo_updated)
+  {
+    double v=(double)m_bpm*(1.0/60.0);
+    // beats per second
+
+    // (beats/interval) / (beats/sec)
+    v = (double) m_bpi / v;
+
+    // seconds/interval
+
+    // samples/interval
+    v *= (double) m_srate;
+
+    m_beatinfo_updated=0;
+    m_interval_length = (int)v;
+    //m_interval_length-=m_interval_length%1152;//hack
+    m_active_bpm=m_bpm;
+    m_active_bpi=m_bpi;
+    m_metronome_interval=(int) ((double)m_interval_length / (double)m_active_bpi);
+  }
+  m_interval_pos=0;
+  m_misc_cs.Leave();
+
+  // new buffer time
+  on_new_interval();
 }
 
 void NJClient::AudioProc(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate)
@@ -531,54 +573,23 @@ void NJClient::AudioProc(float **inbuf, int innch, float **outbuf, int outnch, i
     m_session_pos_ms=sec;
   }
 
-
-
   int offs=0;
+
+  updateInterval(0); // ensure interval length is initialized
 
   while (len > 0)
   {
-    int x=m_interval_length-m_interval_pos;
-    if (!x || m_interval_pos < 0)
-    {
-      m_misc_cs.Enter();
-      if (m_beatinfo_updated)
-      {
-        double v=(double)m_bpm*(1.0/60.0);
-        // beats per second
-
-        // (beats/interval) / (beats/sec)
-        v = (double) m_bpi / v;
-
-        // seconds/interval
-
-        // samples/interval
-        v *= (double) srate;
-
-        m_beatinfo_updated=0;
-        m_interval_length = (int)v;
-        //m_interval_length-=m_interval_length%1152;//hack
-        m_active_bpm=m_bpm;
-        m_active_bpi=m_bpi;
-        m_metronome_interval=(int) ((double)m_interval_length / (double)m_active_bpi);
-      }
-      m_misc_cs.Leave();
-
-      // new buffer time
-      on_new_interval();
-
-      m_interval_pos=0;
-      x=m_interval_length;
+    int x = m_interval_length-m_interval_pos;
+    if (x > len) {
+      x = len;
     }
-
-    if (x > len) x=len;
 
     process_samples(inbuf,innch,outbuf,outnch,x,srate,offs);
 
-    m_interval_pos+=x;
+    updateInterval(x);
     offs += x;
-    len -= x;    
-  }  
-
+    len -= x;
+  }
 }
 
 
