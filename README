@@ -67,11 +67,6 @@ the winclient will not compile out of the box. The following steps must be taken
       Configuration Properties -> Linker -> General and add
 	  ../../sdks/dxsdk/lib/x86/ to Additional Library Directories
   * Copy the Ogg/Vorbis SDK into sdks/ (e.g. sdks/oggvorbis-win32sdk-1.0.1/)
-  * If you are using the VS Express or you are not planning to use MFC,
-      open winclient.rc in the editor and delete lines 529-542 and 5-47 and
-	  #include <windows.h> instead. Then open resource.h in the editor and
-	  add #define IDC_STATIC -1. (this is defined in afxres.h which is not
-	  included with VS Express but MFC support is not required)
   * Lastly, stdint.h is included with VS2010 but not VS2008, so if you prefer to use
       VS2008 rather than converting a second time to VS2010, you will need to put
       a copy of it in C:\Program Files\Microsoft Visual Studio 9.0\VC\include
