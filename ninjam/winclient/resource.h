@@ -1,7 +1,5 @@
-//{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
-// Used by winclientres.rc
-//
+#define IDC_STATIC -1 // defined in afxres.h but MFC support is not required
+
 #define IDD_MAIN                        101
 #define IDD_CONFIG                      102
 #define IDR_MENU1                       102
