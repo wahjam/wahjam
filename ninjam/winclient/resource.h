@@ -105,8 +105,31 @@
 #define IDC_PASSREMEMBER                1060
 #define IDC_DIV                         1062
 
-#define IDC_AGREE						2000
-#define IDC_AGREE_ALWAYS	            2001
+// chat color picker
+#define IDC_COLORTOGGLE													2000
+#define IDD_COLORPICKER													2001
+#define IDC_COLORDKWHITE												2002
+#define IDC_COLORRED														2003
+#define IDC_COLORORANGE													2004
+#define IDC_COLORYELLOW													2005
+#define IDC_COLORGREEN													2006
+#define IDC_COLORAQUA														2007
+#define IDC_COLORBLUE														2008
+#define IDC_COLORPURPLE													2009
+#define IDC_COLORGREY														2010
+#define IDC_COLORDKGREY													2011
+#define IDC_COLORDKRED													2012
+#define IDC_COLORDKORANGE												2013
+#define IDC_COLORDKYELLOW												2014
+#define IDC_COLORDKGREEN												2015
+#define IDC_COLORDKAQUA													2016
+#define IDC_COLORDKBLUE													2017
+#define IDC_COLORDKPURPLE												2018
+#define IDC_COLORLTBLACK												2019
+
+// license
+#define IDC_AGREE																2020
+#define IDC_AGREE_ALWAYS	            					2021
 
 #define ID_FILE_CONNECT                 40001
 #define ID_FILE_DISCONNECT              40002
