@@ -164,7 +164,7 @@ CAPTION "Wahjam Server License Agreement"
 FONT 8, "MS Sans Serif"
 BEGIN
     AUTOCHECKBOX    "&I agree", IDC_AGREE, 7, 197, 40, 10
-    AUTOCHECKBOX    "Please read the licence &agreement", IDC_AGREE_ALWAYS, 51, 197, 120, 10, WS_DISABLED
+    AUTOCHECKBOX    "Please read the license &agreement", IDC_AGREE_ALWAYS, 51, 197, 120, 10, WS_DISABLED
     PUSHBUTTON      "Accept",IDOK,206,194,50,14,WS_DISABLED
     PUSHBUTTON      "Decline",IDCANCEL,259,194,50,14
     CONTROL         "",IDC_LICENSETEXT,"RichEdit20A",WS_BORDER | WS_VSCROLL | 

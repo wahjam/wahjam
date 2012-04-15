@@ -24,7 +24,7 @@
 #define _TEAMSTREAM_H_
 
 #define TEAMSTREAM_CONFSEC "teamstream"
-#define LICENCE_CHANGED_LBL "This licence has ch&anged"
+#define LICENSE_CHANGED_LBL "This license has ch&anged"
 #define AGREE_ALWAYS_LBL "&Always agree for this jam room"
 
 

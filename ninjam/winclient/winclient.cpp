@@ -1371,7 +1371,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdPa
   }
 
   // read config file
-
   {
     char buf[512];
     GetPrivateProfileString(CONFSEC,"host","",buf,sizeof(buf),g_ini_file.Get());

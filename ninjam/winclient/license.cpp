@@ -42,11 +42,11 @@ string makeHostString()
 	return host ;
 }
 
-string makeLicenceFilename()
+string makeLicenseFilename()
 {
-	string licenceFilename(makeHostString()) ; licenceFilename += "_licence.txt" ;
+	string licenseFilename(makeHostString()) ; licenseFilename += "_license.txt" ;
 
-	return licenceFilename ;
+	return licenseFilename ;
 }
 
 string makeAgreeKey() { string agreeKey(makeHostString()) ; return (agreeKey = "Agree_" + agreeKey); }
@@ -58,21 +58,21 @@ string stripLineEnds(string aString)
 	return aString ;
 }
 
-void initLicence(HWND hwndDlg , char* licenceText)
+void initLicense(HWND hwndDlg , char* licenseText)
 {
-	// set licence dialog text and read previously accepted licence text from disk
-	SetDlgItemText(hwndDlg , IDC_LICENSETEXT , licenceText) ;
-	ifstream licenceFileIn(makeLicenceFilename().c_str()) ; string prevLicenceText("") ; string line ;
-	if (licenceFileIn.is_open())
+	// set license dialog text and read previously accepted license text from disk
+	SetDlgItemText(hwndDlg , IDC_LICENSETEXT , licenseText) ;
+	ifstream licenseFileIn(makeLicenseFilename().c_str()) ; string prevLicenseText("") ; string line ;
+	if (licenseFileIn.is_open())
 	{
-		while (licenceFileIn.good()) { getline(licenceFileIn , line) ; prevLicenceText += line ; }
-		licenceFileIn.close();
+		while (licenseFileIn.good()) { getline(licenseFileIn , line) ; prevLicenseText += line ; }
+		licenseFileIn.close();
 	}
 
-	// auto-accept or force re-acceptance if licence has changed
-	if (stripLineEnds(prevLicenceText).compare(stripLineEnds(string(licenceText))))
+	// auto-accept or force re-acceptance if license has changed
+	if (stripLineEnds(prevLicenseText).compare(stripLineEnds(string(licenseText))))
 	{
-		if (!prevLicenceText.empty()) SetDlgItemText(hwndDlg , IDC_AGREE_ALWAYS , LICENCE_CHANGED_LBL) ;
+		if (!prevLicenseText.empty()) SetDlgItemText(hwndDlg , IDC_AGREE_ALWAYS , LICENSE_CHANGED_LBL) ;
 		EnableWindow(GetDlgItem(hwndDlg , IDC_AGREE_ALWAYS) , false) ;
 		WritePrivateProfileString(TEAMSTREAM_CONFSEC , makeAgreeKey().c_str() , "0" , g_ini_file.Get()) ;
 	}
@@ -97,17 +97,17 @@ void handleAgreeAlways(HWND hwndDlg , bool isChecked)
 	WritePrivateProfileString(TEAMSTREAM_CONFSEC , makeAgreeKey().c_str() , (isChecked)? "1": "0" , g_ini_file.Get()) ;
 	if (!isChecked) return ;
 
-	// write licenceText to disk
-	char licenceText[65536] ; (GetDlgItemText(hwndDlg , IDC_LICENSETEXT , licenceText , 65536)) ;
-	ofstream licenceFileOut(makeLicenceFilename().c_str()) ;
-	if (licenceFileOut.is_open()) { licenceFileOut << licenceText ; licenceFileOut.close() ; }
+	// write licenseText to disk
+	char licenseText[65536] ; (GetDlgItemText(hwndDlg , IDC_LICENSETEXT , licenseText , 65536)) ;
+	ofstream licenseFileOut(makeLicenseFilename().c_str()) ;
+	if (licenseFileOut.is_open()) { licenseFileOut << licenseText ; licenseFileOut.close() ; }
 }
 
 static BOOL WINAPI LicenseProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
   switch (uMsg)
   {
-    case WM_INITDIALOG: initLicence(hwndDlg , (char*)lParam) ; return 0 ;
+    case WM_INITDIALOG: initLicense(hwndDlg , (char*)lParam) ; return 0 ;
     case WM_CLOSE: EndDialog(hwndDlg , 0) ; return 0 ;
     case WM_COMMAND:
 		{
