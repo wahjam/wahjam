@@ -137,48 +137,43 @@ void Net_Connection::readyRead()
       recvq.enqueue(m_recvmsg);
       m_recvmsg = 0;
       m_recvstate = 0;
+      recvKeepaliveTimer.start();
     }
   }
 }
 
+void Net_Connection::sendKeepaliveMessage()
+{
+  Net_Message *keepalive = new Net_Message;
+  keepalive->set_type(MESSAGE_KEEPALIVE);
+  keepalive->set_size(0);
+  Send(keepalive);
+}
+
+void Net_Connection::recvTimedOut()
+{
+  setStatus(-3);
+}
+
 Net_Message *Net_Connection::Run(int *wantsleep)
 {
-  if (status != 0) {
+  if (status != 0 || recvq.isEmpty()) {
     return 0;
   }
 
-  time_t now = time(NULL);
+  Net_Message *retv = recvq.dequeue();
 
-  if (now > m_last_send + m_keepalive) {
-    Net_Message *keepalive = new Net_Message;
-    keepalive->set_type(MESSAGE_KEEPALIVE);
-    keepalive->set_size(0);
-    Send(keepalive);
-    m_last_send = now;
+  if (lastmsgs[lastmsgIdx]) {
+    lastmsgs[lastmsgIdx]->releaseRef();
   }
+  retv->addRef();
+  lastmsgs[lastmsgIdx] = retv;
+  lastmsgIdx = (lastmsgIdx + 1) % 5;
 
-  if (!recvq.isEmpty())
-  {
-    Net_Message *retv = recvq.dequeue();
-
-    if (lastmsgs[lastmsgIdx]) {
-      lastmsgs[lastmsgIdx]->releaseRef();
-    }
-    retv->addRef();
-    lastmsgs[lastmsgIdx] = retv;
-    lastmsgIdx = (lastmsgIdx + 1) % 5;
-
-    m_last_recv = now;
-    if (wantsleep) {
-      *wantsleep = 0;
-    }
-    return retv;
+  if (wantsleep) {
+    *wantsleep = 0;
   }
-  else if (now > m_last_recv + m_keepalive * 3)
-  {
-    status = -3;
-  }
-  return 0;
+  return retv;
 }
 
 int Net_Connection::Send(Net_Message *msg)
@@ -198,6 +193,9 @@ int Net_Connection::Send(Net_Message *msg)
   if (ret != msg->get_size()) {
     return -1;
   }
+
+  sendKeepaliveTimer.start();
+
   return 0;
 }
 
@@ -221,6 +219,11 @@ Net_Connection::Net_Connection(QTcpSocket *sock, QObject *parent)
           this, SLOT(socketError(QAbstractSocket::SocketError)));
   connect(sock, SIGNAL(readyRead()), this, SLOT(readyRead()));
 
+  connect(&sendKeepaliveTimer, SIGNAL(timeout()),
+          this, SLOT(sendKeepaliveMessage()));
+  connect(&recvKeepaliveTimer, SIGNAL(timeout()),
+          this, SLOT(recvTimedOut()));
+
   memset(lastmsgs, 0, sizeof(lastmsgs));
   SetKeepAlive(0);
 }
@@ -240,8 +243,20 @@ Net_Connection::~Net_Connection()
   delete m_recvmsg;
 }
 
+void Net_Connection::SetKeepAlive(int interval)
+{
+  if (interval == 0) {
+    interval = NET_CON_KEEPALIVE_RATE;
+  }
+
+  sendKeepaliveTimer.start(interval * 1000 /* milliseconds */);
+  recvKeepaliveTimer.start(3 * interval * 1000 /* milliseconds */);
+}
+
 void Net_Connection::setStatus(int s)
 {
+  sendKeepaliveTimer.stop();
+  recvKeepaliveTimer.stop();
   m_sock->close();
   status = s;
 }

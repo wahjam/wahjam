@@ -28,8 +28,8 @@
 #ifndef _NETMSG_H_
 #define _NETMSG_H_
 
-#include <time.h>
 #include <QQueue>
+#include <QTimer>
 #include <QTcpSocket>
 #include <QHostAddress>
 
@@ -98,25 +98,22 @@ class Net_Connection : public QObject
 
     QHostAddress GetRemoteAddr();
 
-    void SetKeepAlive(int interval)
-    {
-      m_keepalive=interval?interval:NET_CON_KEEPALIVE_RATE;
-      m_last_send=m_last_recv=time(NULL);
-    }
+    void SetKeepAlive(int interval);
 
     void Kill();
 
   private slots:
     void socketError(QAbstractSocket::SocketError socketError);
     void readyRead();
+    void sendKeepaliveMessage();
+    void recvTimedOut();
 
   private:
     void setStatus(int s);
 
     int status;
-    int m_keepalive;
-    time_t m_last_send;
-    time_t m_last_recv;
+    QTimer sendKeepaliveTimer;
+    QTimer recvKeepaliveTimer;
     int m_recvstate;
     Net_Message *m_recvmsg;
     QQueue<Net_Message*> recvq;
