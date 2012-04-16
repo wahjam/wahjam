@@ -177,8 +177,10 @@ public:
 };
 
 
-class User_Connection
+class User_Connection : public QObject
 {
+  Q_OBJECT
+
   public:
     User_Connection(QTcpSocket *sock, User_Group *grp);
     ~User_Connection();
@@ -221,6 +223,12 @@ class User_Connection
     WDL_PtrList<User_TransferState> m_sendfiles;
 
     IUserInfoLookup *m_lookup;
+
+  private slots:
+    void netconMessagesReady();
+
+  private:
+    void processMessage(Net_Message *msg);
 };
 
 

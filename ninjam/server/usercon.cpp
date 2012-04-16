@@ -102,6 +102,8 @@ static void type_to_string(unsigned int t, char *out)
 User_Connection::User_Connection(QTcpSocket *sock, User_Group *grp) : group(grp), m_netcon(sock), m_auth_state(0), m_clientcaps(0), m_auth_privs(0), m_reserved(0), m_max_channels(0),
       m_vote_bpm(0), m_vote_bpm_lasttime(0), m_vote_bpi(0), m_vote_bpi_lasttime(0)
 {
+  connect(&m_netcon, SIGNAL(messagesReady()), this, SLOT(netconMessagesReady()));
+
   WDL_RNG_bytes(m_challenge,sizeof(m_challenge));
 
   mpb_server_auth_challenge ch;
@@ -380,50 +382,8 @@ void User_Connection::SendUserList()
   Send(bh.build());
 }
 
-
-int User_Connection::Run(int *wantsleep)
+void User_Connection::processMessage(Net_Message *msg)
 {
-  Net_Message *msg=m_netcon.Run(wantsleep);
-  if (m_netcon.GetStatus()) 
-  {
-    delete msg;
-    return m_netcon.GetStatus();
-  }
-
-  if (!msg)
-  {
-    if (m_auth_state < 0)
-    {
-      if (!m_lookup || m_lookup->Run())
-      {
-        if (!m_lookup || !OnRunAuth())
-        {
-          m_netcon.Run();
-          m_netcon.Kill();
-        }
-        delete m_lookup;
-        m_lookup=0;
-      }
-    }
-    else if (!m_auth_state)
-    {
-      if (time(NULL) > m_connect_time+120) // if we haven't gotten an auth reply in 120s, disconnect. The reason this is so long is to give
-                                        // the user time to potentially read the license agreement.
-      {
-        logText("%s: Got an authorization timeout\n",
-                m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData());
-        m_connect_time=time(NULL)+120;
-        mpb_server_auth_reply bh;
-        bh.errmsg="authorization timeout";
-        Send(bh.build());
-        m_netcon.Run();
-
-        m_netcon.Kill();
-      }
-    }
-    return 0;
-  }
-
   msg->addRef();
 
   if (!m_auth_state)
@@ -446,12 +406,9 @@ int User_Connection::Run(int *wantsleep)
               bh.errmsg);
 
       Send(bh.build());
-      m_netcon.Run();
-
       m_netcon.Kill();
       msg->releaseRef();
-
-      return 0;
+      return;
     }
 
     m_netcon.SetKeepAlive(group->m_keepalive); // restore default keepalive behavior since we got a response
@@ -472,313 +429,355 @@ int User_Connection::Run(int *wantsleep)
 
   } // !m_auth_state
 
+  if (m_auth_state < 1) {
+    msg->releaseRef();
+    return;
+  }
 
-  if (m_auth_state > 0) 
+  switch (msg->get_type())
   {
-    switch (msg->get_type())
-    {
-      case MESSAGE_CLIENT_SET_CHANNEL_INFO:
+    case MESSAGE_CLIENT_SET_CHANNEL_INFO:
+      {
+        mpb_client_set_channel_info chi;
+        if (!chi.parse(msg))
         {
-          mpb_client_set_channel_info chi;
-          if (!chi.parse(msg))
-          {
-            // update our channel list
+          // update our channel list
 
-            mpb_server_userinfo_change_notify mfmt;
-            int mfmt_changes=0;
+          mpb_server_userinfo_change_notify mfmt;
+          int mfmt_changes=0;
+        
+          int offs=0;
+          short v;
+          int p,f;
+          int whichch=0;
+          char *chnp=0;
+          while ((offs=chi.parse_get_rec(offs,&chnp,&v,&p,&f))>0 && whichch < MAX_USER_CHANNELS && whichch < m_max_channels)
+          {
+            if (!chnp) chnp=""; 
+
+            int doactive=!(f&0x80);
+
+            // only if something changes, do we add it to the rec
+            int hadch=!m_channels[whichch].active != !doactive;
+            if (!hadch) hadch = strcmp(chnp,m_channels[whichch].name.Get());
+            if (!hadch) hadch = m_channels[whichch].volume!=v;
+            if (!hadch) hadch = m_channels[whichch].panning!=p;
+            if (!hadch) hadch = m_channels[whichch].flags!=f;
+
+            m_channels[whichch].active=doactive;
+            m_channels[whichch].name.Set(chnp);
+            m_channels[whichch].volume=v;
+            m_channels[whichch].panning=p;
+            m_channels[whichch].flags=f;
+
+            if (hadch)
+            {
+              mfmt_changes++;
+              mfmt.build_add_rec(m_channels[whichch].active,whichch,
+                                m_channels[whichch].volume,
+                                m_channels[whichch].panning,
+                                m_channels[whichch].flags,
+                                m_username.Get(),
+                                m_channels[whichch].name.Get());
+            }
+
+            whichch++;
+          }
+          while (whichch < MAX_USER_CHANNELS)
+          {
+            m_channels[whichch].name.Set("");
+
+            if (m_channels[whichch].active) // only send deactivate if it was previously active
+            {
+              m_channels[whichch].active=0;
+              mfmt_changes++;
+              mfmt.build_add_rec(0,whichch,
+                                m_channels[whichch].volume,
+                                m_channels[whichch].panning,
+                                m_channels[whichch].flags,
+                                m_username.Get(),
+                                m_channels[whichch].name.Get());
+            }
+
+            whichch++;
+          }
+          if (!group->m_allow_hidden_users && m_max_channels && !(m_auth_privs&PRIV_HIDDEN))
+          {
+            for (whichch = 0; whichch < MAX_USER_CHANNELS && !m_channels[whichch].active; whichch ++);
+
+
+            if (whichch == MAX_USER_CHANNELS) // if empty, tell the user about one channel
+            {
+              mfmt.build_add_rec(1,0,0,0,0,m_username.Get(),"");
+              mfmt_changes++;
+            }
+          }
+
+
+          if (mfmt_changes) group->Broadcast(mfmt.build(),this);
+        }         
+      }
+    break;
+    case MESSAGE_CLIENT_SET_USERMASK:
+      {
+        mpb_client_set_usermask umi;
+        if (!umi.parse(msg))
+        {
+          int offs=0;
+          char *unp=0;
+          unsigned int fla=0;
+          while ((offs=umi.parse_get_rec(offs,&unp,&fla))>0)
+          {
+            if (unp)
+            {
+              int x;
+              for (x = 0; x < m_sublist.GetSize() && strcasecmp(unp,m_sublist.Get(x)->username.Get()); x ++);
+              if (x == m_sublist.GetSize()) // add new
+              {
+                if (fla) // only add if we need to subscribe
+                {
+                  User_SubscribeMask *n=new User_SubscribeMask;
+                  n->username.Set(unp);
+                  n->channelmask = fla;
+                  m_sublist.Add(n);
+                }
+              }
+              else
+              {
+                if (fla) // update flag
+                {
+                  m_sublist.Get(x)->channelmask=fla;
+                }
+                else // remove
+                {
+                  delete m_sublist.Get(x);
+                  m_sublist.Delete(x);
+                }
+              }
+            }
+          }
+        }
+      }
+    break;
+    case MESSAGE_CLIENT_UPLOAD_INTERVAL_BEGIN:
+      {
+        mpb_client_upload_interval_begin mp;
+        if (!mp.parse(msg) && mp.chidx < m_max_channels)
+        {
+          char *myusername=m_username.Get();
+
+          mpb_server_download_interval_begin nmb;
+          nmb.chidx=mp.chidx;
+          nmb.estsize=mp.estsize;
+          nmb.fourcc=mp.fourcc;
+          memcpy(nmb.guid,mp.guid,sizeof(nmb.guid));
+          nmb.username = myusername;
+
+          Net_Message *newmsg=nmb.build();
+          newmsg->addRef();
+                  
+          static unsigned char zero_guid[16];
+
+
+          if (mp.fourcc && memcmp(mp.guid,zero_guid,sizeof(zero_guid))) // zero = silence, so simply rebroadcast
+          {
+            User_TransferState *newrecv=new User_TransferState;
+            newrecv->bytes_estimated=mp.estsize;
+            newrecv->fourcc=mp.fourcc;
+            memcpy(newrecv->guid,mp.guid,sizeof(newrecv->guid));
+
+            if (group->m_logdir.Get()[0])
+            {
+              char fn[512];
+              char guidstr[64];
+              guidtostr(mp.guid,guidstr);
+
+              char ext[8];
+              type_to_string(mp.fourcc,ext);
+              sprintf(fn,"%c/%s.%s",guidstr[0],guidstr,ext);
+
+              WDL_String tmp(group->m_logdir.Get());                
+              tmp.Append(fn);
+
+              newrecv->fp = fopen(tmp.Get(),"wb");
+
+              if (group->m_logfp)
+              {
+                // decide when to write new interval
+                char *chn="?";
+                if (mp.chidx >= 0 && mp.chidx < MAX_USER_CHANNELS) chn=m_channels[mp.chidx].name.Get();
+                fprintf(group->m_logfp,"user %s \"%s\" %d \"%s\"\n",guidstr,myusername,mp.chidx,chn);
+              }
+            }
           
-            int offs=0;
-            short v;
-            int p,f;
-            int whichch=0;
-            char *chnp=0;
-            while ((offs=chi.parse_get_rec(offs,&chnp,&v,&p,&f))>0 && whichch < MAX_USER_CHANNELS && whichch < m_max_channels)
-            {
-              if (!chnp) chnp=""; 
-
-              int doactive=!(f&0x80);
-
-              // only if something changes, do we add it to the rec
-              int hadch=!m_channels[whichch].active != !doactive;
-              if (!hadch) hadch = strcmp(chnp,m_channels[whichch].name.Get());
-              if (!hadch) hadch = m_channels[whichch].volume!=v;
-              if (!hadch) hadch = m_channels[whichch].panning!=p;
-              if (!hadch) hadch = m_channels[whichch].flags!=f;
-
-              m_channels[whichch].active=doactive;
-              m_channels[whichch].name.Set(chnp);
-              m_channels[whichch].volume=v;
-              m_channels[whichch].panning=p;
-              m_channels[whichch].flags=f;
-
-              if (hadch)
-              {
-                mfmt_changes++;
-                mfmt.build_add_rec(m_channels[whichch].active,whichch,
-                                  m_channels[whichch].volume,
-                                  m_channels[whichch].panning,
-                                  m_channels[whichch].flags,
-                                  m_username.Get(),
-                                  m_channels[whichch].name.Get());
-              }
-
-              whichch++;
-            }
-            while (whichch < MAX_USER_CHANNELS)
-            {
-              m_channels[whichch].name.Set("");
-
-              if (m_channels[whichch].active) // only send deactivate if it was previously active
-              {
-                m_channels[whichch].active=0;
-                mfmt_changes++;
-                mfmt.build_add_rec(0,whichch,
-                                  m_channels[whichch].volume,
-                                  m_channels[whichch].panning,
-                                  m_channels[whichch].flags,
-                                  m_username.Get(),
-                                  m_channels[whichch].name.Get());
-              }
-
-              whichch++;
-            }
-            if (!group->m_allow_hidden_users && m_max_channels && !(m_auth_privs&PRIV_HIDDEN))
-            {
-              for (whichch = 0; whichch < MAX_USER_CHANNELS && !m_channels[whichch].active; whichch ++);
-
-
-              if (whichch == MAX_USER_CHANNELS) // if empty, tell the user about one channel
-              {
-                mfmt.build_add_rec(1,0,0,0,0,m_username.Get(),"");
-                mfmt_changes++;
-              }
-            }
-
-
-            if (mfmt_changes) group->Broadcast(mfmt.build(),this);
-          }         
-        }
-      break;
-      case MESSAGE_CLIENT_SET_USERMASK:
-        {
-          mpb_client_set_usermask umi;
-          if (!umi.parse(msg))
-          {
-            int offs=0;
-            char *unp=0;
-            unsigned int fla=0;
-            while ((offs=umi.parse_get_rec(offs,&unp,&fla))>0)
-            {
-              if (unp)
-              {
-                int x;
-                for (x = 0; x < m_sublist.GetSize() && strcasecmp(unp,m_sublist.Get(x)->username.Get()); x ++);
-                if (x == m_sublist.GetSize()) // add new
-                {
-                  if (fla) // only add if we need to subscribe
-                  {
-                    User_SubscribeMask *n=new User_SubscribeMask;
-                    n->username.Set(unp);
-                    n->channelmask = fla;
-                    m_sublist.Add(n);
-                  }
-                }
-                else
-                {
-                  if (fla) // update flag
-                  {
-                    m_sublist.Get(x)->channelmask=fla;
-                  }
-                  else // remove
-                  {
-                    delete m_sublist.Get(x);
-                    m_sublist.Delete(x);
-                  }
-                }
-              }
-            }
+            m_recvfiles.Add(newrecv);
           }
-        }
-      break;
-      case MESSAGE_CLIENT_UPLOAD_INTERVAL_BEGIN:
-        {
-          mpb_client_upload_interval_begin mp;
-          if (!mp.parse(msg) && mp.chidx < m_max_channels)
+
+
+          int user;
+          for (user=0;user<group->m_users.GetSize(); user++)
           {
-            char *myusername=m_username.Get();
-
-            mpb_server_download_interval_begin nmb;
-            nmb.chidx=mp.chidx;
-            nmb.estsize=mp.estsize;
-            nmb.fourcc=mp.fourcc;
-            memcpy(nmb.guid,mp.guid,sizeof(nmb.guid));
-            nmb.username = myusername;
-
-            Net_Message *newmsg=nmb.build();
-            newmsg->addRef();
-                    
-            static unsigned char zero_guid[16];
-
-
-            if (mp.fourcc && memcmp(mp.guid,zero_guid,sizeof(zero_guid))) // zero = silence, so simply rebroadcast
+            User_Connection *u=group->m_users.Get(user);
+            if (u && u != this)
             {
-              User_TransferState *newrecv=new User_TransferState;
-              newrecv->bytes_estimated=mp.estsize;
-              newrecv->fourcc=mp.fourcc;
-              memcpy(newrecv->guid,mp.guid,sizeof(newrecv->guid));
-
-              if (group->m_logdir.Get()[0])
+              int i;
+              for (i=0; i < u->m_sublist.GetSize(); i ++)
               {
-                char fn[512];
-                char guidstr[64];
-                guidtostr(mp.guid,guidstr);
-
-                char ext[8];
-                type_to_string(mp.fourcc,ext);
-                sprintf(fn,"%c/%s.%s",guidstr[0],guidstr,ext);
-
-                WDL_String tmp(group->m_logdir.Get());                
-                tmp.Append(fn);
-
-                newrecv->fp = fopen(tmp.Get(),"wb");
-
-                if (group->m_logfp)
+                User_SubscribeMask *sm=u->m_sublist.Get(i);
+                if (!strcasecmp(sm->username.Get(),myusername))
                 {
-                  // decide when to write new interval
-                  char *chn="?";
-                  if (mp.chidx >= 0 && mp.chidx < MAX_USER_CHANNELS) chn=m_channels[mp.chidx].name.Get();
-                  fprintf(group->m_logfp,"user %s \"%s\" %d \"%s\"\n",guidstr,myusername,mp.chidx,chn);
-                }
-              }
-            
-              m_recvfiles.Add(newrecv);
-            }
-
-
-            int user;
-            for (user=0;user<group->m_users.GetSize(); user++)
-            {
-              User_Connection *u=group->m_users.Get(user);
-              if (u && u != this)
-              {
-                int i;
-                for (i=0; i < u->m_sublist.GetSize(); i ++)
-                {
-                  User_SubscribeMask *sm=u->m_sublist.Get(i);
-                  if (!strcasecmp(sm->username.Get(),myusername))
+                  if (sm->channelmask & (1<<mp.chidx))
                   {
-                    if (sm->channelmask & (1<<mp.chidx))
+                    if (memcmp(mp.guid,zero_guid,sizeof(zero_guid))) // zero = silence, so simply rebroadcast
                     {
-                      if (memcmp(mp.guid,zero_guid,sizeof(zero_guid))) // zero = silence, so simply rebroadcast
-                      {
-                        // add entry in send list
-                        User_TransferState *nt=new User_TransferState;
-                        memcpy(nt->guid,mp.guid,sizeof(nt->guid));
-                        nt->bytes_estimated = mp.estsize;
-                        nt->fourcc = mp.fourcc;
-                        u->m_sendfiles.Add(nt);
-                      }
-
-                      u->Send(newmsg);
+                      // add entry in send list
+                      User_TransferState *nt=new User_TransferState;
+                      memcpy(nt->guid,mp.guid,sizeof(nt->guid));
+                      nt->bytes_estimated = mp.estsize;
+                      nt->fourcc = mp.fourcc;
+                      u->m_sendfiles.Add(nt);
                     }
-                    break;
+
+                    u->Send(newmsg);
                   }
+                  break;
                 }
               }
             }
-            newmsg->releaseRef();
           }
+          newmsg->releaseRef();
         }
-        //m_recvfiles
-      break;
-      case MESSAGE_CLIENT_UPLOAD_INTERVAL_WRITE:
+      }
+      //m_recvfiles
+    break;
+    case MESSAGE_CLIENT_UPLOAD_INTERVAL_WRITE:
+      {
+        mpb_client_upload_interval_write mp;
+        if (!mp.parse(msg))
         {
-          mpb_client_upload_interval_write mp;
-          if (!mp.parse(msg))
+          time_t now;
+          time(&now);
+          msg->set_type(MESSAGE_SERVER_DOWNLOAD_INTERVAL_WRITE); // we rely on the fact that the upload/download write messages are identical
+                                                                 // though we may need to update this at a later date if we change things.
+
+          int user,x;
+
+
+          for (x = 0; x < m_recvfiles.GetSize(); x ++)
           {
-            time_t now;
-            time(&now);
-            msg->set_type(MESSAGE_SERVER_DOWNLOAD_INTERVAL_WRITE); // we rely on the fact that the upload/download write messages are identical
-                                                                   // though we may need to update this at a later date if we change things.
-
-            int user,x;
-
-
-            for (x = 0; x < m_recvfiles.GetSize(); x ++)
+            User_TransferState *t=m_recvfiles.Get(x);
+            if (!memcmp(t->guid,mp.guid,sizeof(mp.guid)))
             {
-              User_TransferState *t=m_recvfiles.Get(x);
-              if (!memcmp(t->guid,mp.guid,sizeof(mp.guid)))
-              {
-                t->last_acttime=now;
+              t->last_acttime=now;
 
-                if (t->fp) fwrite(mp.audio_data,1,mp.audio_data_len,t->fp);
+              if (t->fp) fwrite(mp.audio_data,1,mp.audio_data_len,t->fp);
 
-                t->bytes_sofar+=mp.audio_data_len;
-                if (mp.flags & 1)
-                {
-                  delete t;
-                  m_recvfiles.Delete(x);
-                }
-                break;
-              }
-              if (now-t->last_acttime > TRANSFER_TIMEOUT)
+              t->bytes_sofar+=mp.audio_data_len;
+              if (mp.flags & 1)
               {
                 delete t;
-                m_recvfiles.Delete(x--);
+                m_recvfiles.Delete(x);
               }
+              break;
             }
-
-
-            for (user=0;user<group->m_users.GetSize(); user++)
+            if (now-t->last_acttime > TRANSFER_TIMEOUT)
             {
-              User_Connection *u=group->m_users.Get(user);
-              if (u && u != this)
+              delete t;
+              m_recvfiles.Delete(x--);
+            }
+          }
+
+
+          for (user=0;user<group->m_users.GetSize(); user++)
+          {
+            User_Connection *u=group->m_users.Get(user);
+            if (u && u != this)
+            {
+              int i;
+              for (i=0; i < u->m_sendfiles.GetSize(); i ++)
               {
-                int i;
-                for (i=0; i < u->m_sendfiles.GetSize(); i ++)
+                User_TransferState *t=u->m_sendfiles.Get(i);
+                if (t && !memcmp(t->guid,mp.guid,sizeof(t->guid)))
                 {
-                  User_TransferState *t=u->m_sendfiles.Get(i);
-                  if (t && !memcmp(t->guid,mp.guid,sizeof(t->guid)))
-                  {
-                    t->last_acttime=now;
-                    t->bytes_sofar += mp.audio_data_len;
-                    u->Send(msg);
-                    if (mp.flags & 1)
-                    {
-                      delete t;
-                      u->m_sendfiles.Delete(i);
-                      // remove from transfer list
-                    }
-                    break;
-                  }
-                  if (now-t->last_acttime > TRANSFER_TIMEOUT)
+                  t->last_acttime=now;
+                  t->bytes_sofar += mp.audio_data_len;
+                  u->Send(msg);
+                  if (mp.flags & 1)
                   {
                     delete t;
-                    u->m_sendfiles.Delete(i--);
+                    u->m_sendfiles.Delete(i);
+                    // remove from transfer list
                   }
+                  break;
+                }
+                if (now-t->last_acttime > TRANSFER_TIMEOUT)
+                {
+                  delete t;
+                  u->m_sendfiles.Delete(i--);
                 }
               }
             }
           }
         }
-      break;
+      }
+    break;
 
-      case MESSAGE_CHAT_MESSAGE:
+    case MESSAGE_CHAT_MESSAGE:
+      {
+        mpb_chat_message poo;
+        if (!poo.parse(msg))
         {
-          mpb_chat_message poo;
-          if (!poo.parse(msg))
-          {
-            group->onChatMessage(this,&poo);
-          }
+          group->onChatMessage(this,&poo);
         }
-      break;
+      }
+    break;
 
-      default:
-      break;
-    }
-  } // m_auth_state > 0
+    default:
+    break;
+  }
   msg->releaseRef();
+}
 
+void User_Connection::netconMessagesReady()
+{
+  while (m_netcon.hasMessagesAvailable()) {
+    Net_Message *msg = m_netcon.nextMessage();
+    processMessage(msg);
+  }
+}
+
+int User_Connection::Run(int*)
+{
+  if (m_netcon.GetStatus()) {
+    return m_netcon.GetStatus();
+  }
+
+  if (m_auth_state < 0)
+  {
+    if (!m_lookup || m_lookup->Run())
+    {
+      if (!m_lookup || !OnRunAuth())
+      {
+        m_netcon.Kill();
+      }
+      delete m_lookup;
+      m_lookup=0;
+    }
+  }
+  else if (!m_auth_state)
+  {
+    if (time(NULL) > m_connect_time+120) // if we haven't gotten an auth reply in 120s, disconnect. The reason this is so long is to give
+                                      // the user time to potentially read the license agreement.
+    {
+      logText("%s: Got an authorization timeout\n",
+              m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData());
+      m_connect_time=time(NULL)+120;
+      mpb_server_auth_reply bh;
+      bh.errmsg="authorization timeout";
+      Send(bh.build());
+      m_netcon.Kill();
+    }
+  }
   return 0;
 }
 
