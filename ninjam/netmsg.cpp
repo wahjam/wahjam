@@ -97,11 +97,53 @@ int Net_Message::makeMessageHeader(void *data) // makes message header, data sho
   return (dp-(unsigned char *)data);
 }
 
+void Net_Connection::socketError(QAbstractSocket::SocketError)
+{
+  setStatus(1);
+}
 
+void Net_Connection::readyRead()
+{
+  while (m_sock->bytesAvailable())
+  {
+    char buf[8192];
+    int buflen = m_sock->peek(buf, sizeof(buf));
+    int a = 0;
+
+    if (!m_recvmsg) {
+      m_recvmsg = new Net_Message;
+      m_recvstate = 0;
+    }
+
+    if (!m_recvstate)
+    {
+      a = m_recvmsg->parseMessageHeader(buf, buflen);
+      if (a < 0)
+      {
+        setStatus(-1);
+        return;
+      }
+      if (a == 0) {
+        return;
+      }
+      m_recvstate = 1;
+    }
+    int b2 = m_recvmsg->parseAddBytes(buf + a, buflen - a);
+
+    m_sock->read(buf, b2 + a); // dump our bytes that we used
+
+    if (m_recvmsg->parseBytesNeeded() < 1)
+    {
+      recvq.enqueue(m_recvmsg);
+      m_recvmsg = 0;
+      m_recvstate = 0;
+    }
+  }
+}
 
 Net_Message *Net_Connection::Run(int *wantsleep)
 {
-  if (m_error) {
+  if (status != 0) {
     return 0;
   }
 
@@ -115,56 +157,10 @@ Net_Message *Net_Connection::Run(int *wantsleep)
     m_last_send = now;
   }
 
-  Net_Message *retv = 0;
-
-  if (!m_recvmsg) {
-    m_recvmsg = new Net_Message;
-    m_recvstate = 0;
-  }
-
-  while (!retv && m_sock->bytesAvailable())
+  if (!recvq.isEmpty())
   {
-    char buf[8192];
-    char buf2[8192];
-    int buflen = m_sock->peek(buf, sizeof(buf));
-    int a = 0;
+    Net_Message *retv = recvq.dequeue();
 
-    if (!m_recvstate)
-    {
-      a = m_recvmsg->parseMessageHeader(buf, buflen);
-      if (a < 0)
-      {
-        m_error = -1;
-        break;
-      }
-      if (a == 0) {
-        break;
-      }
-      m_recvstate = 1;
-    }
-    int b2 = m_recvmsg->parseAddBytes(buf + a, buflen - a);
-
-    int nread = m_sock->read(buf2, b2 + a); // dump our bytes that we used
-    if (nread != b2 + a) {
-      fprintf(stderr, "m_sock->read() nread %d b2 + a %d\n", nread, b2 + a);
-    }
-    if (memcmp((const void*)buf, (const void*)buf2, nread) != 0) {
-      fprintf(stderr, "peek and read buffer mismatch!  race condition?\n");
-    }
-
-    if (m_recvmsg->parseBytesNeeded() < 1)
-    {
-      retv = m_recvmsg;
-      m_recvmsg = 0;
-      m_recvstate = 0;
-    }
-    if (wantsleep) {
-      *wantsleep = 0;
-    }
-  }
-
-  if (retv)
-  {
     if (lastmsgs[lastmsgIdx]) {
       lastmsgs[lastmsgIdx]->releaseRef();
     }
@@ -173,13 +169,16 @@ Net_Message *Net_Connection::Run(int *wantsleep)
     lastmsgIdx = (lastmsgIdx + 1) % 5;
 
     m_last_recv = now;
+    if (wantsleep) {
+      *wantsleep = 0;
+    }
+    return retv;
   }
   else if (now > m_last_recv + m_keepalive * 3)
   {
-    m_error = -3;
+    status = -3;
   }
-
-  return retv;
+  return 0;
 }
 
 int Net_Connection::Send(Net_Message *msg)
@@ -204,33 +203,26 @@ int Net_Connection::Send(Net_Message *msg)
 
 int Net_Connection::GetStatus()
 {
-  if (m_error) {
-    fprintf(stderr, "m_error %d!\n", m_error);
-    return m_error;
-  }
-  if (!m_sock || !m_sock->isOpen()) {
-    fprintf(stderr, "socket closed!\n");
-    return 1;
-  }
-  static int last_state;
-  if (last_state != m_sock->state()) {
-    fprintf(stderr, "last_state %d state %d\n", last_state, m_sock->state());
-    last_state = m_sock->state();
-  }
-  switch (m_sock->state()) {
-  case QAbstractSocket::HostLookupState:
-  case QAbstractSocket::ConnectingState:
-  case QAbstractSocket::ConnectedState:
-  case QAbstractSocket::ClosingState:
-    return 0;
-  default:
-    return 1;
-  }
+  return status;
 }
 
 QHostAddress Net_Connection::GetRemoteAddr()
 {
   return m_sock->peerAddress();
+}
+
+Net_Connection::Net_Connection(QTcpSocket *sock, QObject *parent)
+  : QObject(parent), status(0), m_recvstate(0),
+    m_recvmsg(0), m_sock(sock), lastmsgIdx(0)
+{
+  m_sock->setParent(this);
+
+  connect(sock, SIGNAL(error(QAbstractSocket::SocketError)),
+          this, SLOT(socketError(QAbstractSocket::SocketError)));
+  connect(sock, SIGNAL(readyRead()), this, SLOT(readyRead()));
+
+  memset(lastmsgs, 0, sizeof(lastmsgs));
+  SetKeepAlive(0);
 }
 
 Net_Connection::~Net_Connection()
@@ -241,11 +233,20 @@ Net_Connection::~Net_Connection()
     }
   }
 
+  while (!recvq.isEmpty()) {
+    delete recvq.dequeue();
+  }
+
   delete m_recvmsg;
-  delete m_sock;
+}
+
+void Net_Connection::setStatus(int s)
+{
+  m_sock->close();
+  status = s;
 }
 
 void Net_Connection::Kill()
 {
-  m_sock->close();
+  setStatus(1);
 }

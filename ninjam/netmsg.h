@@ -29,6 +29,7 @@
 #define _NETMSG_H_
 
 #include <time.h>
+#include <QQueue>
 #include <QTcpSocket>
 #include <QHostAddress>
 
@@ -83,14 +84,12 @@ class Net_Message
 };
 
 
-class Net_Connection
+class Net_Connection : public QObject
 {
+  Q_OBJECT
+
   public:
-    Net_Connection(QTcpSocket *sock) : m_error(0), m_recvstate(0), m_recvmsg(0), m_sock(sock), lastmsgIdx(0)
-    {
-      memset(lastmsgs, 0, sizeof(lastmsgs));
-      SetKeepAlive(0);
-    }
+    Net_Connection(QTcpSocket *sock, QObject *parent = 0);
     ~Net_Connection();
 
     Net_Message *Run(int *wantsleep=0);
@@ -107,13 +106,20 @@ class Net_Connection
 
     void Kill();
 
+  private slots:
+    void socketError(QAbstractSocket::SocketError socketError);
+    void readyRead();
+
   private:
-    int m_error;
+    void setStatus(int s);
+
+    int status;
     int m_keepalive;
     time_t m_last_send;
     time_t m_last_recv;
     int m_recvstate;
     Net_Message *m_recvmsg;
+    QQueue<Net_Message*> recvq;
     QTcpSocket *m_sock;
     Net_Message *lastmsgs[5];
     unsigned int lastmsgIdx;
