@@ -104,6 +104,8 @@ void Net_Connection::socketError(QAbstractSocket::SocketError)
 
 void Net_Connection::readyRead()
 {
+  bool msgEnqueued = false;
+
   while (m_sock->bytesAvailable())
   {
     char buf[8192];
@@ -138,7 +140,13 @@ void Net_Connection::readyRead()
       m_recvmsg = 0;
       m_recvstate = 0;
       recvKeepaliveTimer.start();
+      msgEnqueued = true;
     }
+  }
+
+  /* Only emit signal once per readyRead() */
+  if (msgEnqueued) {
+    emit messagesReady();
   }
 }
 
@@ -155,7 +163,7 @@ void Net_Connection::recvTimedOut()
   setStatus(-3);
 }
 
-Net_Message *Net_Connection::Run(int *wantsleep)
+Net_Message *Net_Connection::nextMessage()
 {
   if (status != 0 || recvq.isEmpty()) {
     return 0;
@@ -170,10 +178,21 @@ Net_Message *Net_Connection::Run(int *wantsleep)
   lastmsgs[lastmsgIdx] = retv;
   lastmsgIdx = (lastmsgIdx + 1) % 5;
 
-  if (wantsleep) {
+  return retv;
+}
+
+Net_Message *Net_Connection::Run(int *wantsleep)
+{
+  Net_Message *retv = nextMessage();
+  if (retv && wantsleep) {
     *wantsleep = 0;
   }
   return retv;
+}
+
+bool Net_Connection::hasMessagesAvailable()
+{
+  return !recvq.isEmpty();
 }
 
 int Net_Connection::Send(Net_Message *msg)
@@ -218,6 +237,7 @@ Net_Connection::Net_Connection(QTcpSocket *sock, QObject *parent)
   connect(sock, SIGNAL(error(QAbstractSocket::SocketError)),
           this, SLOT(socketError(QAbstractSocket::SocketError)));
   connect(sock, SIGNAL(readyRead()), this, SLOT(readyRead()));
+  connect(sock, SIGNAL(disconnected()), this, SIGNAL(disconnected()));
 
   connect(&sendKeepaliveTimer, SIGNAL(timeout()),
           this, SLOT(sendKeepaliveMessage()));
@@ -257,8 +277,8 @@ void Net_Connection::setStatus(int s)
 {
   sendKeepaliveTimer.stop();
   recvKeepaliveTimer.stop();
-  m_sock->close();
   status = s;
+  m_sock->disconnectFromHost();
 }
 
 void Net_Connection::Kill()

@@ -92,6 +92,8 @@ class Net_Connection : public QObject
     Net_Connection(QTcpSocket *sock, QObject *parent = 0);
     ~Net_Connection();
 
+    bool hasMessagesAvailable();
+    Net_Message *nextMessage();
     Net_Message *Run(int *wantsleep=0);
     int Send(Net_Message *msg); // -1 on error, i.e. queue full
     int GetStatus(); // returns <0 on error, 0 on normal, 1 on disconnect
@@ -101,6 +103,10 @@ class Net_Connection : public QObject
     void SetKeepAlive(int interval);
 
     void Kill();
+
+  signals:
+    void messagesReady();
+    void disconnected();
 
   private slots:
     void socketError(QAbstractSocket::SocketError socketError);
