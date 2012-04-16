@@ -99,7 +99,7 @@ static void type_to_string(unsigned int t, char *out)
 
 #define TRANSFER_TIMEOUT 8
 
-User_Connection::User_Connection(QTcpSocket *sock, User_Group *grp) : m_netcon(sock), m_auth_state(0), m_clientcaps(0), m_auth_privs(0), m_reserved(0), m_max_channels(0),
+User_Connection::User_Connection(QTcpSocket *sock, User_Group *grp) : group(grp), m_netcon(sock), m_auth_state(0), m_clientcaps(0), m_auth_privs(0), m_reserved(0), m_max_channels(0),
       m_vote_bpm(0), m_vote_bpm_lasttime(0), m_vote_bpi(0), m_vote_bpi_lasttime(0)
 {
   WDL_RNG_bytes(m_challenge,sizeof(m_challenge));
@@ -167,7 +167,7 @@ void User_Connection::SendConfigChangeNotify(int bpm, int bpi)
   }
 }
 
-int User_Connection::OnRunAuth(User_Group *group)
+int User_Connection::OnRunAuth()
 {
   {
     WDL_SHA1 shatmp;
@@ -191,7 +191,7 @@ int User_Connection::OnRunAuth(User_Group *group)
 
   if (m_lookup->is_status)
   {
-    SendUserList(group);
+    SendUserList();
 
     {
       mpb_server_config_change_notify mk;
@@ -329,7 +329,7 @@ int User_Connection::OnRunAuth(User_Group *group)
   SendConfigChangeNotify(group->m_last_bpm,group->m_last_bpi);
 
 
-  SendUserList(group);
+  SendUserList();
 
 
   {
@@ -350,7 +350,7 @@ int User_Connection::OnRunAuth(User_Group *group)
 }
 
 // send user list to user
-void User_Connection::SendUserList(User_Group *group)
+void User_Connection::SendUserList()
 {
   mpb_server_userinfo_change_notify bh;
 
@@ -381,7 +381,7 @@ void User_Connection::SendUserList(User_Group *group)
 }
 
 
-int User_Connection::Run(User_Group *group, int *wantsleep)
+int User_Connection::Run(int *wantsleep)
 {
   Net_Message *msg=m_netcon.Run(wantsleep);
   if (m_netcon.GetStatus()) 
@@ -396,7 +396,7 @@ int User_Connection::Run(User_Group *group, int *wantsleep)
     {
       if (!m_lookup || m_lookup->Run())
       {
-        if (!m_lookup || !OnRunAuth(group))
+        if (!m_lookup || !OnRunAuth())
         {
           m_netcon.Run();
           m_netcon.Kill();
@@ -872,7 +872,7 @@ int User_Group::Run()
       User_Connection *p=m_users.Get(thispos);
       if (p)
       {
-        int ret=p->Run(this,&wantsleep);
+        int ret=p->Run(&wantsleep);
         if (ret)
         {
           // broadcast to other users that this user is no longer present

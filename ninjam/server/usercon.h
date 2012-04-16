@@ -183,15 +183,16 @@ class User_Connection
     User_Connection(QTcpSocket *sock, User_Group *grp);
     ~User_Connection();
 
-    int Run(User_Group *group, int *wantsleep=0); // returns 1 if disconnected, -1 if error in data. 0 if ok.
+    int Run(int *wantsleep=0); // returns 1 if disconnected, -1 if error in data. 0 if ok.
     void SendConfigChangeNotify(int bpm, int bpi);
 
     void Send(Net_Message *msg);
 
-    int OnRunAuth(User_Group *group);
+    int OnRunAuth();
 
-    void SendUserList(User_Group *group);
+    void SendUserList();
 
+    User_Group *group;
     Net_Connection m_netcon;
     WDL_String m_username;
     
