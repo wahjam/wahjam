@@ -225,12 +225,18 @@ int Net_Connection::GetStatus()
 
 QHostAddress Net_Connection::GetRemoteAddr()
 {
-  return m_sock->peerAddress();
+  /* Cache remote address since QTcpSocket clears it on disconnect */
+  if (remoteAddr != QHostAddress::Null) {
+    return remoteAddr;
+  }
+  remoteAddr = m_sock->peerAddress();
+  return remoteAddr;
 }
 
 Net_Connection::Net_Connection(QTcpSocket *sock, QObject *parent)
   : QObject(parent), status(0), m_recvstate(0),
-    m_recvmsg(0), m_sock(sock), lastmsgIdx(0)
+    m_recvmsg(0), m_sock(sock), remoteAddr(sock->peerAddress()),
+    lastmsgIdx(0)
 {
   m_sock->setParent(this);
 
