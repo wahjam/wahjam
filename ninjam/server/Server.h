@@ -94,7 +94,6 @@ public:
   Server(User_Group *group);
   ~Server();
   bool setConfig(ServerConfig *config);
-  bool run();
 
 private slots:
   void acceptNewConnection();

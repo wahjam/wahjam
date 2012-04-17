@@ -103,6 +103,7 @@ User_Connection::User_Connection(QTcpSocket *sock, User_Group *grp) : group(grp)
       m_vote_bpm(0), m_vote_bpm_lasttime(0), m_vote_bpi(0), m_vote_bpi_lasttime(0)
 {
   connect(&m_netcon, SIGNAL(messagesReady()), this, SLOT(netconMessagesReady()));
+  connect(&m_netcon, SIGNAL(disconnected()), this, SIGNAL(disconnected()));
 
   WDL_RNG_bytes(m_challenge,sizeof(m_challenge));
 
@@ -125,11 +126,16 @@ User_Connection::User_Connection(QTcpSocket *sock, User_Group *grp) : group(grp)
   else m_netcon.SetKeepAlive(grp->m_keepalive);
   Send(ch.build());
 
-  time(&m_connect_time);
-
   m_lookup=0;
-}
 
+  /* Kill connection if there is no authentication response, but give enough
+   * time so the license can be read.
+   */
+  connect(&authenticationTimer, SIGNAL(timeout()),
+          this, SLOT(authenticationTimeout()));
+  authenticationTimer.setSingleShot(true);
+  authenticationTimer.start(120 * 1000 /* milliseconds */);
+}
 
 void User_Connection::Send(Net_Message *msg)
 {
@@ -395,6 +401,8 @@ void User_Connection::processMessage(Net_Message *msg)
     if (!err_st) err_st = ( authrep.client_version < PROTO_VER_MIN || authrep.client_version > PROTO_VER_MAX ) ? 2 : 0;
     if (!err_st) err_st = ( group->m_licensetext.Get()[0] && !(authrep.client_caps & 1) ) ? 3 : 0;
 
+    msg->releaseRef();
+
     if (err_st)
     {
       static char *tab[] = { "invalid authorization reply", "incorrect client version", "license not agreed to" };
@@ -407,7 +415,6 @@ void User_Connection::processMessage(Net_Message *msg)
 
       Send(bh.build());
       m_netcon.Kill();
-      msg->releaseRef();
       return;
     }
 
@@ -418,15 +425,16 @@ void User_Connection::processMessage(Net_Message *msg)
     delete m_lookup;
     m_lookup=group->CreateUserLookup?group->CreateUserLookup(authrep.username):NULL;
 
+    m_auth_state = -1;
+
     if (m_lookup)
     {
       m_lookup->hostmask.Set(m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData());
       memcpy(m_lookup->sha1buf_request,authrep.passhash,sizeof(m_lookup->sha1buf_request));
+      connect(m_lookup, SIGNAL(completed()), this, SLOT(userLookupCompleted()));
+      m_lookup->start();
     }
-
-    m_auth_state=-1;
-    
-
+    return;
   } // !m_auth_state
 
   if (m_auth_state < 1) {
@@ -746,46 +754,34 @@ void User_Connection::netconMessagesReady()
   }
 }
 
-int User_Connection::Run(int*)
+void User_Connection::authenticationTimeout()
 {
-  if (m_netcon.GetStatus()) {
-    return m_netcon.GetStatus();
-  }
+  logText("%s: Got an authorization timeout\n",
+      m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData());
+  mpb_server_auth_reply bh;
+  bh.errmsg = "authorization timeout";
+  Send(bh.build());
+  m_netcon.Kill();
+}
 
-  if (m_auth_state < 0)
+void User_Connection::userLookupCompleted()
+{
+  if (!OnRunAuth())
   {
-    if (!m_lookup || m_lookup->Run())
-    {
-      if (!m_lookup || !OnRunAuth())
-      {
-        m_netcon.Kill();
-      }
-      delete m_lookup;
-      m_lookup=0;
-    }
+    m_netcon.Kill();
   }
-  else if (!m_auth_state)
-  {
-    if (time(NULL) > m_connect_time+120) // if we haven't gotten an auth reply in 120s, disconnect. The reason this is so long is to give
-                                      // the user time to potentially read the license agreement.
-    {
-      logText("%s: Got an authorization timeout\n",
-              m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData());
-      m_connect_time=time(NULL)+120;
-      mpb_server_auth_reply bh;
-      bh.errmsg="authorization timeout";
-      Send(bh.build());
-      m_netcon.Kill();
-    }
-  }
-  return 0;
+  delete m_lookup;
+  m_lookup=0;
 }
 
 
 User_Group::User_Group() : m_max_users(0), m_last_bpm(120), m_last_bpi(32), m_keepalive(0), 
   m_voting_threshold(110), m_voting_timeout(120),
-  m_run_robin(0), m_allow_hidden_users(0), m_logfp(0)
+  m_allow_hidden_users(0), m_logfp(0)
 {
+  connect(&signalMapper, SIGNAL(mapped(QObject*)),
+          this, SLOT(userDisconnected(QObject*)));
+
   CreateUserLookup=0;
 }
 
@@ -860,67 +856,55 @@ void User_Group::Broadcast(Net_Message *msg, User_Connection *nosend)
   }
 }
 
-int User_Group::Run()
+void User_Group::userDisconnected(QObject *userObj)
 {
-    int wantsleep=1;
-    int x;
+  User_Connection *p = (User_Connection*)userObj;
 
-    for (x = 0; x < m_users.GetSize(); x ++)
+  Q_ASSERT(p);
+
+  // broadcast to other users that this user is no longer present
+  if (p->m_auth_state>0) 
+  {
+    mpb_chat_message newmsg;
+    newmsg.parms[0]="PART";
+    newmsg.parms[1]=p->m_username.Get();
+    Broadcast(newmsg.build(),p);
+
+    mpb_server_userinfo_change_notify mfmt;
+    int mfmt_changes=0;
+
+    int whichch=0;
+    while (whichch < MAX_USER_CHANNELS)
     {
-      int thispos=(x+m_run_robin)%m_users.GetSize();
-      User_Connection *p=m_users.Get(thispos);
-      if (p)
+      p->m_channels[whichch].name.Set("");
+
+      if (!whichch || p->m_channels[whichch].active) // only send deactivate if it was previously active
       {
-        int ret=p->Run(&wantsleep);
-        if (ret)
-        {
-          // broadcast to other users that this user is no longer present
-          if (p->m_auth_state>0) 
-          {
-            mpb_chat_message newmsg;
-            newmsg.parms[0]="PART";
-            newmsg.parms[1]=p->m_username.Get();
-            Broadcast(newmsg.build(),p);
-
-            mpb_server_userinfo_change_notify mfmt;
-            int mfmt_changes=0;
-
-            int whichch=0;
-            while (whichch < MAX_USER_CHANNELS)
-            {
-              p->m_channels[whichch].name.Set("");
-
-              if (!whichch || p->m_channels[whichch].active) // only send deactivate if it was previously active
-              {
-                p->m_channels[whichch].active=0;
-                mfmt_changes++;
-                mfmt.build_add_rec(0,whichch,
-                                  p->m_channels[whichch].volume,
-                                  p->m_channels[whichch].panning,
-                                  p->m_channels[whichch].flags,
-                                  p->m_username.Get(),
-                                  p->m_channels[whichch].name.Get());
-              }
-
-              whichch++;
-            }
-
-            if (mfmt_changes) Broadcast(mfmt.build(),p);
-          }
-
-          logText("%s: disconnected (username:'%s', code=%d)\n",
-                  p->m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData(),
-                  p->m_auth_state > 0 ? p->m_username.Get() : "", ret);
-
-          delete p;
-          m_users.Delete(thispos);
-          x--;
-        }
+        p->m_channels[whichch].active=0;
+        mfmt_changes++;
+        mfmt.build_add_rec(0,whichch,
+            p->m_channels[whichch].volume,
+            p->m_channels[whichch].panning,
+            p->m_channels[whichch].flags,
+            p->m_username.Get(),
+            p->m_channels[whichch].name.Get());
       }
-    }
-    m_run_robin++;
 
-    return wantsleep;
+      whichch++;
+    }
+
+    if (mfmt_changes) Broadcast(mfmt.build(),p);
+  }
+
+  logText("%s: disconnected (username:'%s')\n",
+      p->m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData(),
+      p->m_auth_state > 0 ? p->m_username.Get() : "");
+
+  int idx = m_users.Find(p);
+  Q_ASSERT(idx != -1);
+  m_users.Delete(idx);
+
+  p->deleteLater();
 }
 
 void User_Group::SetConfig(int bpi, int bpm)
@@ -940,6 +924,8 @@ void User_Group::AddConnection(QTcpSocket *sock, int isres)
     p->m_reserved = 1;
   }
   m_users.Add(p);
+  signalMapper.setMapping(p, p);
+  connect(p, SIGNAL(disconnected()), &signalMapper, SLOT(map()));
 }
 
 void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)

@@ -32,6 +32,8 @@
 #define _USERCON_H_
 
 #include <time.h>
+#include <QSignalMapper>
+#include <QTimer>
 #include "../netmsg.h"
 #include "../../WDL/string.h"
 #include "../../WDL/sha.h"
@@ -57,13 +59,15 @@
 #define MIN_BPM 40
 #define MIN_BPI 2
 
-class IUserInfoLookup // abstract base class, overridden by server
+class IUserInfoLookup : public QObject // abstract base class, overridden by server
 {
+  Q_OBJECT
+
 public:
   IUserInfoLookup() { is_status=0; user_valid=0; reqpass=1; privs=0; max_channels=0; }
   virtual ~IUserInfoLookup() { }
 
-  virtual int Run()=0; // return 1 if run is complete, 0 if still needs to run more
+  virtual void start() = 0;
 
   int user_valid; // 1 if valid
   int reqpass; // password required, 1 is default
@@ -77,20 +81,24 @@ public:
 
 
   unsigned char sha1buf_request[WDL_SHA1SIZE]; // don't use, internal for User_Connection
+
+signals:
+  void completed();
 };
 
 
 class User_Connection;
 
-class User_Group
+class User_Group : public QObject
 {
+  Q_OBJECT
+
   public:
     User_Group();
     ~User_Group();
 
     void AddConnection(QTcpSocket *sock, int isres=0);
 
-    int Run(); // return 1 if safe to sleep
     void SetConfig(int bpi, int bpm);
     void SetLicenseText(char *text) { m_licensetext.Set(text); }
     void Broadcast(Net_Message *msg, User_Connection *nosend=0);
@@ -117,8 +125,6 @@ class User_Group
     int m_voting_threshold; // can be 1-100, or >100 to disable
     int m_voting_timeout; // seconds
 
-    unsigned int m_run_robin;
-
     int m_allow_hidden_users;
 
     WDL_String m_licensetext;
@@ -126,6 +132,12 @@ class User_Group
 
     WDL_String m_logdir;
     FILE *m_logfp;
+
+  private slots:
+    void userDisconnected(QObject *userObj);
+
+  private:
+    QSignalMapper signalMapper;
 };
 
 
@@ -185,7 +197,6 @@ class User_Connection : public QObject
     User_Connection(QTcpSocket *sock, User_Group *grp);
     ~User_Connection();
 
-    int Run(int *wantsleep=0); // returns 1 if disconnected, -1 if error in data. 0 if ok.
     void SendConfigChangeNotify(int bpm, int bpi);
 
     void Send(Net_Message *msg);
@@ -199,10 +210,10 @@ class User_Connection : public QObject
     WDL_String m_username;
     
     // auth info
-    time_t m_connect_time;
     int m_auth_state;      // 1 if authorized, 0 if not yet, -1 if auth pending
     unsigned char m_challenge[8];
     int m_clientcaps;
+    QTimer authenticationTimer;
 
     int m_auth_privs;
 
@@ -224,8 +235,13 @@ class User_Connection : public QObject
 
     IUserInfoLookup *m_lookup;
 
+  signals:
+    void disconnected();
+
   private slots:
     void netconMessagesReady();
+    void authenticationTimeout();
+    void userLookupCompleted();
 
   private:
     void processMessage(Net_Message *msg);

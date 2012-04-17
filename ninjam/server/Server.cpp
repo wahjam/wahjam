@@ -206,12 +206,3 @@ void Server::updateNextSession()
     setIdleSessionUpdateTimer();
   }
 }
-
-/* Run an iteration of the main loop
- *
- * Return true if the main loop should sleep.
- */
-bool Server::run()
-{
-  return group->Run();
-}

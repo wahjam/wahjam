@@ -72,7 +72,7 @@ public:
   {
   }
 
-  int Run()
+  void start()
   {
     // perform lookup here
 
@@ -81,7 +81,10 @@ public:
     if (!strncmp(username.Get(),"anonymous",9) && (!username.Get()[9] || username.Get()[9] == ':'))
     {
       logText("got anonymous request (%s)\n",g_config.allowAnonymous?"allowing":"denying");
-      if (!g_config.allowAnonymous) return 1;
+      if (!g_config.allowAnonymous) {
+        emit completed();
+        return;
+      }
 
       user_valid=1;
       reqpass=0;
@@ -165,10 +168,8 @@ public:
         }
       }
     }
-
-    return 1;
+    emit completed();
   }
-
 };
 
 
@@ -711,15 +712,12 @@ int main(int argc, char **argv)
 
   while (!g_done)
   {
-    if (g_server->run())
-    {
-      app.processEvents(QEventLoop::AllEvents, 1 /* milliseconds */);
+    app.processEvents(QEventLoop::AllEvents, 1 /* milliseconds */);
 
-      if (g_reloadconfig && strcmp(argv[1],"-"))
-      {
-        g_reloadconfig=0;
-        reloadConfig(argc, argv, false);
-      }
+    if (g_reloadconfig && strcmp(argv[1],"-"))
+    {
+      g_reloadconfig=0;
+      reloadConfig(argc, argv, false);
     }
   }
 
