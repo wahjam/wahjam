@@ -1,5 +1,5 @@
-Wahjam clients and server (http://wahjam.org/)
-----------------------------------------------
+Wahjam client and server (http://wahjam.org/)
+---------------------------------------------
 
 This software allows musicians to play music together over the internet.  It is
 compatible with and based on NINJAM (http://ninjam.com/).
@@ -13,12 +13,8 @@ Source tree layout
 
   ninjam/
     qtclient/       Qt client (cross-platform)
-    winclient/      Windows client
-    cocoaclient/    Mac OS X client
-    cursesclient/   Linux/Mac OS X curses client
     server/         Server
   WDL/              Common library
-  sdks/             Third-party source libraries (Windows only)
 
 How to build the Qt client
 --------------------------

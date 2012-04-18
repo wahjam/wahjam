@@ -29,10 +29,16 @@
 #else
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/time.h>
 #endif
 
 #include <ctype.h>
 
+#include <QHostAddress>
+
+#include "ninjamsrv.h"
 #include "usercon.h"
 #include "../mpb.h"
 
@@ -47,7 +53,7 @@
 static void guidtostr(unsigned char *guid, char *str)
 {
   int x;
-  for (x = 0; x < 16; x ++) wsprintf(str+x*2,"%02x",guid[x]);
+  for (x = 0; x < 16; x ++) sprintf(str+x*2,"%02x",guid[x]);
 }
 
 
@@ -89,17 +95,13 @@ static void type_to_string(unsigned int t, char *out)
 
 
 
-extern void logText(char *s, ...);
-
 #define MAX_NICK_LEN 128 // not including null term
 
 #define TRANSFER_TIMEOUT 8
 
-User_Connection::User_Connection(JNL_Connection *con, User_Group *grp) : m_auth_state(0), m_clientcaps(0), m_auth_privs(0), m_reserved(0), m_max_channels(0),
+User_Connection::User_Connection(QTcpSocket *sock, User_Group *grp) : m_netcon(sock), m_auth_state(0), m_clientcaps(0), m_auth_privs(0), m_reserved(0), m_max_channels(0),
       m_vote_bpm(0), m_vote_bpm_lasttime(0), m_vote_bpi(0), m_vote_bpi_lasttime(0)
 {
-  m_netcon.attach(con);
-
   WDL_RNG_bytes(m_challenge,sizeof(m_challenge));
 
   mpb_server_auth_challenge ch;
@@ -167,9 +169,6 @@ void User_Connection::SendConfigChangeNotify(int bpm, int bpi)
 
 int User_Connection::OnRunAuth(User_Group *group)
 {
-  char addrbuf[256];
-  JNL::addr_to_ipstr(m_netcon.GetConnection()->get_remote(),addrbuf,sizeof(addrbuf));
- 
   {
     WDL_SHA1 shatmp;
 
@@ -182,7 +181,7 @@ int User_Connection::OnRunAuth(User_Group *group)
 
     if ((m_lookup->reqpass && memcmp(buf,m_lookup->sha1buf_request,WDL_SHA1SIZE)) || !m_lookup->user_valid)
     {
-      logText("%s: Refusing user, invalid login/password\n",addrbuf);
+      logText("%s: Refusing user, invalid login/password\n", m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData());
       mpb_server_auth_reply bh;
       bh.errmsg="invalid login/password";
       Send(bh.build());
@@ -295,7 +294,9 @@ int User_Connection::OnRunAuth(User_Group *group)
     }
     if (cnt >= group->m_max_users)
     {
-      logText("%s: Refusing user %s, server full\n",addrbuf,m_username.Get());
+      logText("%s: Refusing user %s, server full\n",
+              m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData(),
+              m_username.Get());
       // sorry, gotta kill this connection
       mpb_server_auth_reply bh;
       bh.errmsg="server full";
@@ -306,7 +307,9 @@ int User_Connection::OnRunAuth(User_Group *group)
 
 
 
-  logText("%s: Accepted user: %s\n",addrbuf,m_username.Get());
+  logText("%s: Accepted user: %s\n",
+          m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData(),
+          m_username.Get());
 
   {
     mpb_server_auth_reply bh;
@@ -407,9 +410,8 @@ int User_Connection::Run(User_Group *group, int *wantsleep)
       if (time(NULL) > m_connect_time+120) // if we haven't gotten an auth reply in 120s, disconnect. The reason this is so long is to give
                                         // the user time to potentially read the license agreement.
       {
-        char buf[256];
-        JNL::addr_to_ipstr(m_netcon.GetConnection()->get_remote(),buf,sizeof(buf));
-        logText("%s: Got an authorization timeout\n",buf);
+        logText("%s: Got an authorization timeout\n",
+                m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData());
         m_connect_time=time(NULL)+120;
         mpb_server_auth_reply bh;
         bh.errmsg="authorization timeout";
@@ -439,10 +441,9 @@ int User_Connection::Run(User_Group *group, int *wantsleep)
       mpb_server_auth_reply bh;
       bh.errmsg=tab[err_st-1];
 
-      char addrbuf[256];
-      JNL::addr_to_ipstr(m_netcon.GetConnection()->get_remote(),addrbuf,sizeof(addrbuf));
-
-      logText("%s: Refusing user, %s\n",addrbuf,bh.errmsg);
+      logText("%s: Refusing user, %s\n",
+              m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData(),
+              bh.errmsg);
 
       Send(bh.build());
       m_netcon.Run();
@@ -462,9 +463,7 @@ int User_Connection::Run(User_Group *group, int *wantsleep)
 
     if (m_lookup)
     {
-      char addrbuf[256];
-      JNL::addr_to_ipstr(m_netcon.GetConnection()->get_remote(),addrbuf,sizeof(addrbuf));
-      m_lookup->hostmask.Set(addrbuf);
+      m_lookup->hostmask.Set(m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData());
       memcpy(m_lookup->sha1buf_request,authrep.passhash,sizeof(m_lookup->sha1buf_request));
     }
 
@@ -945,9 +944,9 @@ int User_Group::Run()
             if (mfmt_changes) Broadcast(mfmt.build(),p);
           }
 
-          char addrbuf[256];
-          JNL::addr_to_ipstr(p->m_netcon.GetConnection()->get_remote(),addrbuf,sizeof(addrbuf));
-          logText("%s: disconnected (username:'%s', code=%d)\n",addrbuf,p->m_auth_state>0?p->m_username.Get():"",ret);
+          logText("%s: disconnected (username:'%s', code=%d)\n",
+                  p->m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData(),
+                  p->m_auth_state > 0 ? p->m_username.Get() : "", ret);
 
           delete p;
           m_users.Delete(thispos);
@@ -970,10 +969,12 @@ void User_Group::SetConfig(int bpi, int bpm)
   Broadcast(mk.build());
 }
 
-void User_Group::AddConnection(JNL_Connection *con, int isres)
+void User_Group::AddConnection(QTcpSocket *sock, int isres)
 {
-  User_Connection *p=new User_Connection(con,this);
-  if (isres) p->m_reserved=1;
+  User_Connection *p = new User_Connection(sock, this);
+  if (isres) {
+    p->m_reserved = 1;
+  }
   m_users.Add(p);
 }
 

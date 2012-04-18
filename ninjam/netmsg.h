@@ -18,9 +18,9 @@
 
 /*
 
-  This header provides the declarations for the Net_Messsage class, and 
-  Net_Connection class (handles sending and receiving Net_Messages to
-  a JNetLib JNL_Connection).
+  This header provides the declarations for the Net_Messsage class, and
+  Net_Connection class (handles sending and receiving Net_Messages)
+
 */
 
 
@@ -28,8 +28,11 @@
 #ifndef _NETMSG_H_
 #define _NETMSG_H_
 
+#include <time.h>
+#include <QTcpSocket>
+#include <QHostAddress>
+
 #include "../WDL/queue.h"
-#include "../WDL/jnetlib/jnetlib.h"
 
 #define NET_MESSAGE_MAX_SIZE 16384
 
@@ -83,21 +86,17 @@ class Net_Message
 class Net_Connection
 {
   public:
-    Net_Connection() : m_error(0),m_msgsendpos(-1), m_recvstate(0),m_recvmsg(0),m_con(0)
-    { 
+    Net_Connection(QTcpSocket *sock) : m_error(0), m_recvstate(0), m_recvmsg(0), m_sock(sock)
+    {
       SetKeepAlive(0);
     }
     ~Net_Connection();
 
-    void attach(JNL_Connection *con) 
-    {
-      m_con=con; 
-    }
-
     Net_Message *Run(int *wantsleep=0);
     int Send(Net_Message *msg); // -1 on error, i.e. queue full
     int GetStatus(); // returns <0 on error, 0 on normal, 1 on disconnect
-    JNL_Connection *GetConnection() { return m_con; }
+
+    QHostAddress GetRemoteAddr();
 
     void SetKeepAlive(int interval)
     {
@@ -105,23 +104,16 @@ class Net_Connection
       m_last_send=m_last_recv=time(NULL);
     }
 
-    void Kill(int quick=0);
+    void Kill();
 
   private:
     int m_error;
-
     int m_keepalive;
-    int m_msgsendpos;
-
-    time_t m_last_send, m_last_recv;
-
+    time_t m_last_send;
+    time_t m_last_recv;
     int m_recvstate;
     Net_Message *m_recvmsg;
-
-    JNL_Connection *m_con;
-    WDL_Queue m_sendq;
-
-
+    QTcpSocket *m_sock;
 };
 
 

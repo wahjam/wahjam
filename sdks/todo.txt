@@ -1,4 +1,0 @@
-This directory needs to have the following items: 
-  oggvorbis-win32sdk-1.0.1  -- get from vorbis.com 
-  DXSDK  -- DirectX SDK, get from Microsoft 
-  asiosdk2  -- ASIO2 SDK (optional, only if you need to build njasiodrv.dll), get from Steinberg 

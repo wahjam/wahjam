@@ -49,6 +49,9 @@
 #ifndef _WDL_HEAPBUF_H_
 #define _WDL_HEAPBUF_H_
 
+#include <stdlib.h>
+#include <string.h>
+
 #ifndef WDL_HEAPBUF_IMPL_ONLY
 
 class WDL_HeapBuf

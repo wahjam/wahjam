@@ -1,7 +1,7 @@
 tags
 *.o
 moc_*.cpp
-ninjam/cursesclient/cwahjam
 ninjam/server/wahjamsrv
+ninjam/server/Makefile
 ninjam/qtclient/Makefile
 ninjam/qtclient/qtclient

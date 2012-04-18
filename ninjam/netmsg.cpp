@@ -19,8 +19,7 @@
 /*
 
   This file provides the implementations of the Net_Messsage class, and 
-  Net_Connection class (handles sending and receiving Net_Messages to
-  a JNetLib JNL_Connection).
+  Net_Connection class (handles sending and receiving Net_Messages)
 
 */
 
@@ -90,130 +89,68 @@ int Net_Message::makeMessageHeader(void *data) // makes message header, data sho
 
 Net_Message *Net_Connection::Run(int *wantsleep)
 {
-  if (!m_con || m_error) return 0;
-
-  {
-    int s=0,r=0;
-    m_con->run(-1,-1,&s,&r);
-    if (wantsleep && (s||r)) *wantsleep=0;
+  if (m_error) {
+    return 0;
   }
 
-  time_t now=time(NULL);
+  time_t now = time(NULL);
 
-  if (m_sendq.Available() > 0) m_last_send=now;
-  else if (now > m_last_send + m_keepalive)
-  {
-    Net_Message *keepalive= new Net_Message;
+  if (now > m_last_send + m_keepalive) {
+    Net_Message *keepalive = new Net_Message;
     keepalive->set_type(MESSAGE_KEEPALIVE);
     keepalive->set_size(0);
     Send(keepalive);
-    m_last_send=now;
+    m_last_send = now;
   }
 
-  // handle sending
-  while (m_con->send_bytes_available()>64 && m_sendq.Available()>0)
-  {
-    Net_Message **topofq = (Net_Message **)m_sendq.Get();
+  Net_Message *retv = 0;
 
-    if (!topofq) break;
-    Net_Message *sendm=*topofq;
-    if (sendm)
-    {
-      if (wantsleep) *wantsleep=0;
-      if (m_msgsendpos<0) // send header
-      {
-        char buf[32];
-        int hdrlen=sendm->makeMessageHeader(buf);
-        m_con->send_bytes(buf,hdrlen);
-
-        m_msgsendpos=0;
-      }
-
-      int sz=sendm->get_size()-m_msgsendpos;
-      if (sz < 1) // end of message, discard and move to next
-      {
-        sendm->releaseRef();
-        m_sendq.Advance(sizeof(Net_Message*));
-        m_msgsendpos=-1;
-      }
-      else
-      {
-        int avail=m_con->send_bytes_available();
-        if (sz > avail) sz=avail;
-        if (sz>0)
-        {
-          m_con->send_bytes((char*)sendm->get_data()+m_msgsendpos,sz);
-          m_msgsendpos+=sz;
-        }
-      }
-    }
-    else
-    {
-      m_sendq.Advance(sizeof(Net_Message*));
-      m_msgsendpos=-1;
-    }
-    {
-      int s=0,r=0;
-      m_con->run(-1,-1,&s,&r);
-      if (wantsleep && (s||r)) *wantsleep=0;
-    }
+  if (!m_recvmsg) {
+    m_recvmsg = new Net_Message;
+    m_recvstate = 0;
   }
 
-  m_sendq.Compact();
-
-  Net_Message *retv=0;
-
-  // handle receive now
-  if (!m_recvmsg) 
-  {
-    m_recvmsg=new Net_Message;
-    m_recvstate=0;
-  }
-
-  while (!retv && m_con->recv_bytes_available()>0)
+  while (!retv && m_sock->bytesAvailable())
   {
     char buf[8192];
-    int bufl=m_con->peek_bytes(buf,sizeof(buf));
-    int a=0;
+    int buflen = m_sock->peek(buf, sizeof(buf));
+    int a = 0;
 
     if (!m_recvstate)
     {
-      a=m_recvmsg->parseMessageHeader(buf,bufl);
-      if (a<0)
+      a = m_recvmsg->parseMessageHeader(buf, buflen);
+      if (a < 0)
       {
-        m_error=-1;
+        m_error = -1;
         break;
       }
-      if (a==0) break;
-      m_recvstate=1;
+      if (a == 0) {
+        break;
+      }
+      m_recvstate = 1;
     }
-    int b2=m_recvmsg->parseAddBytes(buf+a,bufl-a);
+    int b2 = m_recvmsg->parseAddBytes(buf + a, buflen - a);
 
-    m_con->recv_bytes(buf,b2+a); // dump our bytes that we used
+    m_sock->read(buf, b2 + a); // dump our bytes that we used
 
-    if (m_recvmsg->parseBytesNeeded()<1)
+    if (m_recvmsg->parseBytesNeeded() < 1)
     {
-      retv=m_recvmsg;
-      m_recvmsg=0;
-      m_recvstate=0;
+      retv = m_recvmsg;
+      m_recvmsg = 0;
+      m_recvstate = 0;
     }
-    if (wantsleep) *wantsleep=0;
+    if (wantsleep) {
+      *wantsleep = 0;
+    }
   }
-
-  {
-    int s=0,r=0;
-    m_con->run(-1,-1,&s,&r);
-    if (wantsleep && (s||r)) *wantsleep=0;
-  }
-
 
   if (retv)
   {
-    m_last_recv=now;
+    m_last_recv = now;
   }
-  else if (now > m_last_recv + m_keepalive*3)
+  else if (now > m_last_recv + m_keepalive * 3)
   {
-    m_error=-3;
+    m_error = -3;
   }
 
   return retv;
@@ -221,102 +158,55 @@ Net_Message *Net_Connection::Run(int *wantsleep)
 
 int Net_Connection::Send(Net_Message *msg)
 {
-  if (msg)
-  {
-    msg->addRef();
-    if (m_sendq.GetSize() < NET_CON_MAX_MESSAGES*(int)sizeof(Net_Message *))
-      m_sendq.Add(&msg,sizeof(Net_Message *));
-    else 
-    {
-      m_error=-2;
-      msg->releaseRef(); // todo: debug message to log overrun error
-      return -1;
-    }
+  if (!msg) {
+    return 0;
+  }
 
-#if 0
-    if (m_con) 
-    {
-      m_con->run();
+  char buf[32];
+  int hdrlen = msg->makeMessageHeader(buf);
+  qint64 ret = m_sock->write(buf, hdrlen);
+  if (ret != hdrlen) {
+    return -1;
+  }
 
-      while (m_con->send_bytes_available()>64 && m_sendq.Available()>0)
-      {
-        Net_Message **topofq = (Net_Message **)m_sendq.Get();
-
-        if (!topofq) break;
-        Net_Message *sendm=*topofq;
-        if (sendm)
-        {
-          if (m_msgsendpos<0) // send header
-          {
-            char buf[32];
-            int hdrlen=sendm->makeMessageHeader(buf);
-            m_con->send_bytes(buf,hdrlen);
-
-            m_msgsendpos=0;
-          }
-
-          int sz=sendm->get_size()-m_msgsendpos;
-          if (sz < 1) // end of message, discard and move to next
-          {
-            sendm->releaseRef();
-            m_sendq.Advance(sizeof(Net_Message*));
-            m_msgsendpos=-1;
-          }
-          else
-          {
-            int avail=m_con->send_bytes_available();
-            if (sz > avail) sz=avail;
-            if (sz>0)
-            {
-              m_con->send_bytes((char*)sendm->get_data()+m_msgsendpos,sz);
-              m_msgsendpos+=sz;
-            }
-          }
-        }
-        else
-        {
-          m_sendq.Advance(sizeof(Net_Message*));
-          m_msgsendpos=-1;
-        }
-        m_con->run();
-      }
-
-      m_sendq.Compact();
-    }
-  #endif 
-
+  ret = m_sock->write((const char*)msg->get_data(), msg->get_size());
+  if (ret != msg->get_size()) {
+    return -1;
   }
   return 0;
 }
 
 int Net_Connection::GetStatus()
 {
-  if (m_error) return m_error;
-  return !m_con || m_con->get_state()<JNL_Connection::STATE_RESOLVING || m_con->get_state()>=JNL_Connection::STATE_CLOSING; // 1 if disconnected somehow
+  if (m_error) {
+    return m_error;
+  }
+  if (!m_sock || !m_sock->isOpen()) {
+    return 1;
+  }
+  switch (m_sock->state()) {
+  case QAbstractSocket::HostLookupState:
+  case QAbstractSocket::ConnectingState:
+  case QAbstractSocket::ConnectedState:
+  case QAbstractSocket::ClosingState:
+    return 0;
+  default:
+    return 1;
+  }
+}
+
+QHostAddress Net_Connection::GetRemoteAddr()
+{
+  return m_sock->peerAddress();
 }
 
 Net_Connection::~Net_Connection()
-{ 
-  Net_Message **p=(Net_Message **)m_sendq.Get();
-  if (p)
-  {
-    int n=m_sendq.Available()/sizeof(Net_Message *);
-    while (n-->0)
-    {
-      (*p)->releaseRef();
-      p++;
-    }
-    m_sendq.Advance(m_sendq.Available());
-    
-  }
-
-  delete m_con; 
+{
   delete m_recvmsg;
-
+  delete m_sock;
 }
 
-
-void Net_Connection::Kill(int quick) 
-{ 
-  m_con->close(); 
+void Net_Connection::Kill()
+{
+  m_sock->close();
 }

@@ -31,7 +31,11 @@
 #ifndef _USERCON_H_
 #define _USERCON_H_
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
+#include <time.h>
 #include "../netmsg.h"
 #include "../../WDL/string.h"
 #include "../../WDL/sha.h"
@@ -88,7 +92,7 @@ class User_Group
     User_Group();
     ~User_Group();
 
-    void AddConnection(JNL_Connection *con, int isres=0);
+    void AddConnection(QTcpSocket *sock, int isres=0);
 
     int Run(); // return 1 if safe to sleep
     void SetConfig(int bpi, int bpm);
@@ -187,7 +191,7 @@ public:
 class User_Connection
 {
   public:
-    User_Connection(JNL_Connection *con, User_Group *grp);
+    User_Connection(QTcpSocket *sock, User_Group *grp);
     ~User_Connection();
 
     int Run(User_Group *group, int *wantsleep=0); // returns 1 if disconnected, -1 if error in data. 0 if ok.

@@ -35,7 +35,6 @@
 #include "ClientRunThread.h"
 #include "ConnectDialog.h"
 #include "PortAudioConfigDialog.h"
-#include "../../WDL/jnetlib/jnetlib.h"
 #include "../njmisc.h"
 
 MainWindow *MainWindow::instance; /* singleton */
@@ -73,8 +72,6 @@ MainWindow::MainWindow(QWidget *parent)
     abort();
   }
   MainWindow::instance = this;
-
-  JNL::open_socketlib();
 
   client.config_savelocalaudio = 0;
   client.LicenseAgreementCallback = LicenseCallbackTrampoline;
@@ -236,7 +233,6 @@ MainWindow::~MainWindow()
     delete runThread;
     runThread = NULL;
   }
-  JNL::close_socketlib();
 }
 
 /* Must be called with client mutex held or before client thread is started */
