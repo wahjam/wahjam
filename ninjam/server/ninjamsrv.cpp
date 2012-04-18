@@ -36,7 +36,6 @@
 #include <string.h>
 #endif
 #include <time.h>
-#include <signal.h>
 #include <stdarg.h>
 
 #include <QCoreApplication>
@@ -51,6 +50,9 @@
 #include "../../WDL/string.h"
 
 #include "Server.h"
+#ifndef _WIN32
+#include "SignalHandler.h"
+#endif
 #include "ninjamsrv.h"
 
 #define VERSION "v0.06"
@@ -545,24 +547,6 @@ static int ReadConfig(ServerConfig *config, char *configfile)
   return 0;
 }
 
-static int g_reloadconfig;
-static int g_done;
-
-
-void sighandler(int sig)
-{
-  if (sig == SIGINT)
-  {
-    g_done=1;
-  }
-#ifndef _WIN32
-  if (sig == SIGHUP)
-  {
-    g_reloadconfig=1;
-  }
-#endif
-}
-
 void usage(const char *progname)
 {
     printf("Usage: %s config.cfg [options]\n"
@@ -686,14 +670,7 @@ int main(int argc, char **argv)
     }
     else printf("Error opening PID file '%s'\n", g_config.pidFilename.Get());
   }
-
-
-
-  signal(SIGPIPE,sighandler);
-  signal(SIGHUP,sighandler);
 #endif
-  signal(SIGINT,sighandler);
-
 
   if (g_config.logFilename.Get()[0])
   {
@@ -707,16 +684,15 @@ int main(int argc, char **argv)
 
   logText("Server starting up...\n");
 
-  while (!g_done)
-  {
-    app.processEvents(QEventLoop::AllEvents, 1 /* milliseconds */);
+#ifndef _WIN32
+  SignalHandler *sigHandler = new SignalHandler(argc, argv);
+#endif
 
-    if (g_reloadconfig && strcmp(argv[1],"-"))
-    {
-      g_reloadconfig=0;
-      reloadConfig(argc, argv, false);
-    }
-  }
+  app.exec();
+
+#ifndef _WIN32
+  delete sigHandler;
+#endif
 
   logText("Shutting down server\n");
 
