@@ -65,6 +65,8 @@
 #endif
 #include <stdio.h>
 #include <time.h>
+#include <QObject>
+
 #include "../WDL/string.h"
 #include "../WDL/ptrlist.h"
 #include "../WDL/sha.h"
@@ -86,11 +88,13 @@ class BufferQueue;
 // #define NJCLIENT_NO_XMIT_SUPPORT // might want to do this for njcast :)
 //  it also removes mixed ogg writing support
 
-class NJClient
+class NJClient : public QObject
 {
+  Q_OBJECT
+
   friend class RemoteDownload;
 public:
-  NJClient();
+  NJClient(QObject *parent = 0);
   ~NJClient();
 
   void Connect(char *host, char *user, char *pass);

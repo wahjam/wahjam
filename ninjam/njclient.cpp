@@ -326,7 +326,8 @@ void NJClient::makeFilenameFromGuid(WDL_String *s, unsigned char *guid)
 
 
 
-NJClient::NJClient()
+NJClient::NJClient(QObject *parent)
+  : QObject(parent)
 {
   m_wavebq=new BufferQueue;
   m_userinfochange=0;

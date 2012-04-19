@@ -31,6 +31,7 @@ HEADERS += ServerBrowser.h
 HEADERS += MetronomeBar.h
 HEADERS += ChatOutput.h
 HEADERS += ../netmsg.h
+HEADERS += ../njclient.h
 
 SOURCES += qtclient.cpp
 SOURCES += MainWindow.cpp
