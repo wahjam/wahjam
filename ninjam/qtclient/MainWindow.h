@@ -52,13 +52,6 @@ signals:
   void Connected();
   void Disconnected();
 
-  // TODO move to NJClient
-  void userInfoChanged();
-  void statusChanged(int newStatus);
-  void beatsPerMinuteChanged(int bpi);
-  void beatsPerIntervalChanged(int bpi);
-  void currentBeatChanged(int currentBeat);
-
 public slots:
   void ShowAudioConfigDialog();
   void ShowConnectDialog();
@@ -81,7 +74,6 @@ private slots:
   void ShowAboutDialog();
   void VoteBPMDialog();
   void VoteBPIDialog();
-  void RunTick();
 
 private:
   static MainWindow *instance;

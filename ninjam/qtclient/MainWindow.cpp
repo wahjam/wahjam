@@ -182,23 +182,18 @@ MainWindow::MainWindow(QWidget *parent)
   connectionStateMachine->setErrorState(disconnectedState);
   connectionStateMachine->start();
 
-  connect(this, SIGNAL(userInfoChanged()),
+  connect(&client, SIGNAL(userInfoChanged()),
           this, SLOT(UserInfoChanged()));
-  connect(this, SIGNAL(statusChanged(int)),
+  connect(&client, SIGNAL(statusChanged(int)),
           this, SLOT(ClientStatusChanged(int)));
-  connect(this, SIGNAL(beatsPerMinuteChanged(int)),
+  connect(&client, SIGNAL(beatsPerMinuteChanged(int)),
           this, SLOT(BeatsPerMinuteChanged(int)));
-  connect(this, SIGNAL(beatsPerIntervalChanged(int)),
+  connect(&client, SIGNAL(beatsPerIntervalChanged(int)),
           this, SLOT(BeatsPerIntervalChanged(int)));
-  connect(this, SIGNAL(beatsPerIntervalChanged(int)),
+  connect(&client, SIGNAL(beatsPerIntervalChanged(int)),
           metronomeBar, SLOT(setBeatsPerInterval(int)));
-  connect(this, SIGNAL(currentBeatChanged(int)),
+  connect(&client, SIGNAL(currentBeatChanged(int)),
           metronomeBar, SLOT(setCurrentBeat(int)));
-
-  QTimer *runTimer = new QTimer(this);
-  runTimer->setInterval(20 /* milliseconds */);
-  connect(runTimer, SIGNAL(timeout()), this, SLOT(RunTick()));
-  runTimer->start();
 }
 
 MainWindow::~MainWindow()

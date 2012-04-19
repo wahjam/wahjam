@@ -25,22 +25,9 @@
   when the user tweaks something, and NJClient tells the UI code when
   it needs to update something.
 
-  NJClient::Run() needs to be called regularly (preferably every 50ms or less).
-  When calling, if Run() returns 0, you should immediately call it again. i.e.:
-
-  while (!myClient->Run()); 
-
-  Is how Run() should usually be called. In general it is easier to call Run() 
-  from the UI thread in a timer, for example, but it turns out it's a lot better
-  to call it from its own thread to ensure that some UI issue doesn't end up
-  stalling it. If you go this route, you will want to put the Run() call inside
-  of a mutex lock, and also any code that reads/writes remote channel state or 
-  writes to local channel state, in that mutex lock as well. This is a bit of 
-  a pain, but not really that bad.
-
   Additionally, NJClient::AudioProc() needs to be called from the audio thread.
-  It is not necessary to do any sort of mutex protection around these calls, 
-  though, as they are done internally.
+  It is not necessary to do any sort of mutex protection around these calls
+  as they are done internally.
 
 
   Some other notes:
@@ -99,9 +86,6 @@ public:
 
   void Connect(char *host, char *user, char *pass);
   void Disconnect();
-
-  // call Run() from your main (UI) thread
-  int Run();// returns nonzero if sleep is OK
 
   char *GetErrorStr() { return m_errstr.Get(); }
 
@@ -195,6 +179,12 @@ public:
   int (*ChannelMixer)(int user32, float **inbuf, int in_offset, int innch, int chidx, float *outbuf, int len);
   int ChannelMixer_User32;
 
+signals:
+  void userInfoChanged();
+  void statusChanged(int newStatus);
+  void beatsPerMinuteChanged(int bpi);
+  void beatsPerIntervalChanged(int bpi);
+  void currentBeatChanged(int currentBeat);
 
 protected:
   double output_peaklevel;
@@ -254,6 +244,12 @@ protected:
   WDL_PtrList<RemoteDownload> m_downloads;
 
   WDL_HeapBuf tmpblock;
+
+private slots:
+  void tick();
+
+private:
+  int Run();// returns nonzero if sleep is OK
 };
 
 

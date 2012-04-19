@@ -375,6 +375,11 @@ NJClient::NJClient(QObject *parent)
   _reinit();
 
   m_session_pos_ms=m_session_pos_samples=0;
+
+  QTimer *tickTimer = new QTimer(this);
+  tickTimer->setInterval(20 /* milliseconds */);
+  connect(tickTimer, SIGNAL(timeout()), this, SLOT(tick()));
+  tickTimer->start();
 }
 
 void NJClient::_reinit()
@@ -1198,6 +1203,54 @@ int NJClient::Run() // nonzero if sleep ok
 
   return wantsleep;
 
+}
+
+void NJClient::tick()
+{
+  // Values that we watch for changes
+  static int lastStatus = GetStatus();
+  static int lastBpm = -1;
+  static int lastBpi = -1;
+  static int lastBeat = -1;
+
+  while (!Run());
+
+  if (HasUserInfoChanged()) {
+    emit userInfoChanged();
+  }
+
+  int status = GetStatus();
+  if (status != lastStatus) {
+    emit statusChanged(status);
+    lastStatus = status;
+
+    // Ensure we emit signals once client connects
+    lastBpm = -1;
+    lastBpi = -1;
+    lastBeat = -1;
+  }
+
+  if (status == NJClient::NJC_STATUS_OK) {
+    int bpm = GetActualBPM();
+    if (bpm != lastBpm) {
+      emit beatsPerMinuteChanged(bpm);
+      lastBpm = bpm;
+    }
+
+    int bpi = GetBPI();
+    if (bpi != lastBpi) {
+      emit beatsPerIntervalChanged(bpi);
+      lastBpi = bpi;
+    }
+
+    int pos, length; // in samples
+    GetPosition(&pos, &length);
+    int currentBeat = pos * bpi / length + 1;
+    if (currentBeat != lastBeat) {
+      lastBeat = currentBeat;
+      emit currentBeatChanged(currentBeat);
+    }
+  }
 }
 
 
