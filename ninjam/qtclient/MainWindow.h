@@ -36,8 +36,6 @@
 #include "../njclient.h"
 #include "../audiostream.h"
 
-class ClientRunThread;
-
 class MainWindow : public QMainWindow
 {
   Q_OBJECT
@@ -54,6 +52,13 @@ signals:
   void Connected();
   void Disconnected();
 
+  // TODO move to NJClient
+  void userInfoChanged();
+  void statusChanged(int newStatus);
+  void beatsPerMinuteChanged(int bpi);
+  void beatsPerIntervalChanged(int bpi);
+  void currentBeatChanged(int currentBeat);
+
 public slots:
   void ShowAudioConfigDialog();
   void ShowConnectDialog();
@@ -61,8 +66,6 @@ public slots:
   void SendChatMessage(const QString &line);
 
 private slots:
-  void LicenseCallback(const char *licensetext, bool *result);
-  void ChatMessageCallback(char **parms, int nparms);
   void ChatInputReturnPressed();
   void ChatLinkClicked(const QUrl &url);
   void UserInfoChanged();
@@ -78,14 +81,13 @@ private slots:
   void ShowAboutDialog();
   void VoteBPMDialog();
   void VoteBPIDialog();
+  void RunTick();
 
 private:
   static MainWindow *instance;
 
   NJClient client;
   audioStreamer *audio;
-  QMutex clientMutex;
-  ClientRunThread *runThread;
   ChatOutput *chatOutput;
   QLineEdit *chatInput;
   ChannelTreeWidget *channelTree;
@@ -109,6 +111,8 @@ private:
                    const QString &href = "", const QString &linktext = "");
   void chatAddMessage(const QString &src, const QString &msg,
                       const QString &href = "", const QString &linktext = "");
+  bool LicenseCallback(const char *licensetext);
+  void ChatMessageCallback(char **parms, int nparms);
   static void OnSamplesTrampoline(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
   static int LicenseCallbackTrampoline(int user32, char *licensetext);
   static void ChatMessageCallbackTrampoline(int user32, NJClient *inst, char **parms, int nparms);
