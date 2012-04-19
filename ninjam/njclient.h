@@ -245,9 +245,12 @@ protected:
 
 private slots:
   void tick();
+  void netconDisconnected();
+  void netconMessagesReady();
 
 private:
   int Run();// returns nonzero if sleep is OK
+  void processMessage(Net_Message *msg);
 };
 
 
