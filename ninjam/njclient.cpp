@@ -330,7 +330,6 @@ NJClient::NJClient(QObject *parent)
   : QObject(parent)
 {
   m_wavebq=new BufferQueue;
-  m_userinfochange=0;
   m_loopcnt=0;
   m_srate=48000;
 #ifdef _WIN32
@@ -611,7 +610,7 @@ void NJClient::Disconnect()
   int x;
   for (x=0;x<m_remoteusers.GetSize(); x++) delete m_remoteusers.Get(x);
   m_remoteusers.Empty();
-  if (x) m_userinfochange=1; // if we removed users, notify parent
+  bool removedUsers = x;
 
   for (x = 0; x < m_downloads.GetSize(); x ++) delete m_downloads.Get(x);
 
@@ -637,6 +636,10 @@ void NJClient::Disconnect()
   m_wavebq->Clear();
 
   _reinit();
+
+  if (removedUsers) {
+    emit userInfoChanged();
+  }
 }
 
 void NJClient::Connect(char *host, char *user, char *pass)
@@ -835,8 +838,6 @@ int NJClient::Run() // nonzero if sleep ok
                 if (!un) un="";
                 if (!chn) chn="";
 
-                m_userinfochange=1;
-
                 int x;
                 // todo: per-user autosubscribe option, or callback
                 // todo: have volume/pan settings here go into defaults for the channel. or not, kinda think it's pointless
@@ -908,6 +909,7 @@ int NJClient::Run() // nonzero if sleep ok
                   m_users_cs.Leave();
                 }
               }
+              emit userInfoChanged();
             }
           }
         break;
@@ -1214,10 +1216,6 @@ void NJClient::tick()
   static int lastBeat = -1;
 
   while (!Run());
-
-  if (HasUserInfoChanged()) {
-    emit userInfoChanged();
-  }
 
   int status = GetStatus();
   if (status != lastStatus) {

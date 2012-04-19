@@ -124,7 +124,6 @@ public:
   int GetLoopCount() { return m_loopcnt; }  
   unsigned int GetSessionPosition(); // returns milliseconds
 
-  int HasUserInfoChanged() { if (m_userinfochange) { m_userinfochange=0; return 1; } return 0; }
   int GetNumUsers() { return m_remoteusers.GetSize(); }
   char *GetUserState(int idx, float *vol=0, float *pan=0, bool *mute=0);
   void SetUserState(int idx, bool setvol, float vol, bool setpan, float pan, bool setmute, bool mute);
@@ -219,7 +218,6 @@ protected:
   int m_beatinfo_updated;
   int m_audio_enable;
   int m_srate;
-  int m_userinfochange;
   int m_issoloactive;
 
   unsigned int m_session_pos_ms,m_session_pos_samples; // samples just keeps track of any samples lost to precision errors
