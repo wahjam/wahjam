@@ -1,5 +1,4 @@
 /*
-    Copyright (C) 2005-2007 Cockos Incorporated
     Copyright (C) 2012 Stefan Hajnoczi <stefanha@gmail.com>
 
     Wahjam is free software; you can redistribute it and/or modify
@@ -17,13 +16,28 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _NINJAMSRV_H_
-#define _NINJAMSRV_H_
+#ifndef _JAMMRUSERLOOKUP_H_
+#define _JAMMRUSERLOOKUP_H_
 
-#include <QNetworkAccessManager>
+#include <QUrl>
+#include <QNetworkReply>
 
-extern QNetworkAccessManager *netmanager;
+#include "usercon.h"
 
-bool reloadConfig(int argc, char **argv, bool firstTime);
+class JammrUserLookup : public IUserInfoLookup {
+  Q_OBJECT
 
-#endif /* _NINJAMSRV_H_ */
+public:
+  JammrUserLookup(const QUrl &apiUrl, const QString &apiServerName,
+                  int max_channels_, const QString &username_);
+  void start();
+
+private slots:
+  void requestFinished();
+
+private:
+  QUrl tokenUrl;
+  QNetworkReply *reply;
+};
+
+#endif /* _JAMMRUSERLOOKUP_H_ */

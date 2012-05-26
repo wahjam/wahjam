@@ -12,7 +12,7 @@ TARGET = wahjamsrv
 DEPENDPATH += ..
 INCLUDEPATH += ..
 QT -= gui
-QT += network
+QT += network xml
 
 include(../common/libcommon.pri)
 
@@ -31,6 +31,7 @@ unix {
 HEADERS += usercon.h \
            Server.h \
            logging.h \
+           JammrUserLookup.h \
            ninjamsrv.h \
            ../WDL/queue.h \
            ../WDL/heapbuf.h \
@@ -40,4 +41,5 @@ HEADERS += usercon.h \
 SOURCES += ninjamsrv.cpp \
            logging.cpp \
            usercon.cpp \
-           Server.cpp
+           Server.cpp \
+           JammrUserLookup.cpp

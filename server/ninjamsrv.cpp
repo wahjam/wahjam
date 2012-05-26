@@ -46,6 +46,7 @@
 #include "../common/netmsg.h"
 #include "../common/mpb.h"
 #include "usercon.h"
+#include "JammrUserLookup.h"
 
 #include "../WDL/lineparse.h"
 #include "../WDL/string.h"
@@ -58,6 +59,8 @@
 #include "ninjamsrv.h"
 
 static const char *startupmessage = "Wahjam Server " VERSION " (" COMMIT_ID ") built on " __DATE__ " at " __TIME__ " starting up...\n" "Copyright (C) 2005-2007, Cockos, Inc.\nCopyright (C) 2011-2012, Wahjam contributors\n";
+
+QNetworkAccessManager *netmanager;
 
 static ServerConfig g_config;
 static Server *g_server;
@@ -600,6 +603,8 @@ int main(int argc, char **argv)
   {
     usage(argv[0]);
   }
+
+  netmanager = new QNetworkAccessManager(&app);
 
   g_server = new Server(myCreateUserLookup);
 
