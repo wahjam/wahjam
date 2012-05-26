@@ -48,6 +48,7 @@
 #ifndef _WDL_SHA_H_
 #define _WDL_SHA_H_
 
+#include <stdint.h>
 
 #define WDL_SHA1SIZE 20
 
@@ -63,10 +64,10 @@ public:
 
 private:
 
-  unsigned long H[5];
-  unsigned long W[80];
+  uint32_t H[5];
+  uint32_t W[80];
   int lenW;
-  unsigned long size[2];
+  uint32_t size[2];
 };
 
 #endif

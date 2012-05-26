@@ -64,7 +64,7 @@ void WDL_SHA1::reset()
   H[2] = 0x98badcfeL;
   H[3] = 0x10325476L;
   H[4] = 0xc3d2e1f0L;
-  int x;
+  unsigned int x;
   for (x = 0; x < sizeof(W)/sizeof(W[0]); x ++) W[x]=0;
 }
 
@@ -78,38 +78,38 @@ void WDL_SHA1::add(const void *data, int datalen)
   for (i = 0; i < datalen; i++) 
   {
     W[lenW / 4] <<= 8;
-    W[lenW / 4] |= (unsigned long)((const unsigned char *)data)[i];
+    W[lenW / 4] |= (uint32_t)((const unsigned char *)data)[i];
     if (!(++lenW & 63)) 
     {
       int t;
 
-      unsigned long A = H[0];
-      unsigned long B = H[1];
-      unsigned long C = H[2];
-      unsigned long D = H[3];
-      unsigned long E = H[4];
+      uint32_t A = H[0];
+      uint32_t B = H[1];
+      uint32_t C = H[2];
+      uint32_t D = H[3];
+      uint32_t E = H[4];
 
 
       for (t = 16; t < 80; t++) W[t] = SHA_ROTL(W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16], 1);
 
       for (t = 0; t < 20; t++) 
       {
-        unsigned long TEMP = SHA_ROTL(A,5) + E + W[t] + 0x5a827999L + (((C^D)&B)^D);
+        uint32_t TEMP = SHA_ROTL(A,5) + E + W[t] + 0x5a827999L + (((C^D)&B)^D);
         SHUFFLE();
       }
       for (; t < 40; t++) 
       {
-        unsigned long TEMP = SHA_ROTL(A,5) + E + W[t] + 0x6ed9eba1L + (B^C^D);
+        uint32_t TEMP = SHA_ROTL(A,5) + E + W[t] + 0x6ed9eba1L + (B^C^D);
         SHUFFLE();
       }
       for (; t < 60; t++) 
       {
-        unsigned long TEMP = SHA_ROTL(A,5) + E + W[t] + 0x8f1bbcdcL + ((B&C)|(D&(B|C)));
+        uint32_t TEMP = SHA_ROTL(A,5) + E + W[t] + 0x8f1bbcdcL + ((B&C)|(D&(B|C)));
         SHUFFLE();
       }
       for (; t < 80; t++) 
       {
-        unsigned long TEMP = SHA_ROTL(A,5) + E + W[t] + 0xca62c1d6L + (B^C^D);
+        uint32_t TEMP = SHA_ROTL(A,5) + E + W[t] + 0xca62c1d6L + (B^C^D);
         SHUFFLE();
       }
 
