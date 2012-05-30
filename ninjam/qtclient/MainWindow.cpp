@@ -79,6 +79,8 @@ MainWindow::MainWindow(QWidget *parent)
   client.SetLocalChannelInfo(0, "channel0", true, 0, false, 0, true, true);
   client.SetLocalChannelMonitoring(0, false, 0.0f, false, 0.0f, false, false, false, false);
 
+  netManager = new QNetworkAccessManager(this);
+
   connectAction = new QAction(tr("&Connect..."), this);
   connect(connectAction, SIGNAL(triggered()), this, SLOT(ShowConnectDialog()));
 
@@ -356,7 +358,7 @@ void MainWindow::cleanupWorkDir(const QString &path)
 void MainWindow::ShowConnectDialog()
 {
   const QUrl url("http://autosong.ninjam.com/serverlist.php");
-  ConnectDialog connectDialog;
+  ConnectDialog connectDialog(netManager);
   QStringList hosts = settings->value("connect/hosts").toStringList();
 
   connectDialog.resize(600, 500);

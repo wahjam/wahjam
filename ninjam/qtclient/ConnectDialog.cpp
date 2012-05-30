@@ -22,10 +22,10 @@
 
 #include "ConnectDialog.h"
 
-ConnectDialog::ConnectDialog(QWidget *parent)
+ConnectDialog::ConnectDialog(QNetworkAccessManager *netManager, QWidget *parent)
   : QDialog(parent)
 {
-  serverBrowser = new ServerBrowser(this);
+  serverBrowser = new ServerBrowser(netManager, this);
   connect(serverBrowser, SIGNAL(serverItemClicked(const QString &)),
           this, SLOT(setHost(const QString &)));
   connect(serverBrowser, SIGNAL(serverItemActivated(const QString &)),
