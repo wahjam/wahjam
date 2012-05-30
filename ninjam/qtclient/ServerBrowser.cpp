@@ -23,23 +23,13 @@
 /**
  * ServerBrowser constructor
  */
-ServerBrowser::ServerBrowser(QWidget *parent)
-  : QTreeWidget(parent)
+ServerBrowser::ServerBrowser(QNetworkAccessManager *manager_, QWidget *parent)
+  : QTreeWidget(parent), netManager(manager_)
 {
   setHeaderLabels(QStringList() << "Server" << "Tempo" << "Users");
   setRootIsDecorated(false);
   setItemsExpandable(false);
   setColumnWidth(0, 200);
-
-
-  // NOTE: network-access-manager should be application global (singleton).
-  // but currently, we don't use QtNetwork other place, so it just stays here.
-
-  // NOTE: when the network-access-manager move scope, be careful the life
-  // cycle of reply object. it should be deleted by manual.
-
-  manager = new QNetworkAccessManager(this);
-
 
   connect(this, SIGNAL(itemClicked(QTreeWidgetItem*,int)),
           this, SLOT(onItemClicked(QTreeWidgetItem*,int)));
@@ -51,7 +41,7 @@ void ServerBrowser::loadServerList(const QUrl &url)
 {
   QNetworkRequest request(url);
 
-  reply = manager->get(request);
+  reply = netManager->get(request);
 
   connect(reply, SIGNAL(finished()),
           this, SLOT(completeDownloadServerList()));

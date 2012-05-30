@@ -23,6 +23,7 @@
 #include <QLineEdit>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QNetworkAccessManager>
 #include "ServerBrowser.h"
 
 class ConnectDialog : public QDialog
@@ -34,7 +35,7 @@ class ConnectDialog : public QDialog
   Q_PROPERTY(QString pass READ pass)
 
 public:
-  ConnectDialog(QWidget *parent = 0);
+  ConnectDialog(QNetworkAccessManager *netManager, QWidget *parent = 0);
   QString host() const;
   QString user() const;
   bool isPublicServer() const;

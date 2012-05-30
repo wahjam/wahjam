@@ -28,6 +28,7 @@
 #include <QUrl>
 #include <QStateMachine>
 #include <QState>
+#include <QNetworkAccessManager>
 
 #include "qtclient.h"
 #include "ChannelTreeWidget.h"
@@ -80,6 +81,7 @@ private:
 
   NJClient client;
   audioStreamer *audio;
+  QNetworkAccessManager *netManager;
   ChatOutput *chatOutput;
   QLineEdit *chatInput;
   ChannelTreeWidget *channelTree;
