@@ -208,5 +208,6 @@ Net_Connection::~Net_Connection()
 
 void Net_Connection::Kill()
 {
+  m_sock->flush(); /* try to send any queued data before closing */
   m_sock->close();
 }
