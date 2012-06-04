@@ -95,7 +95,7 @@ class Net_Connection : public QObject
     bool hasMessagesAvailable();
     Net_Message *nextMessage();
     Net_Message *Run(int *wantsleep=0);
-    int Send(Net_Message *msg); // -1 on error, i.e. queue full
+    int Send(Net_Message *msg); // -1 on error
     int GetStatus(); // returns <0 on error, 0 on normal, 1 on disconnect
 
     QHostAddress GetRemoteAddr();
