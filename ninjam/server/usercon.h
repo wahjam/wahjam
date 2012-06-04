@@ -86,6 +86,7 @@ signals:
   void completed();
 };
 
+typedef IUserInfoLookup *CreateUserLookupFn(char *username);
 
 class User_Connection;
 
@@ -94,7 +95,7 @@ class User_Group : public QObject
   Q_OBJECT
 
   public:
-    User_Group();
+    User_Group(CreateUserLookupFn *CreateUserLookup_, QObject *parent=0);
     ~User_Group();
 
     void AddConnection(QTcpSocket *sock, int isres=0);
@@ -109,11 +110,11 @@ class User_Group : public QObject
     // sends a message to the people subscribing to a channel of a user
     void BroadcastToSubs(Net_Message *msg, User_Connection *src, int channel);
 
-    IUserInfoLookup *(*CreateUserLookup)(char *username);
-
     void onChatMessage(User_Connection *con, mpb_chat_message *msg);
 
     bool hasAuthenticatedUsers();
+
+    CreateUserLookupFn *CreateUserLookup;
 
     WDL_PtrList<User_Connection> m_users;
 

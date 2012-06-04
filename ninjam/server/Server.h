@@ -91,8 +91,7 @@ class Server : public QObject
   Q_OBJECT
 
 public:
-  Server(User_Group *group);
-  ~Server();
+  Server(CreateUserLookupFn *createUserLookup, QObject *parent=0);
   bool setConfig(ServerConfig *config);
 
 private slots:

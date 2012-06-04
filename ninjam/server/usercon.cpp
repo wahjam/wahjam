@@ -775,14 +775,13 @@ void User_Connection::userLookupCompleted()
 }
 
 
-User_Group::User_Group() : m_max_users(0), m_last_bpm(120), m_last_bpi(32), m_keepalive(0), 
-  m_voting_threshold(110), m_voting_timeout(120),
-  m_allow_hidden_users(0), m_logfp(0)
+User_Group::User_Group(CreateUserLookupFn *CreateUserLookup_, QObject *parent)
+  : QObject(parent), CreateUserLookup(CreateUserLookup_), m_max_users(0),
+    m_last_bpm(120), m_last_bpi(32), m_keepalive(0), m_voting_threshold(110),
+    m_voting_timeout(120), m_allow_hidden_users(0), m_logfp(0)
 {
   connect(&signalMapper, SIGNAL(mapped(QObject*)),
           this, SLOT(userDisconnected(QObject*)));
-
-  CreateUserLookup=0;
 }
 
 User_Group::~User_Group()

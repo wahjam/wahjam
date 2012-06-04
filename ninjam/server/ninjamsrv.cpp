@@ -654,10 +654,7 @@ int main(int argc, char **argv)
     usage(argv[0]);
   }
 
-  User_Group *group = new User_Group;
-  group->CreateUserLookup=myCreateUserLookup;
-
-  g_server = new Server(group);
+  g_server = new Server(myCreateUserLookup);
 
   printf("%s", startupmessage);
 
@@ -723,6 +720,7 @@ int main(int argc, char **argv)
 
   logText("Shutting down server\n");
 
+  /* Explicitly delete before closing log */
   delete g_server;
 
   if (g_logfp)

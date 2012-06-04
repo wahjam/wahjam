@@ -30,10 +30,11 @@
 #include "ninjamsrv.h"
 #include "Server.h"
 
-/* Takes ownership of group_ */
-Server::Server(User_Group *group_)
-  : group(group_)
+Server::Server(CreateUserLookupFn *createUserLookup, QObject *parent)
+  : QObject(parent)
 {
+  group = new User_Group(createUserLookup, this);
+
   connect(&listener, SIGNAL(newConnection()),
           this, SLOT(acceptNewConnection()));
 
@@ -41,11 +42,6 @@ Server::Server(User_Group *group_)
           this, SLOT(updateNextSession()));
   setIdleSessionUpdateTimer();
   sessionUpdateTimer.start();
-}
-
-Server::~Server()
-{
-  delete group;
 }
 
 void AccessControlList::add(unsigned long addr, unsigned long mask, int flags)
