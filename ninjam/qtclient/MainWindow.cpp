@@ -462,54 +462,6 @@ void MainWindow::BeatsPerIntervalChanged(int bpi)
   }
 }
 
-void MainWindow::RunTick()
-{
-  // Values that we watch for changes
-  static int lastStatus = client.GetStatus();
-  static int lastBpm = -1;
-  static int lastBpi = -1;
-  static int lastBeat = -1;
-
-  while (!client.Run());
-
-  if (client.HasUserInfoChanged()) {
-    emit userInfoChanged();
-  }
-
-  int status = client.GetStatus();
-  if (status != lastStatus) {
-    emit statusChanged(status);
-    lastStatus = status;
-
-    // Ensure we emit signals once client connects
-    lastBpm = -1;
-    lastBpi = -1;
-    lastBeat = -1;
-  }
-
-  if (status == NJClient::NJC_STATUS_OK) {
-    int bpm = client.GetActualBPM();
-    if (bpm != lastBpm) {
-      emit beatsPerMinuteChanged(bpm);
-      lastBpm = bpm;
-    }
-
-    int bpi = client.GetBPI();
-    if (bpi != lastBpi) {
-      emit beatsPerIntervalChanged(bpi);
-      lastBpi = bpi;
-    }
-
-    int pos, length; // in samples
-    client.GetPosition(&pos, &length);
-    int currentBeat = pos * bpi / length + 1;
-    if (currentBeat != lastBeat) {
-      lastBeat = currentBeat;
-      emit currentBeatChanged(currentBeat);
-    }
-  }
-}
-
 void MainWindow::ChatMessageCallback(char **charparms, int nparms)
 {
   QString parms[nparms];
