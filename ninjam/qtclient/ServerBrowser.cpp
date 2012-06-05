@@ -17,6 +17,7 @@
 */
 
 #include <QRegExp>
+#include <QDebug>
 #include "ServerBrowser.h"
 
 
@@ -42,6 +43,10 @@ void ServerBrowser::loadServerList(const QUrl &url)
   QNetworkRequest request(url);
   QNetworkReply *reply = netManager->get(request);
 
+  Q_ASSERT(reply && reply->isRunning());
+
+  connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
+          this, SLOT(errorDownloadServerList(QNetworkReply::NetworkError)));
   connect(reply, SIGNAL(finished()),
           this, SLOT(completeDownloadServerList()));
   connect(reply, SIGNAL(finished()),
@@ -68,26 +73,45 @@ void ServerBrowser::onItemActivated(QTreeWidgetItem *item, int column)
   emit serverItemActivated(item->data(0, Qt::DisplayRole).toString());
 }
 
+void ServerBrowser::errorDownloadServerList(QNetworkReply::NetworkError code)
+{
+  QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
+
+  if (reply) {
+    Q_ASSERT(reply->error() != QNetworkReply::NoError);
+
+    qDebug() << reply->errorString();
+  }
+}
+
 void ServerBrowser::completeDownloadServerList()
 {
   QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
 
   if (reply) {
+    Q_ASSERT(reply->isFinished());
+
     if (reply->error() == QNetworkReply::NoError) {
       QTextStream stream(reply);
       parseServerList(&stream);
     }
+  }
+  else {
+    qDebug() << "sender must be QNetworkReply instance";
   }
 }
 
 void ServerBrowser::parseServerList(QTextStream *stream)
 {
   QRegExp serverPattern("SERVER\\s+\"([^\"]+)\"\\s+\"([^\"]+)\"\\s+\"([^\"]+)\".*");
+  Q_ASSERT(serverPattern.isValid());
 
   while (!stream->atEnd()) {
     if (!serverPattern.exactMatch(stream->readLine())) {
       continue;
     }
+
+    Q_ASSERT(serverPattern.captureCount() == 3);
 
     QTreeWidgetItem *item = new QTreeWidgetItem(this);
     item->setText(0, serverPattern.cap(1)); // server

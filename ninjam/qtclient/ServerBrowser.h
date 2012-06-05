@@ -48,6 +48,7 @@ public slots:
   void loadServerList(const QString &urlString);
 
 private slots:
+  void errorDownloadServerList(QNetworkReply::NetworkError code);
   void completeDownloadServerList();
   void parseServerList(QTextStream *stream);
   void onItemClicked(QTreeWidgetItem *item, int column);
