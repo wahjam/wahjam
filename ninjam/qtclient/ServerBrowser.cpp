@@ -40,8 +40,7 @@ ServerBrowser::ServerBrowser(QNetworkAccessManager *manager_, QWidget *parent)
 void ServerBrowser::loadServerList(const QUrl &url)
 {
   QNetworkRequest request(url);
-
-  reply = netManager->get(request);
+  QNetworkReply *reply = netManager->get(request);
 
   connect(reply, SIGNAL(finished()),
           this, SLOT(completeDownloadServerList()));
@@ -71,9 +70,14 @@ void ServerBrowser::onItemActivated(QTreeWidgetItem *item, int column)
 
 void ServerBrowser::completeDownloadServerList()
 {
-  QTextStream stream(reply);
+  QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
 
-  parseServerList(&stream);
+  if (reply) {
+    if (reply->error() == QNetworkReply::NoError) {
+      QTextStream stream(reply);
+      parseServerList(&stream);
+    }
+  }
 }
 
 void ServerBrowser::parseServerList(QTextStream *stream)
