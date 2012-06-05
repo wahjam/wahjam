@@ -38,15 +38,18 @@ class ServerBrowser : public QTreeWidget
 
 public:
   ServerBrowser(QNetworkAccessManager *manager_, QWidget *parent=0);
-  void loadServerList(const QUrl &url);
-  void parseServerList(QTextStream *stream);
 
 signals:
   void serverItemClicked(const QString &hostname);
   void serverItemActivated(const QString &hostname);
 
+public slots:
+  void loadServerList(const QUrl &url);
+  void loadServerList(const QString &urlString);
+
 private slots:
   void completeDownloadServerList();
+  void parseServerList(QTextStream *stream);
   void onItemClicked(QTreeWidgetItem *item, int column);
   void onItemActivated(QTreeWidgetItem *item, int column);
 

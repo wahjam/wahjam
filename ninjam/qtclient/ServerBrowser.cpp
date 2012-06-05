@@ -49,6 +49,11 @@ void ServerBrowser::loadServerList(const QUrl &url)
           reply, SLOT(deleteLater()));
 }
 
+void ServerBrowser::loadServerList(const QString &urlString)
+{
+  const QUrl url(urlString);
+  loadServerList(url);
+}
 
 void ServerBrowser::onItemClicked(QTreeWidgetItem *item, int column)
 {
