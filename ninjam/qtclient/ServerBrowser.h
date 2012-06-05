@@ -53,6 +53,9 @@ private slots:
   void parseServerList(QTextStream *stream);
   void onItemClicked(QTreeWidgetItem *item, int column);
   void onItemActivated(QTreeWidgetItem *item, int column);
+  void addItem(const QString &serverName,
+               const QString &metronomeInfo,
+	       const QString &memberList);
 
 private:
   QNetworkAccessManager *netManager;

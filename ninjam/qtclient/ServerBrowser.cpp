@@ -113,10 +113,22 @@ void ServerBrowser::parseServerList(QTextStream *stream)
 
     Q_ASSERT(serverPattern.captureCount() == 3);
 
-    QTreeWidgetItem *item = new QTreeWidgetItem(this);
-    item->setText(0, serverPattern.cap(1)); // server
-    item->setText(1, serverPattern.cap(2)); // bpm/bpi
-    item->setText(2, serverPattern.cap(3)); // member list
+    QMetaObject::invokeMethod(this, "addItem", Qt::QueuedConnection,
+      Q_ARG(QString, serverPattern.cap(1)),
+      Q_ARG(QString, serverPattern.cap(2)),
+      Q_ARG(QString, serverPattern.cap(3)));
   }
+}
+
+void ServerBrowser::addItem(const QString &serverName,
+                            const QString &metronomeInfo,
+	                    const QString &memberList)
+{
+  QTreeWidgetItem *item = new QTreeWidgetItem(this);
+  Q_CHECK_PTR(item);
+
+  item->setText(0, serverName);
+  item->setText(1, metronomeInfo);
+  item->setText(2, memberList);
 }
 
