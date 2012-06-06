@@ -21,9 +21,6 @@
 #include "ServerBrowser.h"
 
 
-/**
- * ServerBrowser constructor
- */
 ServerBrowser::ServerBrowser(QNetworkAccessManager *manager_, QWidget *parent)
   : QTreeWidget(parent), netManager(manager_)
 {
