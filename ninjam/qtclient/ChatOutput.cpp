@@ -27,8 +27,7 @@ ChatOutput::ChatOutput(QWidget *parent)
   : QTextBrowser(parent), autolinkRegexp(AUTOLINK_REGEXP)
 {
   setReadOnly(true);
-  setOpenLinks(true);
-  setOpenExternalLinks(true);
+  setOpenLinks(false);
   setUndoRedoEnabled(false);
 
   normalFormat.setFontWeight(QFont::Normal);

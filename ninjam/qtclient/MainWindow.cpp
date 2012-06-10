@@ -538,6 +538,8 @@ void MainWindow::ChatLinkClicked(const QUrl &url)
 {
   if (url.scheme() == "send-message") {
     SendChatMessage(url.path());
+  } else if (url.scheme() == "http" || url.scheme() == "https") {
+    QDesktopServices::openUrl(url);
   }
 }
 
