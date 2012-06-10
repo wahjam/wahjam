@@ -326,10 +326,10 @@ void NJClient::makeFilenameFromGuid(WDL_String *s, unsigned char *guid)
 
 
 
-NJClient::NJClient()
+NJClient::NJClient(QObject *parent)
+  : QObject(parent)
 {
   m_wavebq=new BufferQueue;
-  m_userinfochange=0;
   m_loopcnt=0;
   m_srate=48000;
 #ifdef _WIN32
@@ -374,6 +374,11 @@ NJClient::NJClient()
   _reinit();
 
   m_session_pos_ms=m_session_pos_samples=0;
+
+  QTimer *tickTimer = new QTimer(this);
+  tickTimer->setInterval(20 /* milliseconds */);
+  connect(tickTimer, SIGNAL(timeout()), this, SLOT(tick()));
+  tickTimer->start();
 }
 
 void NJClient::_reinit()
@@ -605,7 +610,7 @@ void NJClient::Disconnect()
   int x;
   for (x=0;x<m_remoteusers.GetSize(); x++) delete m_remoteusers.Get(x);
   m_remoteusers.Empty();
-  if (x) m_userinfochange=1; // if we removed users, notify parent
+  bool removedUsers = x;
 
   for (x = 0; x < m_downloads.GetSize(); x ++) delete m_downloads.Get(x);
 
@@ -631,6 +636,10 @@ void NJClient::Disconnect()
   m_wavebq->Clear();
 
   _reinit();
+
+  if (removedUsers) {
+    emit userInfoChanged();
+  }
 }
 
 void NJClient::Connect(char *host, char *user, char *pass)
@@ -656,6 +665,10 @@ void NJClient::Connect(char *host, char *user, char *pass)
   QTcpSocket *sock = new QTcpSocket;
   sock->connectToHost(tmp.Get(), port);
   m_netcon = new Net_Connection(sock);
+  connect(m_netcon, SIGNAL(disconnected()),
+          this, SLOT(netconDisconnected()));
+  connect(m_netcon, SIGNAL(messagesReady()),
+          this, SLOT(netconMessagesReady()));
 
   m_status=0;
 }
@@ -670,6 +683,315 @@ int NJClient::GetStatus()
   return NJC_STATUS_OK;
 }
 
+void NJClient::processMessage(Net_Message *msg)
+{
+  msg->addRef();
+
+  switch (msg->get_type())
+  {
+    case MESSAGE_SERVER_AUTH_CHALLENGE:
+      {
+        mpb_server_auth_challenge cha;
+        if (!cha.parse(msg))
+        {
+          if (cha.protocol_version < PROTO_VER_MIN || cha.protocol_version >= PROTO_VER_MAX)
+          {
+            m_errstr.Set("server is incorrect protocol version");
+            m_status = 1001;
+            m_netcon->Kill();
+            return;
+          }
+
+          mpb_client_auth_user repl;
+          repl.username=m_user.Get();
+          repl.client_version=PROTO_VER_CUR; // client version number
+
+          m_connection_keepalive=(cha.server_caps>>8)&0xff;
+
+          //              printf("Got keepalive of %d\n",m_connection_keepalive);
+
+          if (cha.license_agreement)
+          {
+            m_netcon->SetKeepAlive(45);
+            if (LicenseAgreementCallback && LicenseAgreementCallback(LicenseAgreement_User32,cha.license_agreement))
+            {
+              repl.client_caps|=1;
+            }
+          }
+          m_netcon->SetKeepAlive(m_connection_keepalive);
+
+          WDL_SHA1 tmp;
+          tmp.add(m_user.Get(),strlen(m_user.Get()));
+          tmp.add(":",1);
+          tmp.add(m_pass.Get(),strlen(m_pass.Get()));
+          tmp.result(repl.passhash);
+
+          tmp.reset(); // new auth method is SHA1(SHA1(user:pass)+challenge)
+          tmp.add(repl.passhash,sizeof(repl.passhash));
+          tmp.add(cha.challenge,sizeof(cha.challenge));
+          tmp.result(repl.passhash);               
+
+          m_netcon->Send(repl.build());
+
+          m_in_auth=1;
+        }
+      }
+      break;
+    case MESSAGE_SERVER_AUTH_REPLY:
+      {
+        mpb_server_auth_reply ar;
+        if (!ar.parse(msg))
+        {
+          if (ar.flag) // send our channel information
+          {
+            mpb_client_set_channel_info sci;
+            int x;
+            for (x = 0; x < m_locchannels.GetSize(); x ++)
+            {
+              Local_Channel *ch=m_locchannels.Get(x);
+              sci.build_add_rec(ch->name.Get(),0,0,0);
+            }
+            m_netcon->Send(sci.build());
+            m_status=2;
+            m_in_auth=0;
+            m_max_localch=ar.maxchan;
+            if (ar.errmsg)
+              m_user.Set(ar.errmsg); // server gave us an updated name
+          }
+          else 
+          {
+            if (ar.errmsg)
+            {
+              m_errstr.Set(ar.errmsg);
+            }
+            m_status = 1001;
+            m_netcon->Kill();
+          }
+        }
+      }
+      break;
+    case MESSAGE_SERVER_CONFIG_CHANGE_NOTIFY:
+      {
+        mpb_server_config_change_notify ccn;
+        if (!ccn.parse(msg))
+        {
+          updateBPMinfo(ccn.beats_minute,ccn.beats_interval);
+          m_audio_enable=1;
+        }
+      }
+
+      break;
+    case MESSAGE_SERVER_USERINFO_CHANGE_NOTIFY:
+      {
+        mpb_server_userinfo_change_notify ucn;
+        if (!ucn.parse(msg))
+        {
+          int offs=0;
+          int a=0, cid=0, p=0,f=0;
+          short v=0;
+          char *un=0,*chn=0;
+          while ((offs=ucn.parse_get_rec(offs,&a,&cid,&v,&p,&f,&un,&chn))>0)
+          {
+            if (!un) un="";
+            if (!chn) chn="";
+
+            int x;
+            // todo: per-user autosubscribe option, or callback
+            // todo: have volume/pan settings here go into defaults for the channel. or not, kinda think it's pointless
+            if (cid >= 0 && cid < MAX_USER_CHANNELS)
+            {
+              RemoteUser *theuser;
+              for (x = 0; x < m_remoteusers.GetSize() && strcmp((theuser=m_remoteusers.Get(x))->name.Get(),un); x ++);
+
+              // printf("user %s, channel %d \"%s\": %s v:%d.%ddB p:%d flag=%d\n",un,cid,chn,a?"active":"inactive",(int)v/10,abs((int)v)%10,p,f);
+
+
+              m_users_cs.Enter();
+              if (a)
+              {
+                if (x == m_remoteusers.GetSize())
+                {
+                  theuser=new RemoteUser;
+                  theuser->name.Set(un);
+                  m_remoteusers.Add(theuser);
+                }
+
+                theuser->channels[cid].name.Set(chn);
+                theuser->chanpresentmask |= 1<<cid;
+
+
+                if (config_autosubscribe)
+                {
+                  theuser->submask |= 1<<cid;
+                  mpb_client_set_usermask su;
+                  su.build_add_rec(un,theuser->submask);
+                  m_netcon->Send(su.build());
+                }
+              }
+              else
+              {
+                if (x < m_remoteusers.GetSize())
+                {
+                  theuser->channels[cid].name.Set("");
+                  theuser->chanpresentmask &= ~(1<<cid);
+                  theuser->submask &= ~(1<<cid);
+
+                  int chksolo=theuser->solomask == (1<<cid);
+                  theuser->solomask &= ~(1<<cid);
+
+                  delete theuser->channels[cid].ds;
+                  delete theuser->channels[cid].next_ds[0];
+                  delete theuser->channels[cid].next_ds[1];
+                  theuser->channels[cid].ds=0;
+                  theuser->channels[cid].next_ds[0]=0;
+                  theuser->channels[cid].next_ds[1]=0;
+
+                  if (!theuser->chanpresentmask) // user no longer exists, it seems
+                  {
+                    chksolo=1;
+                    delete theuser;
+                    m_remoteusers.Delete(x);
+                  }
+
+                  if (chksolo)
+                  {
+                    int i;
+                    for (i = 0; i < m_remoteusers.GetSize() && !m_remoteusers.Get(i)->solomask; i ++);
+
+                    if (i < m_remoteusers.GetSize()) m_issoloactive|=1;
+                    else m_issoloactive&=~1;
+                  }
+                }
+              }
+              m_users_cs.Leave();
+            }
+          }
+          emit userInfoChanged();
+        }
+      }
+      break;
+    case MESSAGE_SERVER_DOWNLOAD_INTERVAL_BEGIN:
+      {
+        mpb_server_download_interval_begin dib;
+        if (!dib.parse(msg) && dib.username)
+        {
+          int x;
+          RemoteUser *theuser;
+          for (x = 0; x < m_remoteusers.GetSize() && strcmp((theuser=m_remoteusers.Get(x))->name.Get(),dib.username); x ++);
+          if (x < m_remoteusers.GetSize() && dib.chidx >= 0 && dib.chidx < MAX_USER_CHANNELS)
+          {              
+            //printf("Getting interval for %s, channel %d\n",dib.username,dib.chidx);
+            if (!memcmp(dib.guid,zero_guid,sizeof(zero_guid)))
+            {
+              m_users_cs.Enter();
+              int useidx=!!theuser->channels[dib.chidx].next_ds[0];
+              DecodeState *tmp=theuser->channels[dib.chidx].next_ds[useidx];
+              theuser->channels[dib.chidx].next_ds[useidx]=0;
+              m_users_cs.Leave();
+              delete tmp;
+            }
+            else if (dib.fourcc) // download coming
+            {                
+              if (config_debug_level>1) printf("RECV BLOCK %s\n",guidtostr_tmp(dib.guid));
+              RemoteDownload *ds=new RemoteDownload;
+              memcpy(ds->guid,dib.guid,sizeof(ds->guid));
+              ds->Open(this,dib.fourcc);
+
+              ds->playtime=config_play_prebuffer;
+              ds->chidx=dib.chidx;
+              ds->username.Set(dib.username);
+
+              m_downloads.Add(ds);
+            }
+            else
+            {
+              DecodeState *tmp=start_decode(dib.guid);
+              m_users_cs.Enter();
+              int useidx=!!theuser->channels[dib.chidx].next_ds[0];
+              DecodeState *t2=theuser->channels[dib.chidx].next_ds[useidx];
+              theuser->channels[dib.chidx].next_ds[useidx]=tmp;
+              m_users_cs.Leave();
+              delete t2;
+            }
+
+          }
+        }
+      }
+      break;
+    case MESSAGE_SERVER_DOWNLOAD_INTERVAL_WRITE:
+      {
+        mpb_server_download_interval_write diw;
+        if (!diw.parse(msg)) 
+        {
+          time_t now;
+          time(&now);
+          int x;
+          for (x = 0; x < m_downloads.GetSize(); x ++)
+          {
+            RemoteDownload *ds=m_downloads.Get(x);
+            if (ds)
+            {
+              if (!memcmp(ds->guid,diw.guid,sizeof(ds->guid)))
+              {
+                if (config_debug_level>1) printf("RECV BLOCK DATA %s%s %d bytes\n",guidtostr_tmp(diw.guid),diw.flags&1?":end":"",diw.audio_data_len);
+
+                ds->last_time=now;
+                if (diw.audio_data_len > 0 && diw.audio_data)
+                {
+                  ds->Write(diw.audio_data,diw.audio_data_len);
+                }
+                if (diw.flags & 1)
+                {
+                  delete ds;
+                  m_downloads.Delete(x);
+                }
+                break;
+              }
+
+              if (now - ds->last_time > DOWNLOAD_TIMEOUT)
+              {
+                ds->chidx=-1;
+                delete ds;
+                m_downloads.Delete(x--);
+              }
+            }
+          }
+        }
+      }
+      break;
+    case MESSAGE_CHAT_MESSAGE:
+      if (ChatMessage_Callback)
+      {
+        mpb_chat_message foo;
+        if (!foo.parse(msg))
+        {
+          ChatMessage_Callback(ChatMessage_User32,this,foo.parms,sizeof(foo.parms)/sizeof(foo.parms[0]));
+        }
+      }
+      break;
+    default:
+      //printf("Got unknown message %02X\n",msg->get_type());
+      break;
+  }
+
+  msg->releaseRef();
+}
+
+void NJClient::netconDisconnected()
+{
+  m_audio_enable=0;
+  if (m_in_auth)  m_status=1001;
+  if (m_status > 0 && m_status < 1000) m_status=1002;
+  if (m_status == 0) m_status=1000;
+}
+
+void NJClient::netconMessagesReady()
+{
+  while (m_netcon->hasMessagesAvailable()) {
+    Net_Message *msg = m_netcon->nextMessage();
+    processMessage(msg);
+  }
+}
 
 int NJClient::Run() // nonzero if sleep ok
 {
@@ -702,316 +1024,6 @@ int NJClient::Run() // nonzero if sleep ok
   }
 //    
   int wantsleep=1;
-
-  if (m_netcon)
-  {
-    Net_Message *msg=m_netcon->Run(&wantsleep);
-    if (!msg)
-    {
-      if (m_netcon->GetStatus())
-      {
-        m_audio_enable=0;
-        if (m_in_auth)  m_status=1001;
-        if (m_status > 0 && m_status < 1000) m_status=1002;
-        if (m_status == 0) m_status=1000;
-        return 1;
-      }
-    }
-    else
-    {
-      msg->addRef();
-
-      switch (msg->get_type())
-      {
-        case MESSAGE_SERVER_AUTH_CHALLENGE:
-          {
-            mpb_server_auth_challenge cha;
-            if (!cha.parse(msg))
-            {
-              if (cha.protocol_version < PROTO_VER_MIN || cha.protocol_version >= PROTO_VER_MAX)
-              {
-                m_errstr.Set("server is incorrect protocol version");
-                m_status = 1001;
-                m_netcon->Kill();
-                return 0;
-              }
-
-              mpb_client_auth_user repl;
-              repl.username=m_user.Get();
-              repl.client_version=PROTO_VER_CUR; // client version number
-
-              m_connection_keepalive=(cha.server_caps>>8)&0xff;
-
-//              printf("Got keepalive of %d\n",m_connection_keepalive);
-
-              if (cha.license_agreement)
-              {
-                m_netcon->SetKeepAlive(45);
-                if (LicenseAgreementCallback && LicenseAgreementCallback(LicenseAgreement_User32,cha.license_agreement))
-                {
-                  repl.client_caps|=1;
-                }
-              }
-              m_netcon->SetKeepAlive(m_connection_keepalive);
-
-              WDL_SHA1 tmp;
-              tmp.add(m_user.Get(),strlen(m_user.Get()));
-              tmp.add(":",1);
-              tmp.add(m_pass.Get(),strlen(m_pass.Get()));
-              tmp.result(repl.passhash);
-
-              tmp.reset(); // new auth method is SHA1(SHA1(user:pass)+challenge)
-              tmp.add(repl.passhash,sizeof(repl.passhash));
-              tmp.add(cha.challenge,sizeof(cha.challenge));
-              tmp.result(repl.passhash);               
-
-              m_netcon->Send(repl.build());
-
-              m_in_auth=1;
-            }
-          }
-        break;
-        case MESSAGE_SERVER_AUTH_REPLY:
-          {
-            mpb_server_auth_reply ar;
-            if (!ar.parse(msg))
-            {
-              if (ar.flag) // send our channel information
-              {
-                mpb_client_set_channel_info sci;
-                int x;
-                for (x = 0; x < m_locchannels.GetSize(); x ++)
-                {
-                  Local_Channel *ch=m_locchannels.Get(x);
-                  sci.build_add_rec(ch->name.Get(),0,0,0);
-                }
-                m_netcon->Send(sci.build());
-                m_status=2;
-                m_in_auth=0;
-                m_max_localch=ar.maxchan;
-                if (ar.errmsg)
-                  m_user.Set(ar.errmsg); // server gave us an updated name
-              }
-              else 
-              {
-                if (ar.errmsg)
-                {
-                    m_errstr.Set(ar.errmsg);
-                }
-                m_status = 1001;
-                m_netcon->Kill();
-              }
-            }
-          }
-        break;
-        case MESSAGE_SERVER_CONFIG_CHANGE_NOTIFY:
-          {
-            mpb_server_config_change_notify ccn;
-            if (!ccn.parse(msg))
-            {
-              updateBPMinfo(ccn.beats_minute,ccn.beats_interval);
-              m_audio_enable=1;
-            }
-          }
-
-        break;
-        case MESSAGE_SERVER_USERINFO_CHANGE_NOTIFY:
-          {
-            mpb_server_userinfo_change_notify ucn;
-            if (!ucn.parse(msg))
-            {
-              int offs=0;
-              int a=0, cid=0, p=0,f=0;
-              short v=0;
-              char *un=0,*chn=0;
-              while ((offs=ucn.parse_get_rec(offs,&a,&cid,&v,&p,&f,&un,&chn))>0)
-              {
-                if (!un) un="";
-                if (!chn) chn="";
-
-                m_userinfochange=1;
-
-                int x;
-                // todo: per-user autosubscribe option, or callback
-                // todo: have volume/pan settings here go into defaults for the channel. or not, kinda think it's pointless
-                if (cid >= 0 && cid < MAX_USER_CHANNELS)
-                {
-                  RemoteUser *theuser;
-                  for (x = 0; x < m_remoteusers.GetSize() && strcmp((theuser=m_remoteusers.Get(x))->name.Get(),un); x ++);
-
-                 // printf("user %s, channel %d \"%s\": %s v:%d.%ddB p:%d flag=%d\n",un,cid,chn,a?"active":"inactive",(int)v/10,abs((int)v)%10,p,f);
-
-
-                  m_users_cs.Enter();
-                  if (a)
-                  {
-                    if (x == m_remoteusers.GetSize())
-                    {
-                      theuser=new RemoteUser;
-                      theuser->name.Set(un);
-                      m_remoteusers.Add(theuser);
-                    }
-
-                    theuser->channels[cid].name.Set(chn);
-                    theuser->chanpresentmask |= 1<<cid;
-
-
-                    if (config_autosubscribe)
-                    {
-                      theuser->submask |= 1<<cid;
-                      mpb_client_set_usermask su;
-                      su.build_add_rec(un,theuser->submask);
-                      m_netcon->Send(su.build());
-                    }
-                  }
-                  else
-                  {
-                    if (x < m_remoteusers.GetSize())
-                    {
-                      theuser->channels[cid].name.Set("");
-                      theuser->chanpresentmask &= ~(1<<cid);
-                      theuser->submask &= ~(1<<cid);
-
-                      int chksolo=theuser->solomask == (1<<cid);
-                      theuser->solomask &= ~(1<<cid);
-
-                      delete theuser->channels[cid].ds;
-                      delete theuser->channels[cid].next_ds[0];
-                      delete theuser->channels[cid].next_ds[1];
-                      theuser->channels[cid].ds=0;
-                      theuser->channels[cid].next_ds[0]=0;
-                      theuser->channels[cid].next_ds[1]=0;
-
-                      if (!theuser->chanpresentmask) // user no longer exists, it seems
-                      {
-                        chksolo=1;
-                        delete theuser;
-                        m_remoteusers.Delete(x);
-                      }
-
-                      if (chksolo)
-                      {
-                        int i;
-                        for (i = 0; i < m_remoteusers.GetSize() && !m_remoteusers.Get(i)->solomask; i ++);
-
-                        if (i < m_remoteusers.GetSize()) m_issoloactive|=1;
-                        else m_issoloactive&=~1;
-                      }
-                    }
-                  }
-                  m_users_cs.Leave();
-                }
-              }
-            }
-          }
-        break;
-        case MESSAGE_SERVER_DOWNLOAD_INTERVAL_BEGIN:
-          {
-            mpb_server_download_interval_begin dib;
-            if (!dib.parse(msg) && dib.username)
-            {
-              int x;
-              RemoteUser *theuser;
-              for (x = 0; x < m_remoteusers.GetSize() && strcmp((theuser=m_remoteusers.Get(x))->name.Get(),dib.username); x ++);
-              if (x < m_remoteusers.GetSize() && dib.chidx >= 0 && dib.chidx < MAX_USER_CHANNELS)
-              {              
-                //printf("Getting interval for %s, channel %d\n",dib.username,dib.chidx);
-                if (!memcmp(dib.guid,zero_guid,sizeof(zero_guid)))
-                {
-                  m_users_cs.Enter();
-                  int useidx=!!theuser->channels[dib.chidx].next_ds[0];
-                  DecodeState *tmp=theuser->channels[dib.chidx].next_ds[useidx];
-                  theuser->channels[dib.chidx].next_ds[useidx]=0;
-                  m_users_cs.Leave();
-                  delete tmp;
-                }
-                else if (dib.fourcc) // download coming
-                {                
-                  if (config_debug_level>1) printf("RECV BLOCK %s\n",guidtostr_tmp(dib.guid));
-                  RemoteDownload *ds=new RemoteDownload;
-                  memcpy(ds->guid,dib.guid,sizeof(ds->guid));
-                  ds->Open(this,dib.fourcc);
-
-                  ds->playtime=config_play_prebuffer;
-                  ds->chidx=dib.chidx;
-                  ds->username.Set(dib.username);
-
-                  m_downloads.Add(ds);
-                }
-                else
-                {
-                  DecodeState *tmp=start_decode(dib.guid);
-                  m_users_cs.Enter();
-                  int useidx=!!theuser->channels[dib.chidx].next_ds[0];
-                  DecodeState *t2=theuser->channels[dib.chidx].next_ds[useidx];
-                  theuser->channels[dib.chidx].next_ds[useidx]=tmp;
-                  m_users_cs.Leave();
-                  delete t2;
-                }
-
-              }
-            }
-          }
-        break;
-        case MESSAGE_SERVER_DOWNLOAD_INTERVAL_WRITE:
-          {
-            mpb_server_download_interval_write diw;
-            if (!diw.parse(msg)) 
-            {
-              time_t now;
-              time(&now);
-              int x;
-              for (x = 0; x < m_downloads.GetSize(); x ++)
-              {
-                RemoteDownload *ds=m_downloads.Get(x);
-                if (ds)
-                {
-                  if (!memcmp(ds->guid,diw.guid,sizeof(ds->guid)))
-                  {
-                    if (config_debug_level>1) printf("RECV BLOCK DATA %s%s %d bytes\n",guidtostr_tmp(diw.guid),diw.flags&1?":end":"",diw.audio_data_len);
-
-                    ds->last_time=now;
-                    if (diw.audio_data_len > 0 && diw.audio_data)
-                    {
-                      ds->Write(diw.audio_data,diw.audio_data_len);
-                    }
-                    if (diw.flags & 1)
-                    {
-                      delete ds;
-                      m_downloads.Delete(x);
-                    }
-                    break;
-                  }
-
-                  if (now - ds->last_time > DOWNLOAD_TIMEOUT)
-                  {
-                    ds->chidx=-1;
-                    delete ds;
-                    m_downloads.Delete(x--);
-                  }
-                }
-              }
-            }
-          }
-        break;
-        case MESSAGE_CHAT_MESSAGE:
-          if (ChatMessage_Callback)
-          {
-            mpb_chat_message foo;
-            if (!foo.parse(msg))
-            {
-              ChatMessage_Callback(ChatMessage_User32,this,foo.parms,sizeof(foo.parms)/sizeof(foo.parms[0]));
-            }
-          }
-        break;
-        default:
-          //printf("Got unknown message %02X\n",msg->get_type());
-        break;
-      }
-
-      msg->releaseRef();
-    }
-  }
 
 #ifndef NJCLIENT_NO_XMIT_SUPPORT
   int u;
@@ -1197,6 +1209,50 @@ int NJClient::Run() // nonzero if sleep ok
 
   return wantsleep;
 
+}
+
+void NJClient::tick()
+{
+  // Values that we watch for changes
+  static int lastStatus = GetStatus();
+  static int lastBpm = -1;
+  static int lastBpi = -1;
+  static int lastBeat = -1;
+
+  while (!Run());
+
+  int status = GetStatus();
+  if (status != lastStatus) {
+    emit statusChanged(status);
+    lastStatus = status;
+
+    // Ensure we emit signals once client connects
+    lastBpm = -1;
+    lastBpi = -1;
+    lastBeat = -1;
+  }
+
+  if (status == NJClient::NJC_STATUS_OK) {
+    int bpm = GetActualBPM();
+    if (bpm != lastBpm) {
+      emit beatsPerMinuteChanged(bpm);
+      lastBpm = bpm;
+    }
+
+    int bpi = GetBPI();
+    if (bpi != lastBpi) {
+      emit beatsPerIntervalChanged(bpi);
+      lastBpi = bpi;
+    }
+
+    int pos, length; // in samples
+    GetPosition(&pos, &length);
+    int currentBeat = pos * bpi / length + 1;
+    if (currentBeat != lastBeat) {
+      lastBeat = currentBeat;
+      emit currentBeatChanged(currentBeat);
+    }
+  }
 }
 
 

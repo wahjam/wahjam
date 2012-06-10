@@ -12,6 +12,11 @@ QT += network
 # Core ninjam/ code does not use wide characters
 win32:DEFINES -= UNICODE
 
+unix {
+    HEADERS += SignalHandler.h
+    SOURCES += SignalHandler.cpp
+}
+
 # Input
 HEADERS += usercon.h \
            Server.h \

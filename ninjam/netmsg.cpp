@@ -23,6 +23,8 @@
 
 */
 
+#include <stdint.h>
+
 
 #ifdef _WIN32
 #include <windows.h>
@@ -60,7 +62,17 @@ int Net_Message::parseMessageHeader(void *data, int len) // returns bytes used, 
   size |= ((int)*dp++)<<16; 
   size |= ((int)*dp++)<<24; 
   len -= 5;
-  if (type == MESSAGE_INVALID || size < 0 || size > NET_MESSAGE_MAX_SIZE) return -1;
+  if (type == MESSAGE_INVALID || size < 0 || size > NET_MESSAGE_MAX_SIZE) {
+    fprintf(stderr, "len = %d\n", len);
+    for (int i = 0; i < len; i += 16) {
+      for (int j = 0; j < 16; j++) {
+        fprintf(stderr, "%02x ", ((uint8_t*)data)[i + j]);
+      }
+      fprintf(stderr, "\n");
+    }
+    fprintf(stderr, "\n");
+    return -1;
+  }
 
   m_type=type;
   set_size(size);
@@ -85,47 +97,36 @@ int Net_Message::makeMessageHeader(void *data) // makes message header, data sho
   return (dp-(unsigned char *)data);
 }
 
-
-
-Net_Message *Net_Connection::Run(int *wantsleep)
+void Net_Connection::socketError(QAbstractSocket::SocketError)
 {
-  if (m_error) {
-    return 0;
-  }
+  setStatus(1);
+}
 
-  time_t now = time(NULL);
+void Net_Connection::readyRead()
+{
+  bool msgEnqueued = false;
 
-  if (now > m_last_send + m_keepalive) {
-    Net_Message *keepalive = new Net_Message;
-    keepalive->set_type(MESSAGE_KEEPALIVE);
-    keepalive->set_size(0);
-    Send(keepalive);
-    m_last_send = now;
-  }
-
-  Net_Message *retv = 0;
-
-  if (!m_recvmsg) {
-    m_recvmsg = new Net_Message;
-    m_recvstate = 0;
-  }
-
-  while (!retv && m_sock->bytesAvailable())
+  while (m_sock->bytesAvailable())
   {
     char buf[8192];
     int buflen = m_sock->peek(buf, sizeof(buf));
     int a = 0;
+
+    if (!m_recvmsg) {
+      m_recvmsg = new Net_Message;
+      m_recvstate = 0;
+    }
 
     if (!m_recvstate)
     {
       a = m_recvmsg->parseMessageHeader(buf, buflen);
       if (a < 0)
       {
-        m_error = -1;
-        break;
+        setStatus(-1);
+        return;
       }
       if (a == 0) {
-        break;
+        return;
       }
       m_recvstate = 1;
     }
@@ -135,25 +136,63 @@ Net_Message *Net_Connection::Run(int *wantsleep)
 
     if (m_recvmsg->parseBytesNeeded() < 1)
     {
-      retv = m_recvmsg;
+      recvq.enqueue(m_recvmsg);
       m_recvmsg = 0;
       m_recvstate = 0;
-    }
-    if (wantsleep) {
-      *wantsleep = 0;
+      recvKeepaliveTimer.start();
+      msgEnqueued = true;
     }
   }
 
-  if (retv)
-  {
-    m_last_recv = now;
+  /* Only emit signal once per readyRead() */
+  if (msgEnqueued) {
+    emit messagesReady();
   }
-  else if (now > m_last_recv + m_keepalive * 3)
-  {
-    m_error = -3;
+}
+
+void Net_Connection::sendKeepaliveMessage()
+{
+  Net_Message *keepalive = new Net_Message;
+  keepalive->set_type(MESSAGE_KEEPALIVE);
+  keepalive->set_size(0);
+  Send(keepalive);
+}
+
+void Net_Connection::recvTimedOut()
+{
+  setStatus(-3);
+}
+
+Net_Message *Net_Connection::nextMessage()
+{
+  if (status != 0 || recvq.isEmpty()) {
+    return 0;
   }
+
+  Net_Message *retv = recvq.dequeue();
+
+  if (lastmsgs[lastmsgIdx]) {
+    lastmsgs[lastmsgIdx]->releaseRef();
+  }
+  retv->addRef();
+  lastmsgs[lastmsgIdx] = retv;
+  lastmsgIdx = (lastmsgIdx + 1) % 5;
 
   return retv;
+}
+
+Net_Message *Net_Connection::Run(int *wantsleep)
+{
+  Net_Message *retv = nextMessage();
+  if (retv && wantsleep) {
+    *wantsleep = 0;
+  }
+  return retv;
+}
+
+bool Net_Connection::hasMessagesAvailable()
+{
+  return !recvq.isEmpty();
 }
 
 int Net_Connection::Send(Net_Message *msg)
@@ -173,40 +212,82 @@ int Net_Connection::Send(Net_Message *msg)
   if (ret != msg->get_size()) {
     return -1;
   }
+
+  sendKeepaliveTimer.start();
+
   return 0;
 }
 
 int Net_Connection::GetStatus()
 {
-  if (m_error) {
-    return m_error;
-  }
-  if (!m_sock || !m_sock->isOpen()) {
-    return 1;
-  }
-  switch (m_sock->state()) {
-  case QAbstractSocket::HostLookupState:
-  case QAbstractSocket::ConnectingState:
-  case QAbstractSocket::ConnectedState:
-  case QAbstractSocket::ClosingState:
-    return 0;
-  default:
-    return 1;
-  }
+  return status;
 }
 
 QHostAddress Net_Connection::GetRemoteAddr()
 {
-  return m_sock->peerAddress();
+  /* Cache remote address since QTcpSocket clears it on disconnect */
+  if (remoteAddr != QHostAddress::Null) {
+    return remoteAddr;
+  }
+  remoteAddr = m_sock->peerAddress();
+  return remoteAddr;
+}
+
+Net_Connection::Net_Connection(QTcpSocket *sock, QObject *parent)
+  : QObject(parent), status(0), m_recvstate(0),
+    m_recvmsg(0), m_sock(sock), remoteAddr(sock->peerAddress()),
+    lastmsgIdx(0)
+{
+  m_sock->setParent(this);
+
+  connect(sock, SIGNAL(error(QAbstractSocket::SocketError)),
+          this, SLOT(socketError(QAbstractSocket::SocketError)));
+  connect(sock, SIGNAL(readyRead()), this, SLOT(readyRead()));
+  connect(sock, SIGNAL(disconnected()), this, SIGNAL(disconnected()));
+
+  connect(&sendKeepaliveTimer, SIGNAL(timeout()),
+          this, SLOT(sendKeepaliveMessage()));
+  connect(&recvKeepaliveTimer, SIGNAL(timeout()),
+          this, SLOT(recvTimedOut()));
+
+  memset(lastmsgs, 0, sizeof(lastmsgs));
+  SetKeepAlive(0);
 }
 
 Net_Connection::~Net_Connection()
 {
+  for (int i = 0; i < 5; i++) {
+    if (lastmsgs[i]) {
+      lastmsgs[i]->releaseRef();
+    }
+  }
+
+  while (!recvq.isEmpty()) {
+    delete recvq.dequeue();
+  }
+
   delete m_recvmsg;
-  delete m_sock;
+}
+
+void Net_Connection::SetKeepAlive(int interval)
+{
+  if (interval == 0) {
+    interval = NET_CON_KEEPALIVE_RATE;
+  }
+
+  sendKeepaliveTimer.start(interval * 1000 /* milliseconds */);
+  recvKeepaliveTimer.start(3 * interval * 1000 /* milliseconds */);
+}
+
+void Net_Connection::setStatus(int s)
+{
+  sendKeepaliveTimer.stop();
+  recvKeepaliveTimer.stop();
+  status = s;
+  m_sock->disconnectFromHost();
 }
 
 void Net_Connection::Kill()
 {
-  m_sock->close();
+  setStatus(1);
 }

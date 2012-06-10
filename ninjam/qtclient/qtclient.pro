@@ -24,17 +24,17 @@ win32:DEFINES -= UNICODE
 # Input
 HEADERS += MainWindow.h
 HEADERS += ConnectDialog.h
-HEADERS += ClientRunThread.h
 HEADERS += ChannelTreeWidget.h
 HEADERS += PortAudioConfigDialog.h
 HEADERS += ServerBrowser.h
 HEADERS += MetronomeBar.h
 HEADERS += ChatOutput.h
+HEADERS += ../netmsg.h
+HEADERS += ../njclient.h
 
 SOURCES += qtclient.cpp
 SOURCES += MainWindow.cpp
 SOURCES += ConnectDialog.cpp
-SOURCES += ClientRunThread.cpp
 SOURCES += ChannelTreeWidget.cpp
 SOURCES += PortAudioConfigDialog.cpp
 SOURCES += ServerBrowser.cpp

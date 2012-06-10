@@ -32,7 +32,6 @@
 #include <QRegExp>
 
 #include "MainWindow.h"
-#include "ClientRunThread.h"
 #include "ConnectDialog.h"
 #include "PortAudioConfigDialog.h"
 #include "../njmisc.h"
@@ -46,14 +45,12 @@ void MainWindow::OnSamplesTrampoline(float **inbuf, int innch, float **outbuf, i
 
 int MainWindow::LicenseCallbackTrampoline(int user32, char *licensetext)
 {
-  /* Bounce back into ClientRunThread */
-  return MainWindow::GetInstance()->runThread->licenseCallbackTrampoline(licensetext);
+  return MainWindow::GetInstance()->LicenseCallback(licensetext);
 }
 
 void MainWindow::ChatMessageCallbackTrampoline(int user32, NJClient *inst, char **parms, int nparms)
 {
-  /* Bounce back into ClientRunThread */
-  MainWindow::GetInstance()->runThread->chatMessageCallbackTrampoline(parms, nparms);
+  MainWindow::GetInstance()->ChatMessageCallback(parms, nparms);
 }
 
 MainWindow *MainWindow::GetInstance()
@@ -185,51 +182,23 @@ MainWindow::MainWindow(QWidget *parent)
   connectionStateMachine->setErrorState(disconnectedState);
   connectionStateMachine->start();
 
-
-  runThread = new ClientRunThread(&clientMutex, &client);
-
-  /* Hook up an inter-thread signal for the license agreement dialog */
-  connect(runThread, SIGNAL(licenseCallback(const char *, bool *)),
-          this, SLOT(LicenseCallback(const char *, bool *)),
-          Qt::BlockingQueuedConnection);
-
-  /* Hook up an inter-thread signal for the chat message callback */
-  connect(runThread, SIGNAL(chatMessageCallback(char **, int)),
-          this, SLOT(ChatMessageCallback(char **, int)),
-          Qt::BlockingQueuedConnection);
-
-  /* No need to block for the remote user info callback */
-  connect(runThread, SIGNAL(userInfoChanged()),
+  connect(&client, SIGNAL(userInfoChanged()),
           this, SLOT(UserInfoChanged()));
-
-  /* Hook up an inter-thread signal for client status changes */
-  connect(runThread, SIGNAL(statusChanged(int)),
+  connect(&client, SIGNAL(statusChanged(int)),
           this, SLOT(ClientStatusChanged(int)));
-
-  /* Hook up inter-thread signals for bpm/bpi changes */
-  connect(runThread, SIGNAL(beatsPerMinuteChanged(int)),
+  connect(&client, SIGNAL(beatsPerMinuteChanged(int)),
           this, SLOT(BeatsPerMinuteChanged(int)));
-  connect(runThread, SIGNAL(beatsPerIntervalChanged(int)),
+  connect(&client, SIGNAL(beatsPerIntervalChanged(int)),
           this, SLOT(BeatsPerIntervalChanged(int)));
-
-  /* Hook up inter-thread signals for beat and interval changes */
-  connect(runThread, SIGNAL(beatsPerIntervalChanged(int)),
+  connect(&client, SIGNAL(beatsPerIntervalChanged(int)),
           metronomeBar, SLOT(setBeatsPerInterval(int)));
-  connect(runThread, SIGNAL(currentBeatChanged(int)),
+  connect(&client, SIGNAL(currentBeatChanged(int)),
           metronomeBar, SLOT(setCurrentBeat(int)));
-
-  runThread->start();
 }
 
 MainWindow::~MainWindow()
 {
   Disconnect();
-
-  if (runThread) {
-    runThread->stop();
-    delete runThread;
-    runThread = NULL;
-  }
 }
 
 /* Must be called with client mutex held or before client thread is started */
@@ -288,12 +257,10 @@ void MainWindow::Disconnect()
   delete audio;
   audio = NULL;
 
-  clientMutex.lock();
   client.Disconnect();
   QString workDirPath = QString::fromUtf8(client.GetWorkDir());
   bool keepWorkDir = client.config_savelocalaudio;
   client.SetWorkDir(NULL);
-  clientMutex.unlock();
 
   if (!workDirPath.isEmpty() && !keepWorkDir) {
     cleanupWorkDir(workDirPath);
@@ -415,7 +382,6 @@ void MainWindow::ShowAboutDialog()
 void MainWindow::UserInfoChanged()
 {
   ChannelTreeWidget::RemoteChannelUpdater updater(channelTree);
-  clientMutex.lock();
 
   int useridx;
   for (useridx = 0; useridx < client.GetNumUsers(); useridx++) {
@@ -430,7 +396,6 @@ void MainWindow::UserInfoChanged()
     }
   }
 
-  clientMutex.unlock();
   updater.commit();
 }
 
@@ -439,7 +404,7 @@ void MainWindow::OnSamples(float **inbuf, int innch, float **outbuf, int outnch,
   client.AudioProc(inbuf, innch, outbuf, outnch, len, srate);
 }
 
-void MainWindow::LicenseCallback(const char *licensetext, bool *result)
+bool MainWindow::LicenseCallback(const char *licensetext)
 {
   QMessageBox msgBox(this);
 
@@ -448,7 +413,7 @@ void MainWindow::LicenseCallback(const char *licensetext, bool *result)
   msgBox.setStandardButtons(QMessageBox::Cancel | QMessageBox::Ok);
   msgBox.setTextFormat(Qt::PlainText);
 
-  *result = msgBox.exec() == QMessageBox::Ok ? TRUE : FALSE;
+  return msgBox.exec() == QMessageBox::Ok;
 }
 
 void MainWindow::ClientStatusChanged(int newStatus)
@@ -457,10 +422,8 @@ void MainWindow::ClientStatusChanged(int newStatus)
   QString statusMessage;
 
   if (newStatus == NJClient::NJC_STATUS_OK) {
-    clientMutex.lock();
     QString host = QString::fromUtf8(client.GetHostName());
     QString username = QString::fromUtf8(client.GetUserName());
-    clientMutex.unlock();
 
     statusMessage = tr("Connected to %1 as %2").arg(host, username);
     emit Connected();
@@ -617,7 +580,6 @@ void MainWindow::SendChatMessage(const QString &line)
     parm = line;
   }
 
-  clientMutex.lock();
   bool connected = client.GetStatus() == NJClient::NJC_STATUS_OK;
   if (connected) {
     if (command == "PRIVMSG") {
@@ -626,7 +588,6 @@ void MainWindow::SendChatMessage(const QString &line)
       client.ChatMessage_Send(command.toUtf8().data(), parm.toUtf8().data());
     }
   }
-  clientMutex.unlock();
 
   if (!connected) {
     chatOutput->addErrorMessage("not connected to a server.");
@@ -635,45 +596,33 @@ void MainWindow::SendChatMessage(const QString &line)
 
 void MainWindow::MetronomeMuteChanged(bool mute)
 {
-  clientMutex.lock();
   client.config_metronome_mute = mute;
-  clientMutex.unlock();
 }
 
 void MainWindow::MetronomeBoostChanged(bool boost)
 {
-  clientMutex.lock();
   client.config_metronome = boost ? DB2VAL(3) : DB2VAL(0);
-  clientMutex.unlock();
 }
 
 void MainWindow::LocalChannelMuteChanged(int ch, bool mute)
 {
-  clientMutex.lock();
   client.SetLocalChannelMonitoring(ch, false, 0, false, 0, true, mute, false, false);
-  clientMutex.unlock();
 }
 
 void MainWindow::LocalChannelBoostChanged(int ch, bool boost)
 {
-  clientMutex.lock();
   client.SetLocalChannelMonitoring(ch, true, boost ? DB2VAL(3) : DB2VAL(0),
                                    false, 0, false, false, false, false);
-  clientMutex.unlock();
 }
 
 void MainWindow::LocalChannelBroadcastChanged(int ch, bool broadcast)
 {
-  clientMutex.lock();
   client.SetLocalChannelInfo(ch, NULL, false, 0, false, 0, true, broadcast);
-  clientMutex.unlock();
 }
 
 void MainWindow::RemoteChannelMuteChanged(int useridx, int channelidx, bool mute)
 {
-  clientMutex.lock();
   client.SetUserChannelState(useridx, channelidx, false, false, false, 0, false, 0, true, mute, false, false);
-  clientMutex.unlock();
 }
 
 void MainWindow::VoteBPMDialog()
