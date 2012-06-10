@@ -21,6 +21,7 @@
 #define _SERVER_H_
 
 #include <QTcpServer>
+#include <QTimer>
 
 #include "../../WDL/string.h"
 #include "../../WDL/ptrlist.h"
@@ -90,21 +91,22 @@ class Server : public QObject
   Q_OBJECT
 
 public:
-  Server(User_Group *group);
-  ~Server();
+  Server(CreateUserLookupFn *createUserLookup, QObject *parent=0);
   bool setConfig(ServerConfig *config);
-  bool run();
 
 private slots:
   void acceptNewConnection();
+  void updateNextSession();
 
 private:
   ServerConfig *config;
   User_Group *group;
   QTcpServer listener;
-  time_t nextSessionUpdateTime;
+  QTimer sessionUpdateTimer;
 
   void enforceACL();
+  void setIdleSessionUpdateTimer();
+  void setActiveSessionUpdateTimer();
 };
 
 #endif /* _SERVER_H_ */

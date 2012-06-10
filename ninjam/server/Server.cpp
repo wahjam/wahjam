@@ -24,21 +24,24 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <QTcpSocket>
+#include <QDir>
+#include <QDateTime>
 
 #include "ninjamsrv.h"
 #include "Server.h"
 
-/* Takes ownership of group_ */
-Server::Server(User_Group *group_)
-  : group(group_), nextSessionUpdateTime(0)
+Server::Server(CreateUserLookupFn *createUserLookup, QObject *parent)
+  : QObject(parent)
 {
+  group = new User_Group(createUserLookup, this);
+
   connect(&listener, SIGNAL(newConnection()),
           this, SLOT(acceptNewConnection()));
-}
 
-Server::~Server()
-{
-  delete group;
+  connect(&sessionUpdateTimer, SIGNAL(timeout()),
+          this, SLOT(updateNextSession()));
+  setIdleSessionUpdateTimer();
+  sessionUpdateTimer.start();
 }
 
 void AccessControlList::add(unsigned long addr, unsigned long mask, int flags)
@@ -106,6 +109,7 @@ bool Server::setConfig(ServerConfig *config_)
 
   enforceACL();
   group->SetLicenseText(config->license.Get());
+  updateNextSession();
 
   listener.close();
   if (!listener.listen(QHostAddress::Any, config->port)) {
@@ -140,70 +144,61 @@ void Server::acceptNewConnection()
   group->AddConnection(sock, flag == ACL_FLAG_RESERVE);
 }
 
-/* Run an iteration of the main loop
- *
- * Return true if the main loop should sleep.
- */
-bool Server::run()
+void Server::setIdleSessionUpdateTimer()
 {
-  bool wantSleep = group->Run();
+  sessionUpdateTimer.setInterval(30 * 1000 /* milliseconds */);
+}
 
-  time_t now;
-  time(&now);
-  if (now >= nextSessionUpdateTime)
-  {
-    group->SetLogDir(NULL);
-
-    int len=30; // check every 30 seconds if we aren't logging
-
-    if (config->logPath.Get()[0])
-    {
-      int x;
-      for (x = 0; x < group->m_users.GetSize() && group->m_users.Get(x)->m_auth_state < 1; x ++);
-
-      if (x < group->m_users.GetSize())
-      {
-        WDL_String tmp;
-
-        int cnt=0;
-        while (cnt < 16)
-        {
-          char buf[512];
-          struct tm *t=localtime(&now);
-          sprintf(buf,"/%04d%02d%02d_%02d%02d",t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min);
-          if (cnt)
-            sprintf(buf+strlen(buf),"_%d",cnt);
-          strcat(buf,".wahjam");
-
-          tmp.Set(config->logPath.Get());
-          tmp.Append(buf);
-
-#ifdef _WIN32
-          if (CreateDirectory(tmp.Get(),NULL)) break;
-#else
-          if (!mkdir(tmp.Get(),0755)) break;
-#endif
-
-          cnt++;
-        }
-
-        if (cnt < 16 )
-        {
-          logText("Archiving session '%s'\n",tmp.Get());
-          group->SetLogDir(tmp.Get());
-        }
-        else
-        {
-          logText("Error creating a session archive directory! Gave up after '%s' failed!\n",tmp.Get());
-        }
-        // if we succeded, don't check until configured time
-        len=config->logSessionLen*60;
-        if (len < 60) len=30;
-      }
-
-    }
-    nextSessionUpdateTime=now+len;
+void Server::setActiveSessionUpdateTimer()
+{
+  int sec = config->logSessionLen * 60;
+  if (sec < 60) {
+    sec = 30;
   }
 
-  return wantSleep;
+  sessionUpdateTimer.setInterval(sec * 1000 /* milliseconds */);
+}
+
+void Server::updateNextSession()
+{
+  group->SetLogDir(NULL);
+
+  if (config->logPath.Get()[0] == '\0') {
+    setIdleSessionUpdateTimer();
+    return;
+  }
+
+  if (!group->hasAuthenticatedUsers()) {
+    setIdleSessionUpdateTimer();
+    return;
+  }
+
+  QDir logDir(config->logPath.Get());
+  QString sessionPath;
+  int cnt;
+  for (cnt = 0; cnt < 16; cnt++) {
+    QString sessionName = QDateTime::currentDateTime().toString("yyyyMMdd_hhmm");
+    if (cnt > 0) {
+      sessionName += QString("_%1").arg(cnt);
+    }
+    sessionName += ".wahjam";
+
+    sessionPath = logDir.absoluteFilePath(sessionName);
+    if (logDir.mkdir(sessionName)) {
+      break;
+    }
+  }
+
+  if (cnt < 16 )
+  {
+    logText("Archiving session '%s'\n", sessionPath.toLocal8Bit().constData());
+    group->SetLogDir(sessionPath.toLocal8Bit().constData());
+    setActiveSessionUpdateTimer();
+  }
+  else
+  {
+    logText("Error creating a session archive directory! Gave up after '%s' failed!\n",
+            sessionPath.toLocal8Bit().constData());
+    setIdleSessionUpdateTimer();
+  }
 }

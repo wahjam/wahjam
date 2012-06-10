@@ -30,6 +30,7 @@ HEADERS += PortAudioConfigDialog.h
 HEADERS += ServerBrowser.h
 HEADERS += MetronomeBar.h
 HEADERS += ChatOutput.h
+HEADERS += ../netmsg.h
 
 SOURCES += qtclient.cpp
 SOURCES += MainWindow.cpp

@@ -36,7 +36,6 @@
 #include <string.h>
 #endif
 #include <time.h>
-#include <signal.h>
 #include <stdarg.h>
 
 #include <QCoreApplication>
@@ -51,6 +50,9 @@
 #include "../../WDL/string.h"
 
 #include "Server.h"
+#ifndef _WIN32
+#include "SignalHandler.h"
+#endif
 #include "ninjamsrv.h"
 
 #define VERSION "v0.06"
@@ -72,7 +74,7 @@ public:
   {
   }
 
-  int Run()
+  void start()
   {
     // perform lookup here
 
@@ -81,7 +83,10 @@ public:
     if (!strncmp(username.Get(),"anonymous",9) && (!username.Get()[9] || username.Get()[9] == ':'))
     {
       logText("got anonymous request (%s)\n",g_config.allowAnonymous?"allowing":"denying");
-      if (!g_config.allowAnonymous) return 1;
+      if (!g_config.allowAnonymous) {
+        emit completed();
+        return;
+      }
 
       user_valid=1;
       reqpass=0;
@@ -165,10 +170,8 @@ public:
         }
       }
     }
-
-    return 1;
+    emit completed();
   }
-
 };
 
 
@@ -544,24 +547,6 @@ static int ReadConfig(ServerConfig *config, char *configfile)
   return 0;
 }
 
-static int g_reloadconfig;
-static int g_done;
-
-
-void sighandler(int sig)
-{
-  if (sig == SIGINT)
-  {
-    g_done=1;
-  }
-#ifndef _WIN32
-  if (sig == SIGHUP)
-  {
-    g_reloadconfig=1;
-  }
-#endif
-}
-
 void usage(const char *progname)
 {
     printf("Usage: %s config.cfg [options]\n"
@@ -653,10 +638,7 @@ int main(int argc, char **argv)
     usage(argv[0]);
   }
 
-  User_Group *group = new User_Group;
-  group->CreateUserLookup=myCreateUserLookup;
-
-  g_server = new Server(group);
+  g_server = new Server(myCreateUserLookup);
 
   printf("%s", startupmessage);
 
@@ -688,14 +670,7 @@ int main(int argc, char **argv)
     }
     else printf("Error opening PID file '%s'\n", g_config.pidFilename.Get());
   }
-
-
-
-  signal(SIGPIPE,sighandler);
-  signal(SIGHUP,sighandler);
 #endif
-  signal(SIGINT,sighandler);
-
 
   if (g_config.logFilename.Get()[0])
   {
@@ -709,22 +684,19 @@ int main(int argc, char **argv)
 
   logText("Server starting up...\n");
 
-  while (!g_done)
-  {
-    if (g_server->run())
-    {
-      app.processEvents(QEventLoop::AllEvents, 1 /* milliseconds */);
+#ifndef _WIN32
+  SignalHandler *sigHandler = new SignalHandler(argc, argv);
+#endif
 
-      if (g_reloadconfig && strcmp(argv[1],"-"))
-      {
-        g_reloadconfig=0;
-        reloadConfig(argc, argv, false);
-      }
-    }
-  }
+  app.exec();
+
+#ifndef _WIN32
+  delete sigHandler;
+#endif
 
   logText("Shutting down server\n");
 
+  /* Explicitly delete before closing log */
   delete g_server;
 
   if (g_logfp)

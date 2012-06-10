@@ -28,7 +28,8 @@
 #ifndef _NETMSG_H_
 #define _NETMSG_H_
 
-#include <time.h>
+#include <QQueue>
+#include <QTimer>
 #include <QTcpSocket>
 #include <QHostAddress>
 
@@ -83,37 +84,49 @@ class Net_Message
 };
 
 
-class Net_Connection
+class Net_Connection : public QObject
 {
+  Q_OBJECT
+
   public:
-    Net_Connection(QTcpSocket *sock) : m_error(0), m_recvstate(0), m_recvmsg(0), m_sock(sock)
-    {
-      SetKeepAlive(0);
-    }
+    Net_Connection(QTcpSocket *sock, QObject *parent = 0);
     ~Net_Connection();
 
+    bool hasMessagesAvailable();
+    Net_Message *nextMessage();
     Net_Message *Run(int *wantsleep=0);
-    int Send(Net_Message *msg); // -1 on error, i.e. queue full
+    int Send(Net_Message *msg); // -1 on error
     int GetStatus(); // returns <0 on error, 0 on normal, 1 on disconnect
 
     QHostAddress GetRemoteAddr();
 
-    void SetKeepAlive(int interval)
-    {
-      m_keepalive=interval?interval:NET_CON_KEEPALIVE_RATE;
-      m_last_send=m_last_recv=time(NULL);
-    }
+    void SetKeepAlive(int interval);
 
     void Kill();
 
+  signals:
+    void messagesReady();
+    void disconnected();
+
+  private slots:
+    void socketError(QAbstractSocket::SocketError socketError);
+    void readyRead();
+    void sendKeepaliveMessage();
+    void recvTimedOut();
+
   private:
-    int m_error;
-    int m_keepalive;
-    time_t m_last_send;
-    time_t m_last_recv;
+    void setStatus(int s);
+
+    int status;
+    QTimer sendKeepaliveTimer;
+    QTimer recvKeepaliveTimer;
     int m_recvstate;
     Net_Message *m_recvmsg;
+    QQueue<Net_Message*> recvq;
     QTcpSocket *m_sock;
+    QHostAddress remoteAddr;
+    Net_Message *lastmsgs[5];
+    unsigned int lastmsgIdx;
 };
 
 
