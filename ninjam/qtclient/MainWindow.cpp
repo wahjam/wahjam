@@ -487,7 +487,7 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
         chatOutput->addInfoMessage(tr("%1 removes topic.").arg(parms[1]));
       } else {
         chatOutput->addInfoMessage(
-	  tr("%1 sets topic to: %2").arg(parms[1], parms[2]));
+        tr("%1 sets topic to: %2").arg(parms[1], parms[2]));
       }
     }
 
