@@ -12,6 +12,9 @@ QT += network
 # Core ninjam/ code does not use wide characters
 win32:DEFINES -= UNICODE
 
+# Build console application
+win32:CONFIG += console
+
 # Input
 HEADERS += usercon.h \
            Server.h \
