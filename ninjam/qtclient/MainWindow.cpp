@@ -549,7 +549,7 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
       chatOutput->addLink(href, linktext);
     } else {
       if (parms[2].startsWith("/me ")) {
-        chatOutput->addActionMessage(parms[1], parms[2]);
+        chatOutput->addActionMessage(parms[1], parms[2].mid(4));
       }
       else {
         chatOutput->addMessage(parms[1], parms[2]);
