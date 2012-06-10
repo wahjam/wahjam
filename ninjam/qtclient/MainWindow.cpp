@@ -493,32 +493,21 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
 
     /* TODO set topic */
   } else if (parms[0] == "MSG") {
-    QString href;
-    QString linktext;
+    QRegExp re("\\[voting system\\] leading candidate: (\\d+)\\/\\d+ votes"
+               " for (\\d+) (BPI|BPM) \\[each vote expires in \\d+s\\]");
 
-    // Add +1 vote link
-    if (parms[1].isEmpty() && parms[2].startsWith("[voting system]")) {
-
-      QRegExp re("\\[voting system\\] leading candidate: (\\d+)\\/\\d+ votes"
-                 " for (\\d+) (BPI|BPM) \\[each vote expires in \\d+s\\]");
-
-      if (re.exactMatch(parms[2]) && re.cap(1) == "1") {
-        href = QString("send-message:!vote %1 %2").arg(
-	                     re.cap(3).toLower(),re.cap(2));
-        linktext = "[+1]";
-      }
-    }
-
-    if (! href.isEmpty() && ! linktext.isEmpty()) {
+    if (parms[1].isEmpty() && re.exactMatch(parms[2]) && re.cap(1) == "1") {
+      // Add vote [+1] link
+      QString type = re.cap(3).toLower();
+      QString value = re.cap(2);
+      QString href = QString("send-message:!vote %1 %2").arg(type, value);
       chatOutput->addMessage(parms[1], parms[2]);
-      chatOutput->addLink(href, linktext);
+      chatOutput->addLink(href, "[+1]");
+    } else if (parms[2].startsWith("/me ")) {
+      // Special formatting for action messages
+      chatOutput->addActionMessage(parms[1], parms[2].mid(4));
     } else {
-      if (parms[2].startsWith("/me ")) {
-        chatOutput->addActionMessage(parms[1], parms[2].mid(4));
-      }
-      else {
-        chatOutput->addMessage(parms[1], parms[2]);
-      }
+      chatOutput->addMessage(parms[1], parms[2]);
     }
   } else if (parms[0] == "PRIVMSG") {
     chatOutput->addPrivateMessage(parms[1], parms[2]);
