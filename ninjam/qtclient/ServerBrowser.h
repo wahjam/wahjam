@@ -37,7 +37,7 @@ class ServerBrowser : public QTreeWidget
   Q_OBJECT
 
 public:
-  ServerBrowser(QWidget *parent=0);
+  ServerBrowser(QNetworkAccessManager *manager_, QWidget *parent=0);
   void loadServerList(const QUrl &url);
   void parseServerList(QTextStream *stream);
 
@@ -51,7 +51,7 @@ private slots:
   void onItemActivated(QTreeWidgetItem *item, int column);
 
 private:
-  QNetworkAccessManager *manager;
+  QNetworkAccessManager *netManager;
   QNetworkReply *reply;
 };
 
