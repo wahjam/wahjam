@@ -22,8 +22,12 @@
 #include "MetronomeBar.h"
 
 MetronomeBar::MetronomeBar(QWidget *parent)
-  : QWidget(parent)
+  : QFrame(parent)
 {
+  setFrameStyle(QFrame::Panel | QFrame::Plain);
+  setLineWidth(1);
+  setMidLineWidth(1);
+
   reset();
 }
 
@@ -72,12 +76,13 @@ QSize MetronomeBar::minimumSizeHint() const
   return QSize(bpi * 8, 8);
 }
 
-void MetronomeBar::paintEvent(QPaintEvent*)
+void MetronomeBar::paintEvent(QPaintEvent *event)
 {
+  QFrame::paintEvent(event);
+
   QPainter painter(this);
 
   painter.setBrush(Qt::white);
-  painter.drawRect(rect());
 
   // Avoid divide-by-zero when there is nothing to paint
   if (bpi == 0) {
