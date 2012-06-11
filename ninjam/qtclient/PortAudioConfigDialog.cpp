@@ -45,13 +45,19 @@ PortAudioConfigDialog::PortAudioConfigDialog(QWidget *parent)
 
   QVBoxLayout *vlayout = new QVBoxLayout;
   QFormLayout *formLayout = new QFormLayout;
+  formLayout->setSpacing(5);
+  formLayout->setContentsMargins(2, 2, 2, 2);
   formLayout->addRow(tr("Audio &system:"), hostAPIList);
   formLayout->addRow(tr("&Input device:"), inputDeviceList);
   formLayout->addRow(tr("&Output device:"), outputDeviceList);
   vlayout->addLayout(formLayout);
   QHBoxLayout *hlayout = new QHBoxLayout;
+  hlayout->setSpacing(0);
+  hlayout->setContentsMargins(0, 0, 0, 0);
   hlayout->addWidget(applyButton);
   hlayout->addWidget(cancelButton);
+  vlayout->setSpacing(2);
+  vlayout->setContentsMargins(5, 5, 5, 5);
   vlayout->addLayout(hlayout);
   setLayout(vlayout);
   setWindowTitle(tr("Configure audio devices..."));
