@@ -30,9 +30,9 @@ ServerBrowser::ServerBrowser(QNetworkAccessManager *manager_, QWidget *parent)
   setColumnWidth(0, 200);
 
   connect(this, SIGNAL(itemClicked(QTreeWidgetItem*,int)),
-          this, SLOT(onItemClicked(QTreeWidgetItem*,int)));
+          this, SLOT(clickItem(QTreeWidgetItem*,int)));
   connect(this, SIGNAL(itemActivated(QTreeWidgetItem*,int)),
-          this, SLOT(onItemActivated(QTreeWidgetItem*,int)));
+          this, SLOT(activateItem(QTreeWidgetItem*,int)));
 }
 
 void ServerBrowser::loadServerList(const QUrl &url)
@@ -56,14 +56,14 @@ void ServerBrowser::loadServerList(const QString &urlString)
   loadServerList(url);
 }
 
-void ServerBrowser::onItemClicked(QTreeWidgetItem *item, int column)
+void ServerBrowser::clickItem(QTreeWidgetItem *item, int column)
 {
   Q_UNUSED(column);
 
   emit serverItemClicked(item->data(0, Qt::DisplayRole).toString());
 }
 
-void ServerBrowser::onItemActivated(QTreeWidgetItem *item, int column)
+void ServerBrowser::activateItem(QTreeWidgetItem *item, int column)
 {
   Q_UNUSED(column);
 

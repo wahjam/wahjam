@@ -51,8 +51,8 @@ private slots:
   void errorDownloadServerList(QNetworkReply::NetworkError code);
   void completeDownloadServerList();
   void parseServerList(QTextStream *stream);
-  void onItemClicked(QTreeWidgetItem *item, int column);
-  void onItemActivated(QTreeWidgetItem *item, int column);
+  void clickItem(QTreeWidgetItem *item, int column);
+  void activateItem(QTreeWidgetItem *item, int column);
   void addItem(const QString &serverName,
                const QString &metronomeInfo,
 	       const QString &memberList);
