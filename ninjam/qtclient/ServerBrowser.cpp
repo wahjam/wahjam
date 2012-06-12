@@ -16,6 +16,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <QApplication>
 #include <QRegExp>
 #include <QDebug>
 #include "ServerBrowser.h"
@@ -110,10 +111,11 @@ void ServerBrowser::parseServerList(QTextStream *stream)
 
     Q_ASSERT(serverPattern.captureCount() == 3);
 
-    QMetaObject::invokeMethod(this, "addItem", Qt::QueuedConnection,
-      Q_ARG(QString, serverPattern.cap(1)),
-      Q_ARG(QString, serverPattern.cap(2)),
-      Q_ARG(QString, serverPattern.cap(3)));
+    addItem(serverPattern.cap(1),
+            serverPattern.cap(2),
+	    serverPattern.cap(3));
+
+    qApp->processEvents();
   }
 }
 
