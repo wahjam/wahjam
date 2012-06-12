@@ -28,6 +28,10 @@ MetronomeBar::MetronomeBar(QWidget *parent)
   setLineWidth(1);
   setMidLineWidth(1);
 
+  QPalette newPalette = palette();
+  newPalette.setColor(QPalette::WindowText, Qt::darkBlue);
+  setPalette(newPalette);
+
   reset();
 }
 
@@ -80,9 +84,9 @@ void MetronomeBar::paintEvent(QPaintEvent *event)
 {
   QFrame::paintEvent(event);
 
-  QPainter painter(this);
+  QColor color = palette().color(QPalette::WindowText);
 
-  painter.setBrush(Qt::white);
+  QPainter painter(this);
 
   // Avoid divide-by-zero when there is nothing to paint
   if (bpi == 0) {
@@ -97,6 +101,6 @@ void MetronomeBar::paintEvent(QPaintEvent *event)
   for (i = 0; i < beat; i++) {
     QRectF area(i * beatWidth + padding, padding,
                 beatWidth - 2 * padding, beatHeight - 2 * padding);
-    painter.fillRect(area, Qt::darkBlue);
+    painter.fillRect(area, color);
   }
 }
