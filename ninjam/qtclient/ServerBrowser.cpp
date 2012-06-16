@@ -22,6 +22,9 @@
 #include "ServerBrowser.h"
 
 
+#define SERVERLIST_MAXLEN (256)
+
+
 ServerBrowser::ServerBrowser(QNetworkAccessManager *manager_, QWidget *parent)
   : QTreeWidget(parent), netManager(manager_)
 {
@@ -105,15 +108,15 @@ void ServerBrowser::parseServerList(QTextStream *stream)
   Q_ASSERT(serverPattern.isValid());
 
   while (!stream->atEnd()) {
-    if (!serverPattern.exactMatch(stream->readLine())) {
-      continue;
+    if (!serverPattern.exactMatch(stream->readLine(SERVERLIST_MAXLEN))) {
+      break;
     }
 
     Q_ASSERT(serverPattern.captureCount() == 3);
 
     addItem(serverPattern.cap(1),
             serverPattern.cap(2),
-	    serverPattern.cap(3));
+            serverPattern.cap(3));
 
     qApp->processEvents();
   }
@@ -121,7 +124,7 @@ void ServerBrowser::parseServerList(QTextStream *stream)
 
 void ServerBrowser::addItem(const QString &serverName,
                             const QString &metronomeInfo,
-	                    const QString &memberList)
+                        const QString &memberList)
 {
   QTreeWidgetItem *item = new QTreeWidgetItem(this);
   Q_CHECK_PTR(item);
