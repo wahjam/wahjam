@@ -20,17 +20,12 @@
 #define _SERVERBROWSER_H
 
 
-#include <QUrl>
-#include <QString>
-#include <QTextStream>
-
 #include <QTreeWidget>
-#include <QTreeWidgetItem>
-
-#include <QNetworkAccessManager>
-#include <QNetworkRequest>
 #include <QNetworkReply>
-
+class QUrl;
+class QString;
+class QTextStream;
+class QNetworkAccessManager;
 
 class ServerBrowser : public QTreeWidget
 {

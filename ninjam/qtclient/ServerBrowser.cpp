@@ -17,8 +17,16 @@
 */
 
 #include <QApplication>
+#include <QString>
+#include <QUrl>
+#include <QTextStream>
 #include <QRegExp>
 #include <QDebug>
+
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+
 #include "ServerBrowser.h"
 
 
