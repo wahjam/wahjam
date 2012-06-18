@@ -19,7 +19,7 @@
 #ifndef _METRONOMEBAR_H_
 #define _METRONOMEBAR_H_
 
-#include <QWidget>
+#include <QFrame>
 
 /**
  * A custom widget to show beats
@@ -27,7 +27,7 @@
  * Beats are grouped into intervals.  Each interval has a fixed number of
  * beats.  This widget shows the current beat similar to a progress bar widget.
  */
-class MetronomeBar : public QWidget
+class MetronomeBar : public QFrame
 {
   Q_OBJECT
   Q_PROPERTY(int beatsPerInterval READ beatsPerInterval WRITE setBeatsPerInterval)

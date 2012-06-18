@@ -45,6 +45,8 @@ ConnectDialog::ConnectDialog(QNetworkAccessManager *netManager, QWidget *parent)
   QVBoxLayout *layout = new QVBoxLayout;
   QWidget *form = new QWidget;
   QFormLayout *formLayout = new QFormLayout;
+  formLayout->setSpacing(5);
+  formLayout->setContentsMargins(2, 2, 2, 2);
   formLayout->addRow(tr("&Server:"), hostEdit);
   formLayout->addRow(tr("&Username:"), userEdit);
 
@@ -55,6 +57,8 @@ ConnectDialog::ConnectDialog(QNetworkAccessManager *netManager, QWidget *parent)
 
   formLayout->addRow(tr("&Password:"), passEdit);
   form->setLayout(formLayout);
+  layout->setSpacing(2);
+  layout->setContentsMargins(5, 5, 5, 5);
   layout->addWidget(serverBrowser);
   layout->addWidget(form);
   layout->addWidget(connectButton);

@@ -148,6 +148,8 @@ MainWindow::MainWindow(QWidget *parent)
   QWidget *content = new QWidget;
   QVBoxLayout *layout = new QVBoxLayout;
 
+  layout->setSpacing(2);
+  layout->setContentsMargins(0, 0, 0, 0);
   layout->addWidget(chatOutput);
   layout->addWidget(chatInput);
   layout->addWidget(metronomeBar);
@@ -157,6 +159,7 @@ MainWindow::MainWindow(QWidget *parent)
   splitter->addWidget(channelTree);
   splitter->addWidget(content);
   splitter->setOrientation(Qt::Vertical);
+  splitter->setContentsMargins(5, 5, 5, 5);
 
   setCentralWidget(splitter);
 
