@@ -16,8 +16,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _SERVERBROWSER_H
-#define _SERVERBROWSER_H
+#ifndef _SERVERBROWSER_H_
+#define _SERVERBROWSER_H_
 
 
 #include <QTreeWidget>
@@ -56,4 +56,4 @@ private:
   QNetworkAccessManager *netManager;
 };
 
-#endif
+#endif /* _SERVERBROWSER_H_ */
