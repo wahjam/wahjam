@@ -16,8 +16,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _CHANNELTREEWIDGET_H
-#define _CHANNELTREEWIDGET_H
+#ifndef _CHANNELTREEWIDGET_H_
+#define _CHANNELTREEWIDGET_H_
 
 #include <QTreeWidget>
 
@@ -76,4 +76,4 @@ private:
   QTreeWidgetItem *addChannelItem(QTreeWidgetItem *parent, const QString &text, int flags);
 };
 
-#endif /* _CHANNELTREEWIDGET_H */
+#endif /* _CHANNELTREEWIDGET_H_ */

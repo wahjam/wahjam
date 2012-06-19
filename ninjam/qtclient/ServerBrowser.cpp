@@ -16,13 +16,23 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <QApplication>
+#include <QString>
+#include <QUrl>
+#include <QTextStream>
 #include <QRegExp>
+#include <QDebug>
+
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+
 #include "ServerBrowser.h"
 
 
-/**
- * ServerBrowser constructor
- */
+#define SERVERLIST_MAXLEN (256)
+
+
 ServerBrowser::ServerBrowser(QNetworkAccessManager *manager_, QWidget *parent)
   : QTreeWidget(parent), netManager(manager_)
 {
@@ -32,54 +42,103 @@ ServerBrowser::ServerBrowser(QNetworkAccessManager *manager_, QWidget *parent)
   setColumnWidth(0, 200);
 
   connect(this, SIGNAL(itemClicked(QTreeWidgetItem*,int)),
-          this, SLOT(onItemClicked(QTreeWidgetItem*,int)));
+          this, SLOT(clickItem(QTreeWidgetItem*,int)));
   connect(this, SIGNAL(itemActivated(QTreeWidgetItem*,int)),
-          this, SLOT(onItemActivated(QTreeWidgetItem*,int)));
+          this, SLOT(activateItem(QTreeWidgetItem*,int)));
 }
 
 void ServerBrowser::loadServerList(const QUrl &url)
 {
   QNetworkRequest request(url);
+  QNetworkReply *reply = netManager->get(request);
 
-  reply = netManager->get(request);
+  Q_ASSERT(reply && reply->isRunning());
 
+  connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
+          this, SLOT(errorDownloadServerList(QNetworkReply::NetworkError)));
   connect(reply, SIGNAL(finished()),
           this, SLOT(completeDownloadServerList()));
   connect(reply, SIGNAL(finished()),
           reply, SLOT(deleteLater()));
 }
 
-
-void ServerBrowser::onItemClicked(QTreeWidgetItem *item, int column)
+void ServerBrowser::loadServerList(const QString &urlString)
 {
+  const QUrl url(urlString);
+  loadServerList(url);
+}
+
+void ServerBrowser::clickItem(QTreeWidgetItem *item, int column)
+{
+  Q_UNUSED(column);
+
   emit serverItemClicked(item->data(0, Qt::DisplayRole).toString());
 }
 
-void ServerBrowser::onItemActivated(QTreeWidgetItem *item, int column)
+void ServerBrowser::activateItem(QTreeWidgetItem *item, int column)
 {
+  Q_UNUSED(column);
+
   emit serverItemActivated(item->data(0, Qt::DisplayRole).toString());
+}
+
+void ServerBrowser::errorDownloadServerList(QNetworkReply::NetworkError code)
+{
+  QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
+
+  if (reply) {
+    Q_ASSERT(reply->error() != QNetworkReply::NoError);
+
+    qDebug() << reply->errorString();
+  }
 }
 
 void ServerBrowser::completeDownloadServerList()
 {
-  QTextStream stream(reply);
+  QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
 
-  parseServerList(&stream);
+  if (reply) {
+    Q_ASSERT(reply->isFinished());
+
+    if (reply->error() == QNetworkReply::NoError) {
+      QTextStream stream(reply);
+      parseServerList(&stream);
+    }
+  }
+  else {
+    qDebug() << "sender must be QNetworkReply instance";
+  }
 }
 
 void ServerBrowser::parseServerList(QTextStream *stream)
 {
   QRegExp serverPattern("SERVER\\s+\"([^\"]+)\"\\s+\"([^\"]+)\"\\s+\"([^\"]+)\".*");
+  Q_ASSERT(serverPattern.isValid());
 
   while (!stream->atEnd()) {
-    if (!serverPattern.exactMatch(stream->readLine())) {
-      continue;
+    if (!serverPattern.exactMatch(stream->readLine(SERVERLIST_MAXLEN))) {
+      break;
     }
 
-    QTreeWidgetItem *item = new QTreeWidgetItem(this);
-    item->setText(0, serverPattern.cap(1)); // server
-    item->setText(1, serverPattern.cap(2)); // bpm/bpi
-    item->setText(2, serverPattern.cap(3)); // member list
+    Q_ASSERT(serverPattern.captureCount() == 3);
+
+    addItem(serverPattern.cap(1),
+            serverPattern.cap(2),
+            serverPattern.cap(3));
+
+    qApp->processEvents();
   }
+}
+
+void ServerBrowser::addItem(const QString &serverName,
+                            const QString &metronomeInfo,
+                        const QString &memberList)
+{
+  QTreeWidgetItem *item = new QTreeWidgetItem(this);
+  Q_CHECK_PTR(item);
+
+  item->setText(0, serverName);
+  item->setText(1, metronomeInfo);
+  item->setText(2, memberList);
 }
 

@@ -16,21 +16,16 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _SERVERBROWSER_H
-#define _SERVERBROWSER_H
+#ifndef _SERVERBROWSER_H_
+#define _SERVERBROWSER_H_
 
-
-#include <QUrl>
-#include <QString>
-#include <QTextStream>
 
 #include <QTreeWidget>
-#include <QTreeWidgetItem>
-
-#include <QNetworkAccessManager>
-#include <QNetworkRequest>
 #include <QNetworkReply>
-
+class QUrl;
+class QString;
+class QTextStream;
+class QNetworkAccessManager;
 
 class ServerBrowser : public QTreeWidget
 {
@@ -38,21 +33,27 @@ class ServerBrowser : public QTreeWidget
 
 public:
   ServerBrowser(QNetworkAccessManager *manager_, QWidget *parent=0);
-  void loadServerList(const QUrl &url);
-  void parseServerList(QTextStream *stream);
 
 signals:
   void serverItemClicked(const QString &hostname);
   void serverItemActivated(const QString &hostname);
 
+public slots:
+  void loadServerList(const QUrl &url);
+  void loadServerList(const QString &urlString);
+
 private slots:
+  void errorDownloadServerList(QNetworkReply::NetworkError code);
   void completeDownloadServerList();
-  void onItemClicked(QTreeWidgetItem *item, int column);
-  void onItemActivated(QTreeWidgetItem *item, int column);
+  void parseServerList(QTextStream *stream);
+  void clickItem(QTreeWidgetItem *item, int column);
+  void activateItem(QTreeWidgetItem *item, int column);
+  void addItem(const QString &serverName,
+               const QString &metronomeInfo,
+	       const QString &memberList);
 
 private:
   QNetworkAccessManager *netManager;
-  QNetworkReply *reply;
 };
 
-#endif
+#endif /* _SERVERBROWSER_H_ */
