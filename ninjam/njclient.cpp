@@ -66,7 +66,7 @@ class DecodeState
 #ifdef _WIN32
         DeleteFile(delete_on_delete.Get());
 #else
-        unlink(delete_on_delete.Get());
+        remove(delete_on_delete.Get());
 #endif
       }
     }
