@@ -33,13 +33,13 @@ enum
 ChannelTreeWidget::ChannelTreeWidget(QWidget *parent)
   : QTreeWidget(parent)
 {
-  setHeaderLabels(QStringList("Name") << "Mute" << "Broadcast" << "Boost (+3dB)");
+  setHeaderLabels(QStringList("Name") << "Mute" << "Broadcast");
   setRootIsDecorated(false);
   setItemsExpandable(false);
   setSelectionMode(QAbstractItemView::NoSelection);
 
   QTreeWidgetItem *local = addRootItem("Local");
-  QTreeWidgetItem *metronome = addChannelItem(local, "Metronome", CF_BOOST);
+  QTreeWidgetItem *metronome = addChannelItem(local, "Metronome", 0);
   metronome->setData(0, ItemTypeRole, ItemTypeMetronome);
 
   connect(this, SIGNAL(itemChanged(QTreeWidgetItem*, int)),
@@ -63,16 +63,13 @@ QTreeWidgetItem *ChannelTreeWidget::addChannelItem(QTreeWidgetItem *parent, cons
   if (flags & CF_BROADCAST) {
     channel->setCheckState(2, Qt::Unchecked);
   }
-  if (flags & CF_BOOST) {
-    channel->setCheckState(3, Qt::Unchecked);
-  }
   return channel;
 }
 
 void ChannelTreeWidget::addLocalChannel(int ch, const QString &name, bool mute, bool broadcast)
 {
   QTreeWidgetItem *local = topLevelItem(0);
-  QTreeWidgetItem *channel = addChannelItem(local, name, CF_BROADCAST | CF_BOOST);
+  QTreeWidgetItem *channel = addChannelItem(local, name, CF_BROADCAST);
 
   channel->setData(0, ItemTypeRole, ItemTypeLocalChannel);
   channel->setData(0, ChannelIndexRole, ch);
@@ -92,8 +89,6 @@ void ChannelTreeWidget::handleItemChanged(QTreeWidgetItem *item, int column)
   case ItemTypeMetronome:
     if (column == 1) {
       emit MetronomeMuteChanged(state);
-    } else if (column == 3) {
-      emit MetronomeBoostChanged(state);
     }
     break;
   case ItemTypeLocalChannel:
@@ -103,8 +98,6 @@ void ChannelTreeWidget::handleItemChanged(QTreeWidgetItem *item, int column)
       emit LocalChannelMuteChanged(ch, state);
     } else if (column == 2) {
       emit LocalChannelBroadcastChanged(ch, state);
-    } else if (column == 3) {
-      emit LocalChannelBoostChanged(ch, state);
     }
     break;
   }

@@ -57,9 +57,7 @@ public:
 
 signals:
   void MetronomeMuteChanged(bool mute);
-  void MetronomeBoostChanged(bool boost);
   void LocalChannelMuteChanged(int ch, bool mute);
-  void LocalChannelBoostChanged(int ch, bool boost);
   void LocalChannelBroadcastChanged(int ch, bool broadcast);
   void RemoteChannelMuteChanged(int useridx, int channelidx, bool mute);
 
@@ -69,7 +67,6 @@ private slots:
 private:
   enum ChannelFlags {
     CF_BROADCAST = 0x1,
-    CF_BOOST     = 0x2,
   };
 
   QTreeWidgetItem *addRootItem(const QString &text);
