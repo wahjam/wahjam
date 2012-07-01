@@ -129,12 +129,8 @@ MainWindow::MainWindow(QWidget *parent)
   setupChannelTree();
   connect(channelTree, SIGNAL(MetronomeMuteChanged(bool)),
           this, SLOT(MetronomeMuteChanged(bool)));
-  connect(channelTree, SIGNAL(MetronomeBoostChanged(bool)),
-          this, SLOT(MetronomeBoostChanged(bool)));
   connect(channelTree, SIGNAL(LocalChannelMuteChanged(int, bool)),
           this, SLOT(LocalChannelMuteChanged(int, bool)));
-  connect(channelTree, SIGNAL(LocalChannelBoostChanged(int, bool)),
-          this, SLOT(LocalChannelBoostChanged(int, bool)));
   connect(channelTree, SIGNAL(LocalChannelBroadcastChanged(int, bool)),
           this, SLOT(LocalChannelBroadcastChanged(int, bool)));
   connect(channelTree, SIGNAL(RemoteChannelMuteChanged(int, int, bool)),
@@ -595,20 +591,9 @@ void MainWindow::MetronomeMuteChanged(bool mute)
   client.config_metronome_mute = mute;
 }
 
-void MainWindow::MetronomeBoostChanged(bool boost)
-{
-  client.config_metronome = boost ? DB2VAL(3) : DB2VAL(0);
-}
-
 void MainWindow::LocalChannelMuteChanged(int ch, bool mute)
 {
   client.SetLocalChannelMonitoring(ch, false, 0, false, 0, true, mute, false, false);
-}
-
-void MainWindow::LocalChannelBoostChanged(int ch, bool boost)
-{
-  client.SetLocalChannelMonitoring(ch, true, boost ? DB2VAL(3) : DB2VAL(0),
-                                   false, 0, false, false, false, false);
 }
 
 void MainWindow::LocalChannelBroadcastChanged(int ch, bool broadcast)
