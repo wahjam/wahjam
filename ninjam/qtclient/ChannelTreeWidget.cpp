@@ -147,10 +147,10 @@ void ChannelTreeWidget::RemoteChannelUpdater::addChannel(int channelidx, const Q
     channel->setText(0, name);
   } else {
     channel = owner->addChannelItem(user, name, 0);
-    channel->setData(0, ItemTypeRole, ItemTypeRemoteChannel);
-    channel->setData(0, UserIndexRole, useridx);
   }
 
+  channel->setData(0, ItemTypeRole, ItemTypeRemoteChannel);
+  channel->setData(0, UserIndexRole, useridx);
   channel->setData(0, ChannelIndexRole, channelidx);
   channel->setCheckState(1, mute ? Qt::Checked : Qt::Unchecked);
 }
