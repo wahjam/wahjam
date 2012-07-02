@@ -21,9 +21,6 @@
   This header is used by Wahjam clients to define an abstract audio streamer interface, as
   well as declare functions for creating instances of these audio streamers. 
 
-  On Windows, these functions are primarily called from audioconfig.cpp, and on
-  the Cocoa client the function is called from Controller.mm.
-
   The basic structure is:
 
   The client runs, creates an audiostreamer (below), giving it a SPLPROC, which is it's
@@ -36,10 +33,6 @@
 #ifndef _AUDIOSTREAM_H_
 #define _AUDIOSTREAM_H_
 
-#ifdef _WIN32
-#include <windows.h> // for GUID
-#endif
-
 class audioStreamer
 {
 	public:
@@ -51,26 +44,9 @@ class audioStreamer
 		int m_srate, m_innch, m_outnch, m_bps;
 };
 
-
 typedef void (*SPLPROC)(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
 
 audioStreamer *create_audioStreamer_PortAudio(const char *hostAPI,
     const char *inputDevice, const char *outputDevice, SPLPROC proc);
-
-#ifdef _WIN32
-audioStreamer *create_audioStreamer_KS(int srate, int bps, int *nbufs, int *bufsize, SPLPROC proc);
-
-audioStreamer *create_audioStreamer_WO(int srate, int bps, int devs[2], int *nbufs, int *bufsize, SPLPROC proc);
-audioStreamer *create_audioStreamer_DS(int srate, int bps, GUID devs[2], int *nbufs, int *bufsize, SPLPROC proc);
-
-#else
-
-#ifdef _MAC
-audioStreamer *create_audioStreamer_CoreAudio(char **dev, int srate, int nch, int bps, SPLPROC proc);
-#else
-audioStreamer *create_audioStreamer_ALSA(char *cfg, SPLPROC proc);
-#endif
-
-#endif
 
 #endif
