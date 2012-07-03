@@ -240,6 +240,46 @@ audioStreamer *create_audioStreamer_PortAudio(const char *hostAPI,
   return streamer;
 }
 
+static void logPortAudioInfo()
+{
+  qDebug(Pa_GetVersionText());
+
+  PaHostApiIndex api = 0;
+  const PaHostApiInfo *apiInfo;
+  while ((apiInfo = Pa_GetHostApiInfo(api))) {
+    qDebug("Host API: %s (%d devices)", apiInfo->name, apiInfo->deviceCount);
+
+    int device;
+    for (device = 0; device < apiInfo->deviceCount; device++) {
+      PaDeviceIndex devIdx = Pa_HostApiDeviceIndexToDeviceIndex(api, device);
+      if (devIdx < 0) {
+        qDebug("[%02d] Error: %s", device, Pa_GetErrorText(devIdx));
+        continue;
+      }
+
+      const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(devIdx);
+      if (!deviceInfo) {
+        qDebug("[%02d] Invalid device index", device);
+        continue;
+      }
+
+      qDebug("[%02d] \"%s\" (%d)", device, deviceInfo->name, devIdx);
+      qDebug("     Channels: %d in, %d out",
+          deviceInfo->maxInputChannels,
+          deviceInfo->maxOutputChannels);
+      qDebug("     Default sample rate: %g Hz",
+          deviceInfo->defaultSampleRate);
+      qDebug("     Input latency: %g low, %g high",
+          deviceInfo->defaultLowInputLatency,
+          deviceInfo->defaultHighInputLatency);
+      qDebug("     Output latency: %g low, %g high",
+          deviceInfo->defaultLowOutputLatency,
+          deviceInfo->defaultHighOutputLatency);
+    }
+    api++;
+  }
+}
+
 static void portAudioCleanup()
 {
   Pa_Terminate();
@@ -254,5 +294,7 @@ bool portAudioInit()
     return false;
   }
   atexit(portAudioCleanup);
+
+  logPortAudioInfo();
   return true;
 }
