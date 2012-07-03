@@ -48,5 +48,6 @@ typedef void (*SPLPROC)(float **inbuf, int innch, float **outbuf, int outnch, in
 
 audioStreamer *create_audioStreamer_PortAudio(const char *hostAPI,
     const char *inputDevice, const char *outputDevice, SPLPROC proc);
+bool portAudioInit();
 
 #endif

@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <portaudio.h>
+#include <QtGlobal>
 #include "audiostream.h"
 
 class PortAudioStreamer : public audioStreamer
@@ -237,4 +238,21 @@ audioStreamer *create_audioStreamer_PortAudio(const char *hostAPI,
     return NULL;
   }
   return streamer;
+}
+
+static void portAudioCleanup()
+{
+  Pa_Terminate();
+}
+
+/* Initialize PortAudio once for the whole application */
+bool portAudioInit()
+{
+  PaError error = Pa_Initialize();
+  if (error != paNoError) {
+    qFatal("Pa_Initialize() failed %s", Pa_GetErrorText(error));
+    return false;
+  }
+  atexit(portAudioCleanup);
+  return true;
 }

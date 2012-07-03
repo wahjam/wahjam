@@ -16,21 +16,16 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include <portaudio.h>
 #include <QDesktopServices>
 #include <QDir>
 #include <QApplication>
 #include <QMessageBox>
 
 #include "logging.h"
+#include "../audiostream.h"
 #include "MainWindow.h"
 
 QSettings *settings;
-
-static void portAudioCleanup()
-{
-  Pa_Terminate();
-}
 
 int main(int argc, char *argv[])
 {
@@ -61,13 +56,12 @@ int main(int argc, char *argv[])
   logInit(logFile);
 
   /* Initialize PortAudio once for the whole application */
-  PaError error = Pa_Initialize();
-  if (error != paNoError) {
+  if (!portAudioInit()) {
     QMessageBox::critical(NULL, QObject::tr("Unable to initialize PortAudio"),
-                          QString::fromLocal8Bit(Pa_GetErrorText(error)));
-    return 0;
+                          QObject::tr("Audio could not be initialized, "
+                                      "please report this bug."));
+    return 1;
   }
-  atexit(portAudioCleanup);
 
   MainWindow mainWindow;
   mainWindow.show();

@@ -31,6 +31,7 @@ HEADERS += ChatOutput.h
 HEADERS += ../netmsg.h
 HEADERS += ../njclient.h
 HEADERS += logging.h
+HEADERS += ../audiostream.h
 
 SOURCES += qtclient.cpp
 SOURCES += MainWindow.cpp
