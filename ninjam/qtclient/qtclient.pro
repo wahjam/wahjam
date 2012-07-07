@@ -16,7 +16,6 @@ QT += network
 QMAKE_CXXFLAGS += -Wno-write-strings
 LIBS += -lm -lvorbisenc -lvorbis -logg
 LIBS += -lportaudio
-win32:LIBS += -lwsock32
 
 # Core ninjam/ code does not use wide characters
 win32:DEFINES -= UNICODE
