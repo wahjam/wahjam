@@ -14,8 +14,8 @@ INCLUDEPATH += .
 QT += network
 
 QMAKE_CXXFLAGS += -Wno-write-strings
-LIBS += -lm -lvorbisenc -lvorbis -logg
-LIBS += -lportaudio
+CONFIG += link_pkgconfig
+PKGCONFIG += vorbis vorbisenc portaudio-2.0
 
 # Core ninjam/ code does not use wide characters
 win32:DEFINES -= UNICODE
