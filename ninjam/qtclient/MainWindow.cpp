@@ -70,7 +70,7 @@ MainWindow::MainWindow(QWidget *parent)
   }
   MainWindow::instance = this;
 
-  client.config_savelocalaudio = 0;
+  client.config_savelocalaudio = -1;
   client.LicenseAgreementCallback = LicenseCallbackTrampoline;
   client.ChatMessage_Callback = ChatMessageCallbackTrampoline;
   client.SetLocalChannelInfo(0, "channel0", true, 0, false, 0, true, true);
@@ -264,11 +264,13 @@ void MainWindow::Disconnect()
 
   client.Disconnect();
   QString workDirPath = QString::fromUtf8(client.GetWorkDir());
-  bool keepWorkDir = client.config_savelocalaudio;
+  bool keepWorkDir = client.config_savelocalaudio != -1;
   client.SetWorkDir(NULL);
 
-  if (!workDirPath.isEmpty() && !keepWorkDir) {
-    cleanupWorkDir(workDirPath);
+  if (!workDirPath.isEmpty()) {
+    if (!keepWorkDir) {
+      cleanupWorkDir(workDirPath);
+    }
     chatOutput->addInfoMessage(tr("Disconnected"));
   }
 
