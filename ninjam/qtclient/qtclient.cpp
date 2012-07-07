@@ -16,18 +16,16 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include <portaudio.h>
+#include <QDesktopServices>
+#include <QDir>
 #include <QApplication>
 #include <QMessageBox>
 
+#include "logging.h"
+#include "../audiostream.h"
 #include "MainWindow.h"
 
 QSettings *settings;
-
-static void portAudioCleanup()
-{
-  Pa_Terminate();
-}
 
 int main(int argc, char *argv[])
 {
@@ -41,14 +39,29 @@ int main(int argc, char *argv[])
   /* Instantiate QSettings now that application information has been set */
   settings = new QSettings(&app);
 
-  /* Initialize PortAudio once for the whole application */
-  PaError error = Pa_Initialize();
-  if (error != paNoError) {
-    QMessageBox::critical(NULL, QObject::tr("Unable to initialize PortAudio"),
-                          QString::fromLocal8Bit(Pa_GetErrorText(error)));
-    return 0;
+  /* Set up log file */
+  QString logFile;
+  if (settings->contains("app/logFile")) {
+    logFile = settings->value("app/logFile").toString();
+  } else {
+    QDir basedir(QDesktopServices::storageLocation(QDesktopServices::DataLocation));
+
+    /* The app data directory might not exist, so create it */
+    if (!basedir.mkpath(basedir.absolutePath())) {
+      return false;
+    }
+
+    logFile = basedir.filePath("log.txt");
   }
-  atexit(portAudioCleanup);
+  logInit(logFile);
+
+  /* Initialize PortAudio once for the whole application */
+  if (!portAudioInit()) {
+    QMessageBox::critical(NULL, QObject::tr("Unable to initialize PortAudio"),
+                          QObject::tr("Audio could not be initialized, "
+                                      "please report this bug."));
+    return 1;
+  }
 
   MainWindow mainWindow;
   mainWindow.show();

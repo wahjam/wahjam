@@ -31,6 +31,8 @@ HEADERS += MetronomeBar.h
 HEADERS += ChatOutput.h
 HEADERS += ../netmsg.h
 HEADERS += ../njclient.h
+HEADERS += logging.h
+HEADERS += ../audiostream.h
 
 SOURCES += qtclient.cpp
 SOURCES += MainWindow.cpp
@@ -40,6 +42,7 @@ SOURCES += PortAudioConfigDialog.cpp
 SOURCES += ServerBrowser.cpp
 SOURCES += MetronomeBar.cpp
 SOURCES += ChatOutput.cpp
+SOURCES += logging.cpp
 SOURCES += ../../WDL/rng.cpp
 SOURCES += ../../WDL/sha.cpp
 SOURCES += ../mpb.cpp
