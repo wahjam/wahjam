@@ -8,7 +8,7 @@ DEFINES += VERSION=\'\"$$VERSION\"\'
 DEFINES += COMMIT_ID=\'\"$$system(git rev-parse HEAD)\"\'
 
 TEMPLATE = app
-TARGET = 
+TARGET = wahjam
 DEPENDPATH += .
 INCLUDEPATH += .
 QT += network
