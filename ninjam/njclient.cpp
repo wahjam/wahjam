@@ -49,9 +49,10 @@
 class DecodeState
 {
   public:
-    DecodeState() : decode_fp(0), decode_codec(0), dump_samples(0),
-                                           decode_samplesout(0), resample_state(0.0), decode_peak_vol(0.0)
-    { 
+    DecodeState()
+      : decode_peak_vol(0.0), decode_fp(0), decode_codec(0),
+        decode_samplesout(0), dump_samples(0), resample_state(0.0)
+    {
       memset(guid,0,sizeof(guid));
     }
     ~DecodeState()
@@ -104,7 +105,7 @@ class RemoteUser_Channel
 class RemoteUser
 {
 public:
-  RemoteUser() : muted(0), volume(1.0f), pan(0.0f), submask(0), mutedmask(0), solomask(0), chanpresentmask(0) { }
+  RemoteUser() : muted(0), volume(1.0f), pan(0.0f), submask(0), chanpresentmask(0), mutedmask(0), solomask(0) { }
   ~RemoteUser() { }
 
   bool muted;
@@ -2092,16 +2093,16 @@ void RemoteDownload::Write(void *buf, int len)
 }
 
 
-Local_Channel::Local_Channel() : channel_idx(0), src_channel(0), volume(1.0f), pan(0.0f), 
-                muted(false), solo(false), broadcasting(false), 
+Local_Channel::Local_Channel() : channel_idx(0), src_channel(0), bitrate(64),
+                volume(1.0f), pan(0.0f), muted(false), solo(false),
+                broadcasting(false), bcast_active(false), cbf(NULL),
+                cbf_inst(NULL), decode_peak_vol(0.0), m_need_header(true),
 #ifndef NJCLIENT_NO_XMIT_SUPPORT
                 m_enc(NULL), 
                 m_enc_bitrate_used(0), 
                 m_enc_header_needsend(NULL),
 #endif
-                bcast_active(false), cbf(NULL), cbf_inst(NULL), 
-                bitrate(64), m_need_header(true), m_wavewritefile(NULL),
-                decode_peak_vol(0.0)
+                m_wavewritefile(NULL)
 {
 }
 
