@@ -1617,7 +1617,7 @@ void NJClient::mixInChannel(bool muted, float vol, float pan, DecodeState *chan,
     guidtostr(chan->guid,s);
 
     char buf[512];
-    sprintf(buf,"underrun %d at %d on %s, %d/%d samples\n",cnt++,ftell(chan->decode_fp),s,chan->decode_codec->m_samples_used,needed);
+    sprintf(buf,"underrun %d at %ld on %s, %d/%d samples\n",cnt++,ftell(chan->decode_fp),s,chan->decode_codec->m_samples_used,needed);
 #ifdef _WIN32
     OutputDebugString(buf);
 #endif
