@@ -2081,12 +2081,10 @@ void RemoteDownload::startPlaying(int force)
 
 void RemoteDownload::Write(void *buf, int len)
 {
-  int pos=len;
   if (fp)
   {
     fwrite(buf,1,len,fp);
     fflush(fp);
-    pos = ftell(fp);
   }
 
   startPlaying();  
