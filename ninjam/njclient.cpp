@@ -801,7 +801,7 @@ void NJClient::processMessage(Net_Message *msg)
             // todo: have volume/pan settings here go into defaults for the channel. or not, kinda think it's pointless
             if (cid >= 0 && cid < MAX_USER_CHANNELS)
             {
-              RemoteUser *theuser;
+              RemoteUser *theuser = NULL;
               for (x = 0; x < m_remoteusers.GetSize() && strcmp((theuser=m_remoteusers.Get(x))->name.Get(),un); x ++);
 
               // printf("user %s, channel %d \"%s\": %s v:%d.%ddB p:%d flag=%d\n",un,cid,chn,a?"active":"inactive",(int)v/10,abs((int)v)%10,p,f);
