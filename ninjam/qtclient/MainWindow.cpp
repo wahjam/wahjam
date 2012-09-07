@@ -391,8 +391,9 @@ void MainWindow::UserInfoChanged()
     const char *name = client.GetUserState(useridx, NULL, NULL, NULL);
     updater.addUser(useridx, QString::fromUtf8(name));
 
+    int i = 0;
     int channelidx;
-    for (channelidx = 0; client.EnumUserChannels(useridx, channelidx) != -1; channelidx++) {
+    while ((channelidx = client.EnumUserChannels(useridx, i++)) != -1) {
       bool mute;
       name = client.GetUserChannelState(useridx, channelidx, NULL, NULL, NULL, &mute, NULL);
       updater.addChannel(channelidx, QString::fromUtf8(name), mute);
