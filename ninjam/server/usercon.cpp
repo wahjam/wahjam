@@ -766,6 +766,7 @@ void User_Connection::authenticationTimeout()
 
 void User_Connection::userLookupCompleted()
 {
+  authenticationTimer.stop();
   if (!OnRunAuth())
   {
     m_netcon.Kill();
