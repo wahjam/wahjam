@@ -83,6 +83,8 @@ private:
   static MainWindow *instance;
 
   NJClient client;
+  QUrl jammrApiUrl;
+  QString jammrAuthToken;
   audioStreamer *audio;
   VSTProcessor *vstProcessor;
   VSTConfigDialog *vstConfigDialog;
@@ -113,6 +115,8 @@ private:
   void cleanupWorkDir(const QString &path);
   bool tryReconnect();
   void resetReconnect();
+  void ShowNINJAMConnectDialog();
+  void ShowJammrConnectDialog();
   void OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
   void chatAddLine(const QString &prefix, const QString &content,
                    const QString &href = "", const QString &linktext = "");

@@ -32,6 +32,8 @@
 
 #include "MainWindow.h"
 #include "ConnectDialog.h"
+#include "JammrConnectDialog.h"
+#include "JammrLoginDialog.h"
 #include "PortAudioConfigDialog.h"
 #include "VSTPlugin.h"
 #include "VSTProcessor.h"
@@ -77,6 +79,8 @@ MainWindow::MainWindow(QWidget *parent)
   client.ChatMessage_Callback = ChatMessageCallbackTrampoline;
   client.SetLocalChannelInfo(0, "channel0", true, 0, false, 0, true, true);
   client.SetLocalChannelMonitoring(0, false, 0.0f, false, 0.0f, false, false, false, false);
+
+  jammrApiUrl = settings->value("jammr/apiUrl", JAMMR_API_URL).toUrl();
 
   netManager = new QNetworkAccessManager(this);
 
@@ -388,7 +392,7 @@ void MainWindow::cleanupWorkDir(const QString &path)
   workDir.rmdir(name);
 }
 
-void MainWindow::ShowConnectDialog()
+void MainWindow::ShowNINJAMConnectDialog()
 {
   const QUrl url("http://autosong.ninjam.com/serverlist.php");
   ConnectDialog connectDialog(netManager);
@@ -418,6 +422,46 @@ void MainWindow::ShowConnectDialog()
   }
 
   Connect(connectDialog.host(), user, connectDialog.pass());
+}
+
+void MainWindow::ShowJammrConnectDialog()
+{
+  /* Request login details if we haven't stashed them */
+  if (jammrApiUrl.userName().isEmpty()) {
+    QUrl registerUrl = settings->value("jammr/registerUrl", JAMMR_REGISTER_URL).toUrl();
+    JammrLoginDialog loginDialog(netManager, jammrApiUrl, registerUrl);
+
+    loginDialog.setUsername(settings->value("jammr/user").toString());
+
+    if (loginDialog.exec() != QDialog::Accepted) {
+      return;
+    }
+
+    settings->setValue("jammr/user", loginDialog.username());
+
+    /* Stash login details into the API URL so others can use them */
+    jammrApiUrl.setUserName(loginDialog.username());
+    jammrApiUrl.setPassword(loginDialog.password());
+    jammrAuthToken = loginDialog.token();
+  }
+
+  JammrConnectDialog connectDialog(netManager, jammrApiUrl);
+  connectDialog.resize(600, 500);
+
+  if (connectDialog.exec() != QDialog::Accepted) {
+    return;
+  }
+
+  Connect(connectDialog.host(), jammrApiUrl.userName(), jammrAuthToken);
+}
+
+void MainWindow::ShowConnectDialog()
+{
+  if (jammrApiUrl.isEmpty()) {
+    ShowNINJAMConnectDialog();
+  } else {
+    ShowJammrConnectDialog();
+  }
 }
 
 void MainWindow::ShowAudioConfigDialog()
@@ -519,6 +563,10 @@ void MainWindow::ClientStatusChanged(int newStatus)
 
   case NJClient::NJC_STATUS_INVALIDAUTH:
     statusMessage = tr("Error: authentication failed");
+
+    /* Clear stashed Jammr REST API credentials */
+    jammrApiUrl.setUserInfo("");
+    jammrAuthToken.clear();
     break;
 
   case NJClient::NJC_STATUS_OK:

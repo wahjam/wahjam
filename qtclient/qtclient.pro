@@ -27,6 +27,8 @@ DEFINES += "COMMIT_ID=\'\"$$system(git rev-parse HEAD)\"\'"
 DEFINES += "APPNAME=\'\"$$APPNAME\"\'"
 DEFINES += "ORGNAME=\'\"$$ORGNAME\"\'"
 DEFINES += "ORGDOMAIN=\'\"$$ORGDOMAIN\"\'"
+DEFINES += "JAMMR_API_URL=\'\"$$JAMMR_API_URL\"\'"
+DEFINES += "JAMMR_REGISTER_URL=\'\"$$JAMMR_REGISTER_URL\"\'"
 
 TEMPLATE = app
 TARGET = wahjam
