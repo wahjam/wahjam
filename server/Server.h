@@ -22,6 +22,7 @@
 
 #include <QTcpServer>
 #include <QTimer>
+#include <QUrl>
 
 #include "../WDL/string.h"
 #include "../WDL/ptrlist.h"
@@ -84,6 +85,8 @@ struct ServerConfig
   WDL_String defaultTopic;
   AccessControlList acl;
   WDL_PtrList<UserPassEntry> userlist;
+  QUrl jammrApiUrl;
+  QString jammrServerName;
 };
 
 class Server : public QObject

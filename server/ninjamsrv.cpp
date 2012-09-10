@@ -177,6 +177,18 @@ public:
 
 static IUserInfoLookup *myCreateUserLookup(char *username)
 {
+  if (g_config.statusUser.Get()[0] &&
+      !strcmp(username, g_config.statusUser.Get())) {
+    return new localUserInfoLookup(username);
+  }
+
+  if (!g_config.jammrApiUrl.isEmpty()) {
+    return new JammrUserLookup(g_config.jammrApiUrl,
+                               g_config.jammrServerName,
+                               g_config.maxchUser,
+                               username);
+  }
+
   return new localUserInfoLookup(username);
 }
 
@@ -419,6 +431,14 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
     }
     config->allowAnonChat = x;
   }
+  else if (token == QString("JammrApi").toLower())
+  {
+    if (lp->getnumtokens() != 5) return -1;
+    config->jammrApiUrl = lp->gettoken_str(1);
+    config->jammrApiUrl.setUserName(lp->gettoken_str(2));
+    config->jammrApiUrl.setPassword(lp->gettoken_str(3));
+    config->jammrServerName = lp->gettoken_str(4);
+  }
   else return -3;
   return 0;
 }
@@ -460,6 +480,8 @@ static int ReadConfig(ServerConfig *config, char *configfile)
   config->license.Set("");
   config->defaultTopic.Set("");
   config->acl.clear();
+  config->jammrApiUrl.clear();
+  config->jammrServerName.clear();
 
   int x;
   for(x=0; x < config->userlist.GetSize(); x++)
