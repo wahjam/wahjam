@@ -103,6 +103,7 @@ User_Connection::User_Connection(QTcpSocket *sock, User_Group *grp) : group(grp)
       m_vote_bpm(0), m_vote_bpm_lasttime(0), m_vote_bpi(0), m_vote_bpi_lasttime(0)
 {
   name = QString("%1:%2").arg(sock->peerAddress().toString()).arg(sock->peerPort());
+  qDebug("%s: Connected", name.toLatin1().constData());
 
   connect(&m_netcon, SIGNAL(messagesReady()), this, SLOT(netconMessagesReady()));
   connect(&m_netcon, SIGNAL(disconnected()), this, SIGNAL(disconnected()));
@@ -896,7 +897,7 @@ void User_Group::userDisconnected(QObject *userObj)
     if (mfmt_changes) Broadcast(mfmt.build(),p);
   }
 
-  qDebug("%s: disconnected", p->name.toLatin1().constData());
+  qDebug("%s: Disconnected", p->name.toLatin1().constData());
 
   int idx = m_users.Find(p);
   Q_ASSERT(idx != -1);
