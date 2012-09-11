@@ -56,8 +56,6 @@
 #endif
 #include "ninjamsrv.h"
 
-#define VERSION "v0.06"
-
 static const char *startupmessage = "Wahjam Server " VERSION " built on " __DATE__ " at " __TIME__ " starting up...\n" "Copyright (C) 2005-2007, Cockos, Inc.\n";
 
 static FILE *g_logfp;
