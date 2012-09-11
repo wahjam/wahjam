@@ -85,7 +85,7 @@ void Server::enforceACL()
       killcnt++;
     }
   }
-  if (killcnt) logText("killed %d users by enforcing ACL\n",killcnt);
+  if (killcnt) qDebug("killed %d users by enforcing ACL",killcnt);
 }
 
 /* Keeps a reference to config, do not delete while Server exists */
@@ -113,11 +113,11 @@ bool Server::setConfig(ServerConfig *config_)
 
   listener.close();
   if (!listener.listen(QHostAddress::Any, config->port)) {
-    logText("Error listening on port %d!\n", config->port);
+    qWarning("Error listening on port %d!", config->port);
     return false;
   }
 
-  logText("Port: %d\n", config->port);
+  qDebug("Port: %d", config->port);
   return true;
 }
 
@@ -132,11 +132,11 @@ void Server::acceptNewConnection()
 
   int flag = config->acl.lookup(addr);
   QString ipstr = sock->peerAddress().toString();
-  logText("Incoming connection from %s!\n", ipstr.toLocal8Bit().constData());
+  qDebug("Incoming connection from %s!", ipstr.toLatin1().constData());
 
   if (flag == ACL_FLAG_DENY)
   {
-    logText("Denying connection (via ACL)\n");
+    qDebug("Denying connection (via ACL)");
     delete sock;
     return;
   }
@@ -191,14 +191,14 @@ void Server::updateNextSession()
 
   if (cnt < 16 )
   {
-    logText("Archiving session '%s'\n", sessionPath.toLocal8Bit().constData());
+    qDebug("Archiving session '%s'", sessionPath.toLatin1().constData());
     group->SetLogDir(sessionPath.toLocal8Bit().constData());
     setActiveSessionUpdateTimer();
   }
   else
   {
-    logText("Error creating a session archive directory! Gave up after '%s' failed!\n",
-            sessionPath.toLocal8Bit().constData());
+    qWarning("Error creating a session archive directory! Gave up after '%s' failed!",
+             sessionPath.toLatin1().constData());
     setIdleSessionUpdateTimer();
   }
 }
