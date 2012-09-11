@@ -20,7 +20,6 @@
 #ifndef _NINJAMSRV_H_
 #define _NINJAMSRV_H_
 
-void logText(const char *s, ...);
 bool reloadConfig(int argc, char **argv, bool firstTime);
 
 #endif /* _NINJAMSRV_H_ */

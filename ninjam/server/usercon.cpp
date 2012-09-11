@@ -141,7 +141,7 @@ void User_Connection::Send(Net_Message *msg)
 {
   if (m_netcon.Send(msg))
   {
-    logText("Error sending message to user '%s', type %d, queue full!\n",m_username.Get(),msg->get_type());
+    qWarning("Error sending message to user '%s', type %d, queue full!",m_username.Get(),msg->get_type());
   }
 }
 
@@ -189,7 +189,7 @@ int User_Connection::OnRunAuth()
 
     if ((m_lookup->reqpass && memcmp(buf,m_lookup->sha1buf_request,WDL_SHA1SIZE)) || !m_lookup->user_valid)
     {
-      logText("%s: Refusing user, invalid login/password\n", m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData());
+      qDebug("%s: Refusing user, invalid login/password", m_netcon.GetRemoteAddr().toString().toLatin1().constData());
       mpb_server_auth_reply bh;
       bh.errmsg="invalid login/password";
       Send(bh.build());
@@ -302,8 +302,8 @@ int User_Connection::OnRunAuth()
     }
     if (cnt >= group->m_max_users)
     {
-      logText("%s: Refusing user %s, server full\n",
-              m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData(),
+      qDebug("%s: Refusing user %s, server full",
+              m_netcon.GetRemoteAddr().toString().toLatin1().constData(),
               m_username.Get());
       // sorry, gotta kill this connection
       mpb_server_auth_reply bh;
@@ -315,9 +315,9 @@ int User_Connection::OnRunAuth()
 
 
 
-  logText("%s: Accepted user: %s\n",
-          m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData(),
-          m_username.Get());
+  qDebug("%s: Accepted user: %s",
+         m_netcon.GetRemoteAddr().toString().toLatin1().constData(),
+         m_username.Get());
 
   {
     mpb_server_auth_reply bh;
@@ -409,9 +409,9 @@ void User_Connection::processMessage(Net_Message *msg)
       mpb_server_auth_reply bh;
       bh.errmsg=tab[err_st-1];
 
-      logText("%s: Refusing user, %s\n",
-              m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData(),
-              bh.errmsg);
+      qDebug("%s: Refusing user, %s",
+             m_netcon.GetRemoteAddr().toString().toLatin1().constData(),
+             bh.errmsg);
 
       Send(bh.build());
       m_netcon.Kill();
@@ -756,8 +756,8 @@ void User_Connection::netconMessagesReady()
 
 void User_Connection::authenticationTimeout()
 {
-  logText("%s: Got an authorization timeout\n",
-      m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData());
+  qDebug("%s: Got an authorization timeout",
+         m_netcon.GetRemoteAddr().toString().toLatin1().constData());
   mpb_server_auth_reply bh;
   bh.errmsg = "authorization timeout";
   Send(bh.build());
@@ -895,8 +895,8 @@ void User_Group::userDisconnected(QObject *userObj)
     if (mfmt_changes) Broadcast(mfmt.build(),p);
   }
 
-  logText("%s: disconnected (username:'%s')\n",
-      p->m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData(),
+  qDebug("%s: disconnected (username:'%s')",
+      p->m_netcon.GetRemoteAddr().toString().toLatin1().constData(),
       p->m_auth_state > 0 ? p->m_username.Get() : "");
 
   int idx = m_users.Find(p);
