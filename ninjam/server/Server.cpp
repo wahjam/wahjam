@@ -129,14 +129,12 @@ void Server::acceptNewConnection()
   }
 
   uint32_t addr = sock->peerAddress().toIPv4Address();
-
   int flag = config->acl.lookup(addr);
-  QString ipstr = sock->peerAddress().toString();
-  qDebug("Incoming connection from %s!", ipstr.toLatin1().constData());
-
   if (flag == ACL_FLAG_DENY)
   {
-    qDebug("Denying connection (via ACL)");
+    qDebug("Denying connection (via ACL) from %s:%u",
+           sock->peerAddress().toString().toLatin1().constData(),
+           sock->peerPort());
     delete sock;
     return;
   }
