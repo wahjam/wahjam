@@ -56,7 +56,7 @@
 #endif
 #include "ninjamsrv.h"
 
-static const char *startupmessage = "Wahjam Server " VERSION " built on " __DATE__ " at " __TIME__ " starting up...\n" "Copyright (C) 2005-2007, Cockos, Inc.\n";
+static const char *startupmessage = "Wahjam Server " VERSION " (" COMMIT_ID ") built on " __DATE__ " at " __TIME__ " starting up...\n" "Copyright (C) 2005-2007, Cockos, Inc.\n";
 
 static FILE *g_logfp;
 static ServerConfig g_config;
@@ -643,7 +643,7 @@ int main(int argc, char **argv)
     if (!g_logfp) {
       qWarning("Error opening log file '%s'",g_config.logFilename.Get());
     } else {
-      qDebug("Opened log. Wahjam Server %s built on %s at %s",VERSION,__DATE__,__TIME__);
+      qDebug("Opened log. Wahjam Server " VERSION " (" COMMIT_ID ") built on " __DATE__ " at " __TIME__);
     }
   }
 
