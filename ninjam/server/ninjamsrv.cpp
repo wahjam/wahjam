@@ -1,5 +1,6 @@
 /*
     Copyright (C) 2005-2007 Cockos Incorporated
+    Copyright (C) 2011-2012 Stefan Hajnoczi <stefanha@gmail.com>
 
     Wahjam is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -57,7 +58,7 @@
 #include "logging.h"
 #include "ninjamsrv.h"
 
-static const char *startupmessage = "Wahjam Server " VERSION " (" COMMIT_ID ") built on " __DATE__ " at " __TIME__ " starting up...\n" "Copyright (C) 2005-2007, Cockos, Inc.\n";
+static const char *startupmessage = "Wahjam Server " VERSION " (" COMMIT_ID ") built on " __DATE__ " at " __TIME__ " starting up...\n" "Copyright (C) 2005-2007, Cockos, Inc.\nCopyright (C) 2011-2012, Wahjam contributors\n";
 
 static ServerConfig g_config;
 static Server *g_server;
