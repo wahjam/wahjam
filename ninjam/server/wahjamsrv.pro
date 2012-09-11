@@ -28,6 +28,7 @@ unix {
 # Input
 HEADERS += usercon.h \
            Server.h \
+           logging.h \
            ninjamsrv.h \
            ../netmsg.h \
            ../../WDL/queue.h \
@@ -39,6 +40,7 @@ HEADERS += usercon.h \
            ../../WDL/rng.h \
            ../../WDL/lineparse.h
 SOURCES += ninjamsrv.cpp \
+           logging.cpp \
            usercon.cpp \
            Server.cpp \
            ../netmsg.cpp \

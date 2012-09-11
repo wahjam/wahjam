@@ -54,11 +54,11 @@
 #ifndef _WIN32
 #include "SignalHandler.h"
 #endif
+#include "logging.h"
 #include "ninjamsrv.h"
 
 static const char *startupmessage = "Wahjam Server " VERSION " (" COMMIT_ID ") built on " __DATE__ " at " __TIME__ " starting up...\n" "Copyright (C) 2005-2007, Cockos, Inc.\n";
 
-static FILE *g_logfp;
 static ServerConfig g_config;
 static Server *g_server;
 
@@ -637,15 +637,7 @@ int main(int argc, char **argv)
   }
 #endif
 
-  if (g_config.logFilename.Get()[0])
-  {
-    g_logfp=fopen(g_config.logFilename.Get(),"at");
-    if (!g_logfp) {
-      qWarning("Error opening log file '%s'",g_config.logFilename.Get());
-    } else {
-      qDebug("Opened log. Wahjam Server " VERSION " (" COMMIT_ID ") built on " __DATE__ " at " __TIME__);
-    }
-  }
+  logInit(g_config.logFilename.Get());
 
   qDebug("Server starting up...");
 
@@ -663,12 +655,6 @@ int main(int argc, char **argv)
 
   /* Explicitly delete before closing log */
   delete g_server;
-
-  if (g_logfp)
-  {
-    fclose(g_logfp);
-    g_logfp=0;
-  }
 
 	return 0;
 }
