@@ -24,7 +24,7 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QNetworkAccessManager>
-#include "ServerBrowser.h"
+#include "NINJAMServerBrowser.h"
 
 class ConnectDialog : public QDialog
 {
@@ -53,7 +53,7 @@ private slots:
   void onServerSelected(const QString &host);
 
 private:
-  ServerBrowser *serverBrowser;
+  NINJAMServerBrowser *serverBrowser;
   QComboBox *hostEdit;
   QLineEdit *userEdit;
   QCheckBox *publicCheckbox;
