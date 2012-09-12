@@ -32,7 +32,7 @@ TEMPLATE = app
 TARGET = wahjam
 DEPENDPATH += ..
 INCLUDEPATH += ..
-QT += network
+QT += network xml
 
 include(../common/libcommon.pri)
 
@@ -54,6 +54,7 @@ HEADERS += ChatOutput.h
 HEADERS += AddVSTPluginDialog.h
 HEADERS += VSTConfigDialog.h
 HEADERS += JammrLoginDialog.h
+HEADERS += JammrServerBrowser.h
 HEADERS += NINJAMServerBrowser.h
 HEADERS += logging.h
 HEADERS += VSTPlugin.h
@@ -70,6 +71,7 @@ SOURCES += ChatOutput.cpp
 SOURCES += AddVSTPluginDialog.cpp
 SOURCES += VSTConfigDialog.cpp
 SOURCES += JammrLoginDialog.cpp
+SOURCES += JammrServerBrowser.cpp
 SOURCES += NINJAMServerBrowser.cpp
 SOURCES += logging.cpp
 SOURCES += VSTPlugin.cpp
