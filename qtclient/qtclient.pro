@@ -46,6 +46,7 @@ win32:DEFINES -= UNICODE
 # Input
 HEADERS += MainWindow.h
 HEADERS += ConnectDialog.h
+HEADERS += JammrConnectDialog.h
 HEADERS += ChannelTreeWidget.h
 HEADERS += PortAudioConfigDialog.h
 HEADERS += ServerBrowser.h
@@ -63,6 +64,7 @@ HEADERS += VSTProcessor.h
 SOURCES += qtclient.cpp
 SOURCES += MainWindow.cpp
 SOURCES += ConnectDialog.cpp
+SOURCES += JammrConnectDialog.cpp
 SOURCES += ChannelTreeWidget.cpp
 SOURCES += PortAudioConfigDialog.cpp
 SOURCES += ServerBrowser.cpp

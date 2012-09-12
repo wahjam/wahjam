@@ -16,8 +16,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <QApplication>
 #include <QLabel>
-#include <QPushButton>
 #include <QVBoxLayout>
 #include <QFormLayout>
 #include <QNetworkRequest>
@@ -39,7 +39,7 @@ JammrLoginDialog::JammrLoginDialog(QNetworkAccessManager *netmanager_,
   QLabel *registerLabel = new QLabel(tr("<a href=\"%1\">Create a new account.</a>").arg(registerUrl.toString()));
   registerLabel->setOpenExternalLinks(true);
 
-  QPushButton *connectButton = new QPushButton(tr("&Log in"));
+  connectButton = new QPushButton(tr("&Log in"));
   connect(connectButton, SIGNAL(clicked()), this, SLOT(login()));
 
   QVBoxLayout *layout = new QVBoxLayout;
@@ -94,11 +94,19 @@ void JammrLoginDialog::login()
 
   qDebug("Logging in as \"%s\" at %s", username().toLatin1().data(),
          tokenUrl.toString().toLatin1().data());
+
+  connectButton->setEnabled(false);
+
+  QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 }
 
 void JammrLoginDialog::requestFinished()
 {
   reply->deleteLater();
+
+  QApplication::restoreOverrideCursor();
+
+  connectButton->setEnabled(true);
 
   QNetworkReply::NetworkError err = reply->error();
   if (err != QNetworkReply::NoError) {

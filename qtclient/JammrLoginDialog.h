@@ -21,6 +21,7 @@
 
 #include <QDialog>
 #include <QLineEdit>
+#include <QPushButton>
 #include <QUrl>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -48,6 +49,7 @@ private slots:
 private:
   QLineEdit *userEdit;
   QLineEdit *passEdit;
+  QPushButton *connectButton;
   QNetworkAccessManager *netmanager;
   QNetworkReply *reply;
   QUrl apiUrl;
