@@ -206,6 +206,8 @@ class User_Connection : public QObject
 
     void SendUserList();
 
+    QString name; // used as the logging prefix
+
     User_Group *group;
     Net_Connection m_netcon;
     WDL_String m_username;

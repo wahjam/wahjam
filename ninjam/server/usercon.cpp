@@ -102,6 +102,9 @@ static void type_to_string(unsigned int t, char *out)
 User_Connection::User_Connection(QTcpSocket *sock, User_Group *grp) : group(grp), m_netcon(sock), m_auth_state(0), m_clientcaps(0), m_auth_privs(0), m_reserved(0), m_max_channels(0),
       m_vote_bpm(0), m_vote_bpm_lasttime(0), m_vote_bpi(0), m_vote_bpi_lasttime(0)
 {
+  name = QString("%1:%2").arg(sock->peerAddress().toString()).arg(sock->peerPort());
+  qDebug("%s: Connected", name.toLatin1().constData());
+
   connect(&m_netcon, SIGNAL(messagesReady()), this, SLOT(netconMessagesReady()));
   connect(&m_netcon, SIGNAL(disconnected()), this, SIGNAL(disconnected()));
 
@@ -141,7 +144,8 @@ void User_Connection::Send(Net_Message *msg)
 {
   if (m_netcon.Send(msg))
   {
-    logText("Error sending message to user '%s', type %d, queue full!\n",m_username.Get(),msg->get_type());
+    qWarning("%s: Error sending message to user '%s', type %d, queue full!",
+             name.toLatin1().constData(), m_username.Get(),msg->get_type());
   }
 }
 
@@ -178,6 +182,23 @@ void User_Connection::SendConfigChangeNotify(int bpm, int bpi)
 int User_Connection::OnRunAuth()
 {
   {
+    // fix any invalid characters in username
+    char *p=m_lookup->username.Get();
+    int l=MAX_NICK_LEN;
+    while (*p)
+    {
+      char c=*p;
+      if (!isalnum(c) && c != '-' && c != '_' && c != '@' && c != '.') c='_';
+      *p++=c;
+
+      if (!--l) *p=0;
+    }
+  }
+
+  /* Update logging prefix with the attempted username */
+  name.append(QString(" [%1]").arg(m_lookup->username.Get()));
+
+  {
     WDL_SHA1 shatmp;
 
     shatmp.add(m_lookup->sha1buf_user,sizeof(m_lookup->sha1buf_user));
@@ -189,7 +210,7 @@ int User_Connection::OnRunAuth()
 
     if ((m_lookup->reqpass && memcmp(buf,m_lookup->sha1buf_request,WDL_SHA1SIZE)) || !m_lookup->user_valid)
     {
-      logText("%s: Refusing user, invalid login/password\n", m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData());
+      qDebug("%s: Refusing user, invalid login/password", name.toLatin1().constData());
       mpb_server_auth_reply bh;
       bh.errmsg="invalid login/password";
       Send(bh.build());
@@ -241,21 +262,6 @@ int User_Connection::OnRunAuth()
 
   m_auth_privs=m_lookup->privs;
   m_max_channels = m_lookup->max_channels;
-
-  {
-    // fix any invalid characters in username
-    char *p=m_lookup->username.Get();
-    int l=MAX_NICK_LEN;
-    while (*p)
-    {
-      char c=*p;
-      if (!isalnum(c) && c != '-' && c != '_' && c != '@' && c != '.') c='_';
-      *p++=c;
-
-      if (!--l) *p=0;
-    }
-  }
-
   m_username.Set(m_lookup->username.Get());
   // disconnect any user by the same name
   // in allowmulti mode, append -<idx>
@@ -302,9 +308,8 @@ int User_Connection::OnRunAuth()
     }
     if (cnt >= group->m_max_users)
     {
-      logText("%s: Refusing user %s, server full\n",
-              m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData(),
-              m_username.Get());
+      qDebug("%s: Refusing user %s, server full",
+             name.toLatin1().constData(), m_username.Get());
       // sorry, gotta kill this connection
       mpb_server_auth_reply bh;
       bh.errmsg="server full";
@@ -315,9 +320,8 @@ int User_Connection::OnRunAuth()
 
 
 
-  logText("%s: Accepted user: %s\n",
-          m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData(),
-          m_username.Get());
+  qDebug("%s: Accepted user: %s",
+         name.toLatin1().constData(), m_username.Get());
 
   {
     mpb_server_auth_reply bh;
@@ -409,9 +413,7 @@ void User_Connection::processMessage(Net_Message *msg)
       mpb_server_auth_reply bh;
       bh.errmsg=tab[err_st-1];
 
-      logText("%s: Refusing user, %s\n",
-              m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData(),
-              bh.errmsg);
+      qDebug("%s: Refusing user, %s", name.toLatin1().constData(), bh.errmsg);
 
       Send(bh.build());
       m_netcon.Kill();
@@ -756,8 +758,7 @@ void User_Connection::netconMessagesReady()
 
 void User_Connection::authenticationTimeout()
 {
-  logText("%s: Got an authorization timeout\n",
-      m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData());
+  qDebug("%s: Got an authorization timeout", name.toLatin1().constData());
   mpb_server_auth_reply bh;
   bh.errmsg = "authorization timeout";
   Send(bh.build());
@@ -895,9 +896,7 @@ void User_Group::userDisconnected(QObject *userObj)
     if (mfmt_changes) Broadcast(mfmt.build(),p);
   }
 
-  logText("%s: disconnected (username:'%s')\n",
-      p->m_netcon.GetRemoteAddr().toString().toLocal8Bit().constData(),
-      p->m_auth_state > 0 ? p->m_username.Get() : "");
+  qDebug("%s: Disconnected", p->name.toLatin1().constData());
 
   int idx = m_users.Find(p);
   Q_ASSERT(idx != -1);

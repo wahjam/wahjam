@@ -1,5 +1,4 @@
 /*
-    Copyright (C) 2005-2007 Cockos Incorporated
     Copyright (C) 2012 Stefan Hajnoczi <stefanha@gmail.com>
 
     Wahjam is free software; you can redistribute it and/or modify
@@ -17,9 +16,11 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _NINJAMSRV_H_
-#define _NINJAMSRV_H_
+#ifndef _LOGGING_H_
+#define _LOGGING_H_
 
-bool reloadConfig(int argc, char **argv, bool firstTime);
+#include <QString>
+
+void logInit(const QString &filename);
 
 #endif /* _NINJAMSRV_H_ */

@@ -1,5 +1,6 @@
 /*
     Copyright (C) 2005-2007 Cockos Incorporated
+    Copyright (C) 2011-2012 Stefan Hajnoczi <stefanha@gmail.com>
 
     Wahjam is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -54,13 +55,11 @@
 #ifndef _WIN32
 #include "SignalHandler.h"
 #endif
+#include "logging.h"
 #include "ninjamsrv.h"
 
-#define VERSION "v0.06"
+static const char *startupmessage = "Wahjam Server " VERSION " (" COMMIT_ID ") built on " __DATE__ " at " __TIME__ " starting up...\n" "Copyright (C) 2005-2007, Cockos, Inc.\nCopyright (C) 2011-2012, Wahjam contributors\n";
 
-static const char *startupmessage = "Wahjam Server " VERSION " built on " __DATE__ " at " __TIME__ " starting up...\n" "Copyright (C) 2005-2007, Cockos, Inc.\n";
-
-static FILE *g_logfp;
 static ServerConfig g_config;
 static Server *g_server;
 
@@ -83,7 +82,7 @@ public:
 
     if (!strncmp(username.Get(),"anonymous",9) && (!username.Get()[9] || username.Get()[9] == ':'))
     {
-      logText("got anonymous request (%s)\n",g_config.allowAnonymous?"allowing":"denying");
+      qDebug("got anonymous request (%s)",g_config.allowAnonymous?"allowing":"denying");
       if (!g_config.allowAnonymous) {
         emit completed();
         return;
@@ -134,7 +133,7 @@ public:
     else
     {
       int x;
-      logText("got login request for '%s'\n",username.Get());
+      qDebug("got login request for '%s'",username.Get());
       if (g_config.statusUser.Get()[0] && !strcmp(username.Get(), g_config.statusUser.Get()))
       {
         user_valid=1;
@@ -286,9 +285,7 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
     FILE *fp=fopen(lp->gettoken_str(1),"rt");
     if (!fp) 
     {
-      printf("Error opening license file %s\n",lp->gettoken_str(1));
-      if (g_logfp)
-        logText("Error opening license file %s\n",lp->gettoken_str(1));
+      qWarning("Error opening license file %s",lp->gettoken_str(1));
       return -2;
     }
     config->license.Set("");
@@ -332,9 +329,7 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
 
     if (!suc)
     {
-      if (g_logfp)
-        logText("Usage: ACL xx.xx.xx.xx/X [ban|allow|reserve]\n");
-      printf("Usage: ACL xx.xx.xx.xx/X [ban|allow|reserve]\n");
+      qWarning("Usage: ACL xx.xx.xx.xx/X [ban|allow|reserve]");
       return -2;
     }
   }
@@ -360,9 +355,7 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
         else if (*ptr == 'V' || *ptr == 'v') p->priv_flag |= PRIV_VOTE;               
         else 
         {
-          if (g_logfp)
-            logText("Warning: Unknown user priviledge flag '%c'\n",*ptr);
-          printf("Warning: Unknown user priviledge flag '%c'\n",*ptr);
+          qWarning("Unknown user priviledge flag '%c'",*ptr);
         }
         ptr++;
       }
@@ -436,12 +429,10 @@ static int ReadConfig(ServerConfig *config, char *configfile)
   bool comment_state=0;
   int linecnt=0;
   WDL_String linebuild;
-  if (g_logfp) logText("[config] reloading configuration file\n"); // TODO move this elsewhere
   FILE *fp=strcmp(configfile,"-")?fopen(configfile,"rt"):stdin; 
   if (!fp)
   {
-    printf("[config] error opening configfile '%s'\n",configfile);
-    if (g_logfp) logText("[config] error opening config file (console request)\n"); // TODO move this elsewhere
+    qWarning("Error opening config file '%s'", configfile);
     return -1;
   }
 
@@ -504,13 +495,11 @@ static int ReadConfig(ServerConfig *config, char *configfile)
     {
       if (res==-2) 
       {
-        if (g_logfp) logText("[config] warning: unterminated string parsing line %d of %s\n",linecnt,configfile);
-        printf("[config] warning: unterminated string parsing line %d of %s\n",linecnt,configfile);
+        qWarning("Unterminated string parsing line %d in '%s'",linecnt,configfile);
       }
       else 
       {
-        if (g_logfp) logText("[config] warning: error parsing line %d of %s\n",linecnt,configfile);
-        printf("[config] warning: error parsing line %d of %s\n",linecnt,configfile);
+        qWarning("Error parsing line %d in '%s'",linecnt,configfile);
       }
     }
     else
@@ -524,25 +513,22 @@ static int ReadConfig(ServerConfig *config, char *configfile)
         {
           if (err == -1)
           {
-            if (g_logfp) logText("[config] warning: wrong number of tokens on line %d of %s\n",linecnt,configfile);
-            printf("[config] warning: wrong number of tokens on line %d of %s\n",linecnt,configfile);
+            qWarning("Wrong number of tokens on line %d in '%s'",linecnt,configfile);
           }
           if (err == -2)
           {
-            if (g_logfp) logText("[config] warning: invalid parameter on line %d of %s\n",linecnt,configfile);
-            printf("[config] warning: invalid parameter on line %d of %s\n",linecnt,configfile);
+            qWarning("Invalid parameter on line %d in '%s'",linecnt,configfile);
           }
           if (err == -3)
           {
-            if (g_logfp) logText("[config] warning: invalid config command \"%s\" on line %d of %s\n",lp.gettoken_str(0),linecnt,configfile);
-            printf("[config] warning: invalid config command \"%s\" on line %d of %s\n",lp.gettoken_str(0),linecnt,configfile);
+            qWarning("Invalid config command \"%s\" on line %d in '%s'",lp.gettoken_str(0),linecnt,configfile);
           }
         }
       }
     }
   }
 
-  if (g_logfp) logText("[config] reload complete\n");
+  qDebug("Config reload complete");
 
   if (fp != stdin) fclose(fp);
   return 0;
@@ -565,31 +551,10 @@ void usage(const char *progname)
     exit(1);
 }
 
-void logText(const char *s, ...)
-{
-    if (g_logfp) 
-    {      
-      time_t tv;
-      time(&tv);
-      struct tm *t=localtime(&tv);
-      fprintf(g_logfp,"[%04d/%02d/%02d %02d:%02d:%02d] ",t->tm_year+1900,t->tm_mon,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec);
-    }
-
-
-    va_list ap;
-    va_start(ap,s);
-
-    vfprintf(g_logfp?g_logfp:stdout,s,ap);    
-
-    if (g_logfp) fflush(g_logfp);
-
-    va_end(ap);
-}
-
 bool reloadConfig(int argc, char **argv, bool firstTime)
 {
   if (!firstTime) {
-    logText("reloading config...\n");
+    qDebug("Reloading config...");
   }
 
   if (ReadConfig(&g_config, argv[1]) != 0) {
@@ -669,21 +634,13 @@ int main(int argc, char **argv)
       fprintf(fp,"%d\n",pid);
       fclose(fp);
     }
-    else printf("Error opening PID file '%s'\n", g_config.pidFilename.Get());
+    else qWarning("Error opening PID file '%s'", g_config.pidFilename.Get());
   }
 #endif
 
-  if (g_config.logFilename.Get()[0])
-  {
-    g_logfp=fopen(g_config.logFilename.Get(),"at");
-    if (!g_logfp)
-      printf("Error opening log file '%s'\n",g_config.logFilename.Get());
-    else
-      logText("Opened log. Wahjam Server %s built on %s at %s\n",VERSION,__DATE__,__TIME__);
+  logInit(g_config.logFilename.Get());
 
-  }
-
-  logText("Server starting up...\n");
+  qDebug("Server starting up...");
 
 #ifndef _WIN32
   SignalHandler *sigHandler = new SignalHandler(argc, argv);
@@ -695,16 +652,10 @@ int main(int argc, char **argv)
   delete sigHandler;
 #endif
 
-  logText("Shutting down server\n");
+  qDebug("Shutting down server");
 
   /* Explicitly delete before closing log */
   delete g_server;
-
-  if (g_logfp)
-  {
-    fclose(g_logfp);
-    g_logfp=0;
-  }
 
 	return 0;
 }
