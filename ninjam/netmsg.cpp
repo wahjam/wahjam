@@ -169,16 +169,7 @@ Net_Message *Net_Connection::nextMessage()
     return 0;
   }
 
-  Net_Message *retv = recvq.dequeue();
-
-  if (lastmsgs[lastmsgIdx]) {
-    lastmsgs[lastmsgIdx]->releaseRef();
-  }
-  retv->addRef();
-  lastmsgs[lastmsgIdx] = retv;
-  lastmsgIdx = (lastmsgIdx + 1) % 5;
-
-  return retv;
+  return recvq.dequeue();
 }
 
 Net_Message *Net_Connection::Run(int *wantsleep)
@@ -230,8 +221,7 @@ QHostAddress Net_Connection::GetRemoteAddr()
 
 Net_Connection::Net_Connection(QTcpSocket *sock, QObject *parent)
   : QObject(parent), status(0), m_recvstate(0),
-    m_recvmsg(0), m_sock(sock), remoteAddr(sock->peerAddress()),
-    lastmsgIdx(0)
+    m_recvmsg(0), m_sock(sock), remoteAddr(sock->peerAddress())
 {
   m_sock->setParent(this);
 
@@ -245,18 +235,11 @@ Net_Connection::Net_Connection(QTcpSocket *sock, QObject *parent)
   connect(&recvKeepaliveTimer, SIGNAL(timeout()),
           this, SLOT(recvTimedOut()));
 
-  memset(lastmsgs, 0, sizeof(lastmsgs));
   SetKeepAlive(0);
 }
 
 Net_Connection::~Net_Connection()
 {
-  for (int i = 0; i < 5; i++) {
-    if (lastmsgs[i]) {
-      lastmsgs[i]->releaseRef();
-    }
-  }
-
   while (!recvq.isEmpty()) {
     delete recvq.dequeue();
   }
