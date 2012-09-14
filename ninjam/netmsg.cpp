@@ -186,27 +186,32 @@ bool Net_Connection::hasMessagesAvailable()
   return !recvq.isEmpty();
 }
 
-int Net_Connection::Send(Net_Message *msg)
+int Net_Connection::Send(Net_Message *msg, bool deleteAfterSend)
 {
   if (!msg) {
     return 0;
   }
 
+  int ret = -1;
   char buf[32];
   int hdrlen = msg->makeMessageHeader(buf);
-  qint64 ret = m_sock->write(buf, hdrlen);
-  if (ret != hdrlen) {
-    return -1;
+  qint64 nbytes = m_sock->write(buf, hdrlen);
+  if (nbytes != hdrlen) {
+    goto err;
   }
 
-  ret = m_sock->write((const char*)msg->get_data(), msg->get_size());
-  if (ret != msg->get_size()) {
-    return -1;
+  nbytes = m_sock->write((const char*)msg->get_data(), msg->get_size());
+  if (nbytes != msg->get_size()) {
+    goto err;
   }
 
   sendKeepaliveTimer.start();
-
-  return 0;
+  ret = 0;
+err:
+  if (deleteAfterSend) {
+    delete msg;
+  }
+  return ret;
 }
 
 QHostAddress Net_Connection::GetRemoteAddr()

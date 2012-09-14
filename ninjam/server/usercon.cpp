@@ -140,12 +140,12 @@ User_Connection::User_Connection(QTcpSocket *sock, User_Group *grp) : group(grp)
   authenticationTimer.start(120 * 1000 /* milliseconds */);
 }
 
-void User_Connection::Send(Net_Message *msg)
+void User_Connection::Send(Net_Message *msg, bool deleteAfterSend)
 {
-  if (m_netcon.Send(msg))
+  if (m_netcon.Send(msg, deleteAfterSend))
   {
-    qWarning("%s: Error sending message to user '%s', type %d, queue full!",
-             name.toLatin1().constData(), m_username.Get(),msg->get_type());
+    qWarning("%s: Error sending message to user '%s', queue full!",
+             name.toLatin1().constData(), m_username.Get());
   }
 }
 
@@ -394,8 +394,6 @@ void User_Connection::SendUserList()
 
 void User_Connection::processMessage(Net_Message *msg)
 {
-  msg->addRef();
-
   if (!m_auth_state)
   {
     mpb_client_auth_user authrep;
@@ -404,8 +402,6 @@ void User_Connection::processMessage(Net_Message *msg)
     int          err_st = ( msg->get_type() != MESSAGE_CLIENT_AUTH_USER || authrep.parse(msg) || !authrep.username || !authrep.username[0] ) ? 1 : 0;
     if (!err_st) err_st = ( authrep.client_version < PROTO_VER_MIN || authrep.client_version > PROTO_VER_MAX ) ? 2 : 0;
     if (!err_st) err_st = ( group->m_licensetext.Get()[0] && !(authrep.client_caps & 1) ) ? 3 : 0;
-
-    msg->releaseRef();
 
     if (err_st)
     {
@@ -440,7 +436,6 @@ void User_Connection::processMessage(Net_Message *msg)
   } // !m_auth_state
 
   if (m_auth_state < 1) {
-    msg->releaseRef();
     return;
   }
 
@@ -584,8 +579,7 @@ void User_Connection::processMessage(Net_Message *msg)
           nmb.username = myusername;
 
           Net_Message *newmsg=nmb.build();
-          newmsg->addRef();
-                  
+
           static unsigned char zero_guid[16];
 
 
@@ -648,14 +642,14 @@ void User_Connection::processMessage(Net_Message *msg)
                       u->m_sendfiles.Add(nt);
                     }
 
-                    u->Send(newmsg);
+                    u->Send(newmsg, false);
                   }
                   break;
                 }
               }
             }
           }
-          newmsg->releaseRef();
+          delete newmsg;
         }
       }
       //m_recvfiles
@@ -711,7 +705,7 @@ void User_Connection::processMessage(Net_Message *msg)
                 {
                   t->last_acttime=now;
                   t->bytes_sofar += mp.audio_data_len;
-                  u->Send(msg);
+                  u->Send(msg, false);
                   if (mp.flags & 1)
                   {
                     delete t;
@@ -745,7 +739,6 @@ void User_Connection::processMessage(Net_Message *msg)
     default:
     break;
   }
-  msg->releaseRef();
 }
 
 void User_Connection::netconMessagesReady()
@@ -753,6 +746,7 @@ void User_Connection::netconMessagesReady()
   while (m_netcon.hasMessagesAvailable()) {
     Net_Message *msg = m_netcon.nextMessage();
     processMessage(msg);
+    delete msg;
   }
 }
 
@@ -841,19 +835,17 @@ void User_Group::Broadcast(Net_Message *msg, User_Connection *nosend)
 {
   if (msg)
   {
-    msg->addRef(); // we do this so that if nobody actually gets to send it, we delete it
-
     int x;
     for (x = 0; x < m_users.GetSize(); x ++)
     {
       User_Connection *p=m_users.Get(x);
       if (p && p->m_auth_state > 0 && p != nosend)
       {
-        p->Send(msg);
+        p->Send(msg, false);
       }
     }
 
-    msg->releaseRef();
+    delete msg;
   }
 }
 

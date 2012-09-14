@@ -200,7 +200,7 @@ class User_Connection : public QObject
 
     void SendConfigChangeNotify(int bpm, int bpi);
 
-    void Send(Net_Message *msg);
+    void Send(Net_Message *msg, bool deleteAfterSend = true);
 
     int OnRunAuth();
 

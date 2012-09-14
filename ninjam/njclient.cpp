@@ -686,8 +686,6 @@ int NJClient::GetStatus()
 
 void NJClient::processMessage(Net_Message *msg)
 {
-  msg->addRef();
-
   switch (msg->get_type())
   {
     case MESSAGE_SERVER_AUTH_CHALLENGE:
@@ -974,8 +972,6 @@ void NJClient::processMessage(Net_Message *msg)
       //printf("Got unknown message %02X\n",msg->get_type());
       break;
   }
-
-  msg->releaseRef();
 }
 
 void NJClient::netconDisconnected()
@@ -991,6 +987,7 @@ void NJClient::netconMessagesReady()
   while (m_netcon->hasMessagesAvailable()) {
     Net_Message *msg = m_netcon->nextMessage();
     processMessage(msg);
+    delete msg;
   }
 }
 
