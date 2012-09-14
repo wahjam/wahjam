@@ -124,8 +124,6 @@ class Net_Connection : public QObject
     QQueue<Net_Message*> recvq;
     QTcpSocket *m_sock;
     QHostAddress remoteAddr;
-    Net_Message *lastmsgs[5];
-    unsigned int lastmsgIdx;
 };
 
 
