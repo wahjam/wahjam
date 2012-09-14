@@ -109,9 +109,6 @@ class Net_Connection : public QObject
     void recvTimedOut();
 
   private:
-    void setStatus(int s);
-
-    int status;
     QTimer sendKeepaliveTimer;
     QTimer recvKeepaliveTimer;
     int m_recvstate;

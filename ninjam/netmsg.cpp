@@ -99,7 +99,7 @@ int Net_Message::makeMessageHeader(void *data) // makes message header, data sho
 
 void Net_Connection::socketError(QAbstractSocket::SocketError)
 {
-  setStatus(1);
+  Kill();
 }
 
 void Net_Connection::readyRead()
@@ -122,7 +122,7 @@ void Net_Connection::readyRead()
       a = m_recvmsg->parseMessageHeader(buf, buflen);
       if (a < 0)
       {
-        setStatus(-1);
+        Kill();
         return;
       }
       if (a == 0) {
@@ -160,12 +160,12 @@ void Net_Connection::sendKeepaliveMessage()
 
 void Net_Connection::recvTimedOut()
 {
-  setStatus(-3);
+  Kill();
 }
 
 Net_Message *Net_Connection::nextMessage()
 {
-  if (status != 0 || recvq.isEmpty()) {
+  if (recvq.isEmpty()) {
     return 0;
   }
 
@@ -225,8 +225,8 @@ QHostAddress Net_Connection::GetRemoteAddr()
 }
 
 Net_Connection::Net_Connection(QTcpSocket *sock, QObject *parent)
-  : QObject(parent), status(0), m_recvstate(0),
-    m_recvmsg(0), m_sock(sock), remoteAddr(sock->peerAddress())
+  : QObject(parent), m_recvstate(0), m_recvmsg(0), m_sock(sock),
+    remoteAddr(sock->peerAddress())
 {
   m_sock->setParent(this);
 
@@ -245,11 +245,7 @@ Net_Connection::Net_Connection(QTcpSocket *sock, QObject *parent)
 
 Net_Connection::~Net_Connection()
 {
-  while (!recvq.isEmpty()) {
-    delete recvq.dequeue();
-  }
-
-  delete m_recvmsg;
+  Kill();
 }
 
 void Net_Connection::SetKeepAlive(int interval)
@@ -262,15 +258,16 @@ void Net_Connection::SetKeepAlive(int interval)
   recvKeepaliveTimer.start(3 * interval * 1000 /* milliseconds */);
 }
 
-void Net_Connection::setStatus(int s)
+void Net_Connection::Kill()
 {
   sendKeepaliveTimer.stop();
   recvKeepaliveTimer.stop();
-  status = s;
   m_sock->disconnectFromHost();
-}
 
-void Net_Connection::Kill()
-{
-  setStatus(1);
+  while (!recvq.isEmpty()) {
+    delete recvq.dequeue();
+  }
+
+  delete m_recvmsg;
+  m_recvmsg = NULL;
 }
