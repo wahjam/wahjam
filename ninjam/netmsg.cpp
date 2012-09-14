@@ -99,6 +99,13 @@ int Net_Message::makeMessageHeader(void *data) // makes message header, data sho
 
 void Net_Connection::socketError(QAbstractSocket::SocketError)
 {
+  /* Normally QTcpSocket emits disconnected() for us, but if the socket is not
+   * connected yet we need to emit the signal manually because QTcpSocket will
+   * not. */
+  if (m_sock->state() == QAbstractSocket::UnconnectedState) {
+    emit disconnected();
+  }
+
   Kill();
 }
 
