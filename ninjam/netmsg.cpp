@@ -218,11 +218,6 @@ int Net_Connection::Send(Net_Message *msg)
   return 0;
 }
 
-int Net_Connection::GetStatus()
-{
-  return status;
-}
-
 QHostAddress Net_Connection::GetRemoteAddr()
 {
   /* Cache remote address since QTcpSocket clears it on disconnect */
