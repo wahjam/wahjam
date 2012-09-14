@@ -49,7 +49,7 @@
 class Net_Message
 {
 	public:
-		Net_Message() : m_parsepos(0), m_refcnt(0), m_type(MESSAGE_INVALID)
+		Net_Message() : m_parsepos(0), m_type(MESSAGE_INVALID)
 		{
 		}
 		~Net_Message()
@@ -72,13 +72,8 @@ class Net_Message
 
 		int makeMessageHeader(void *data); // makes message header, returns length. data should be at least 16 bytes to be safe
 
-
-		void addRef() { ++m_refcnt; }
-		void releaseRef() { if (--m_refcnt < 1) delete this; }
-
 	private:
-    		int m_parsepos;
-		int m_refcnt;
+		int m_parsepos;
 		int m_type;
 		WDL_HeapBuf m_hb;
 };
@@ -95,7 +90,7 @@ class Net_Connection : public QObject
     bool hasMessagesAvailable();
     Net_Message *nextMessage();
     Net_Message *Run(int *wantsleep=0);
-    int Send(Net_Message *msg); // -1 on error
+    int Send(Net_Message *msg, bool deleteAfterSend = true);
 
     QHostAddress GetRemoteAddr();
 
