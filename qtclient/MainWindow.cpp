@@ -445,7 +445,8 @@ void MainWindow::ShowJammrConnectDialog()
     jammrAuthToken = loginDialog.token();
   }
 
-  JammrConnectDialog connectDialog(netManager, jammrApiUrl);
+  QUrl upgradeUrl = settings->value("jammr/upgradeUrl", JAMMR_UPGRADE_URL).toUrl();
+  JammrConnectDialog connectDialog(netManager, jammrApiUrl, upgradeUrl);
   connectDialog.resize(600, 500);
 
   if (connectDialog.exec() != QDialog::Accepted) {

@@ -21,7 +21,9 @@
 
 #include <QUrl>
 #include <QDialog>
+#include <QPushButton>
 #include <QNetworkAccessManager>
+#include <QNetworkReply>
 
 #include "JammrServerBrowser.h"
 
@@ -31,21 +33,28 @@ class JammrConnectDialog : public QDialog
   Q_PROPERTY(QString host READ host WRITE setHost)
 
 public:
-  JammrConnectDialog(QNetworkAccessManager *netManager_, const QUrl &apiUrl_, QWidget *parent = 0);
+  JammrConnectDialog(QNetworkAccessManager *netManager_, const QUrl &apiUrl_,
+                     const QUrl &upgradeUrl_, QWidget *parent = 0);
   QString host() const;
 
 public slots:
   void setHost(const QString &host);
   void loadServerList();
+  void createJam();
 
 private slots:
   void onServerSelected(const QString &host);
+  void createJamFinished();
 
 private:
   QNetworkAccessManager *netManager;
   JammrServerBrowser *serverBrowser;
+  QPushButton *connectButton;
+  QPushButton *newJamButton;
   QString selectedHost;
   QUrl apiUrl;
+  QUrl upgradeUrl;
+  QNetworkReply *reply;
 };
 
 #endif /* _JAMMRCONNECTDIALOG_H_ */
