@@ -65,7 +65,7 @@ MainWindow::MainWindow(QWidget *parent)
    * a global variable.
    */
   if (MainWindow::instance) {
-    fprintf(stderr, "MainWindow can only be instantiated once!\n");
+    qFatal("MainWindow can only be instantiated once!");
     abort();
   }
   MainWindow::instance = this;
@@ -242,7 +242,7 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
                                          OnSamplesTrampoline);
   if (!audio)
   {
-    printf("Error opening audio!\n");
+    qCritical("create_audioStreamer_PortAudio() failed");
     exit(1);
   }
 
