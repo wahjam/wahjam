@@ -677,7 +677,8 @@ void NJClient::processMessage(Net_Message *msg)
         mpb_server_auth_challenge cha;
         if (!cha.parse(msg))
         {
-          if (cha.protocol_version < PROTO_VER_MIN || cha.protocol_version >= PROTO_VER_MAX)
+          if (cha.protocol_version < PROTO_NINJAM_VER_MIN ||
+              cha.protocol_version >= PROTO_NINJAM_VER_MAX)
           {
             m_errstr.Set("server is incorrect protocol version");
             m_status = NJC_STATUS_VERSIONMISMATCH;
@@ -688,7 +689,7 @@ void NJClient::processMessage(Net_Message *msg)
 
           mpb_client_auth_user repl;
           repl.username=m_user.Get();
-          repl.client_version=PROTO_VER_CUR; // client version number
+          repl.client_version = PROTO_NINJAM_VER_CUR; // client version number
 
           m_connection_keepalive=(cha.server_caps>>8)&0xff;
 

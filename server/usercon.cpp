@@ -118,7 +118,7 @@ User_Connection::User_Connection(QTcpSocket *sock, User_Group *grp) : group(grp)
   memcpy(ch.challenge,m_challenge,sizeof(ch.challenge));
 
 
-  ch.protocol_version = PROTO_VER_CUR;
+  ch.protocol_version = PROTO_NINJAM_VER_CUR;
   int ka=grp->m_keepalive;
 
   if (ka < 0)ka=0;
@@ -400,7 +400,8 @@ void User_Connection::processMessage(Net_Message *msg)
 
     // verify everything
     int          err_st = ( msg->get_type() != MESSAGE_CLIENT_AUTH_USER || authrep.parse(msg) || !authrep.username || !authrep.username[0] ) ? 1 : 0;
-    if (!err_st) err_st = ( authrep.client_version < PROTO_VER_MIN || authrep.client_version > PROTO_VER_MAX ) ? 2 : 0;
+    if (!err_st) err_st = ( authrep.client_version < PROTO_NINJAM_VER_MIN ||
+                            authrep.client_version > PROTO_NINJAM_VER_MAX ) ? 2 : 0;
     if (!err_st) err_st = ( group->m_licensetext.Get()[0] && !(authrep.client_caps & 1) ) ? 3 : 0;
 
     if (err_st)
