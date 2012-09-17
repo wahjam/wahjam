@@ -117,8 +117,16 @@ User_Connection::User_Connection(QTcpSocket *sock, User_Group *grp) : group(grp)
   mpb_server_auth_challenge ch;
   memcpy(ch.challenge,m_challenge,sizeof(ch.challenge));
 
+  switch (group->GetProtocol()) {
+  case JAM_PROTO_NINJAM:
+    ch.protocol_version = PROTO_NINJAM_VER_CUR;
+    break;
 
-  ch.protocol_version = PROTO_NINJAM_VER_CUR;
+  case JAM_PROTO_JAMMR:
+    ch.protocol_version = PROTO_JAMMR_VER_CUR;
+    break;
+  }
+
   int ka=grp->m_keepalive;
 
   if (ka < 0)ka=0;
@@ -397,11 +405,24 @@ void User_Connection::processMessage(Net_Message *msg)
   if (!m_auth_state)
   {
     mpb_client_auth_user authrep;
+    int ver_min, ver_max;
+
+    switch (group->GetProtocol()) {
+    case JAM_PROTO_NINJAM:
+      ver_min = PROTO_NINJAM_VER_MIN;
+      ver_max = PROTO_NINJAM_VER_MAX;
+      break;
+
+    case JAM_PROTO_JAMMR:
+      ver_min = PROTO_JAMMR_VER_MIN;
+      ver_max = PROTO_JAMMR_VER_MAX;
+      break;
+    }
 
     // verify everything
     int          err_st = ( msg->get_type() != MESSAGE_CLIENT_AUTH_USER || authrep.parse(msg) || !authrep.username || !authrep.username[0] ) ? 1 : 0;
-    if (!err_st) err_st = ( authrep.client_version < PROTO_NINJAM_VER_MIN ||
-                            authrep.client_version > PROTO_NINJAM_VER_MAX ) ? 2 : 0;
+    if (!err_st) err_st = ( authrep.client_version < ver_min ||
+                            authrep.client_version > ver_max ) ? 2 : 0;
     if (!err_st) err_st = ( group->m_licensetext.Get()[0] && !(authrep.client_caps & 1) ) ? 3 : 0;
 
     if (err_st)
@@ -775,7 +796,8 @@ void User_Connection::userLookupCompleted()
 User_Group::User_Group(CreateUserLookupFn *CreateUserLookup_, QObject *parent)
   : QObject(parent), CreateUserLookup(CreateUserLookup_), m_max_users(0),
     m_last_bpm(120), m_last_bpi(32), m_keepalive(0), m_voting_threshold(110),
-    m_voting_timeout(120), m_allow_hidden_users(0), m_logfp(0)
+    m_voting_timeout(120), m_allow_hidden_users(0), m_logfp(0),
+    protocol(JAM_PROTO_NINJAM)
 {
   connect(&signalMapper, SIGNAL(mapped(QObject*)),
           this, SLOT(userDisconnected(QObject*)));
@@ -838,6 +860,16 @@ void User_Group::SetLogDir(const char *path) // NULL to not log
   }
 
   qDebug("Archiving session '%s'", path);
+}
+
+void User_Group::SetProtocol(JamProtocol proto)
+{
+  protocol = proto;
+}
+
+JamProtocol User_Group::GetProtocol() const
+{
+  return protocol;
 }
 
 void User_Group::Broadcast(Net_Message *msg, User_Connection *nosend)

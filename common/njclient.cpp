@@ -330,6 +330,7 @@ NJClient::NJClient(QObject *parent)
   config_mastermute=false;
   config_play_prebuffer=8192;
 
+  protocol = JAM_PROTO_NINJAM;
 
   LicenseAgreement_User32=0;
   LicenseAgreementCallback=0;
@@ -677,8 +678,24 @@ void NJClient::processMessage(Net_Message *msg)
         mpb_server_auth_challenge cha;
         if (!cha.parse(msg))
         {
-          if (cha.protocol_version < PROTO_NINJAM_VER_MIN ||
-              cha.protocol_version >= PROTO_NINJAM_VER_MAX)
+          int ver_min, ver_max, ver_cur;
+
+          switch (protocol) {
+          case JAM_PROTO_NINJAM:
+            ver_min = PROTO_NINJAM_VER_MIN;
+            ver_max = PROTO_NINJAM_VER_MAX;
+            ver_cur = PROTO_NINJAM_VER_CUR;
+            break;
+
+          case JAM_PROTO_JAMMR:
+            ver_min = PROTO_JAMMR_VER_MIN;
+            ver_max = PROTO_JAMMR_VER_MAX;
+            ver_cur = PROTO_JAMMR_VER_CUR;
+            break;
+          }
+
+          if (cha.protocol_version < ver_min ||
+              cha.protocol_version >= ver_max)
           {
             m_errstr.Set("server is incorrect protocol version");
             m_status = NJC_STATUS_VERSIONMISMATCH;
@@ -689,7 +706,7 @@ void NJClient::processMessage(Net_Message *msg)
 
           mpb_client_auth_user repl;
           repl.username=m_user.Get();
-          repl.client_version = PROTO_NINJAM_VER_CUR; // client version number
+          repl.client_version = ver_cur; // client version number
 
           m_connection_keepalive=(cha.server_caps>>8)&0xff;
 

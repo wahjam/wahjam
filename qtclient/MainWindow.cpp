@@ -81,6 +81,9 @@ MainWindow::MainWindow(QWidget *parent)
   client.SetLocalChannelMonitoring(0, false, 0.0f, false, 0.0f, false, false, false, false);
 
   jammrApiUrl = settings->value("jammr/apiUrl", JAMMR_API_URL).toUrl();
+  if (!jammrApiUrl.isEmpty()) {
+    client.SetProtocol(JAM_PROTO_JAMMR);
+  }
 
   netManager = new QNetworkAccessManager(this);
 

@@ -104,6 +104,8 @@ class User_Group : public QObject
     void SetLicenseText(char *text) { m_licensetext.Set(text); }
     void Broadcast(Net_Message *msg, User_Connection *nosend=0);
 
+    void SetProtocol(JamProtocol proto);
+    JamProtocol GetProtocol() const;
 
     void SetLogDir(const char *path); // NULL to not log
 
@@ -139,6 +141,7 @@ class User_Group : public QObject
 
   private:
     QSignalMapper signalMapper;
+    JamProtocol protocol;
 };
 
 
