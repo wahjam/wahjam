@@ -128,7 +128,7 @@ void logInit(const QString &filename)
   if (!logfp) {
     logfp = stderr;
   }
-  setbuf(logfp, NULL);
+  setvbuf(logfp, NULL, _IOLBF, 0); /* use line buffering */
 
   qInstallMsgHandler(logMsgHandler);
 

@@ -101,7 +101,7 @@ bool PortAudioStreamer::Start(const PaStreamParameters *inputParams,
                         paPrimeOutputBuffersUsingStreamCallback,
                         streamCallbackTrampoline, this);
   if (error != paNoError) {
-    fprintf(stderr, "Pa_OpenStream: %s\n", Pa_GetErrorText(error));
+    qCritical("Pa_OpenStream() failed: %s", Pa_GetErrorText(error));
     stream = NULL;
     return false;
   }
@@ -112,7 +112,7 @@ bool PortAudioStreamer::Start(const PaStreamParameters *inputParams,
 
   error = Pa_StartStream(stream);
   if (error != paNoError) {
-    fprintf(stderr, "Pa_StartStream: %s\n", Pa_GetErrorText(error));
+    qCritical("Pa_StartStream() failed: %s", Pa_GetErrorText(error));
     Pa_CloseStream(stream);
     stream = NULL;
     return false;
@@ -290,7 +290,7 @@ bool portAudioInit()
 {
   PaError error = Pa_Initialize();
   if (error != paNoError) {
-    qFatal("Pa_Initialize() failed %s", Pa_GetErrorText(error));
+    qCritical("Pa_Initialize() failed: %s", Pa_GetErrorText(error));
     return false;
   }
   atexit(portAudioCleanup);

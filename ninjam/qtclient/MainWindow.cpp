@@ -65,7 +65,7 @@ MainWindow::MainWindow(QWidget *parent)
    * a global variable.
    */
   if (MainWindow::instance) {
-    fprintf(stderr, "MainWindow can only be instantiated once!\n");
+    qFatal("MainWindow can only be instantiated once!");
     abort();
   }
   MainWindow::instance = this;
@@ -242,8 +242,25 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
                                          OnSamplesTrampoline);
   if (!audio)
   {
-    printf("Error opening audio!\n");
-    exit(1);
+    qCritical("create_audioStreamer_PortAudio() failed");
+
+    QDir basedir(QDesktopServices::storageLocation(QDesktopServices::DataLocation));
+    QString filename = basedir.filePath("log.txt");
+    QUrl url = QUrl::fromLocalFile(filename);
+
+    QMessageBox::critical(this, tr("Failed to start audio"),
+        tr("<p>There was a problem starting audio.  Try the following "
+           "steps:</p><ul><li>Check that the audio device is connected.</li>"
+           "<li>Ensure no other applications are using the device.</li>"
+           "<li>Check input and output devices in the Audio Configuration "
+           "dialog.</li><li>Select a different Audio System in the Audio "
+           "Configuration dialog.</li></ul>"
+           "<p>If this problem continues please report a bug and include "
+           "contents of the log file at "
+           "<a href=\"%1\">%2</a>.</p>").arg(url.toString(), filename));
+
+    ShowAudioConfigDialog();
+    return;
   }
 
   setWindowTitle(tr("Wahjam - %1").arg(host));
