@@ -357,6 +357,9 @@ int User_Connection::OnRunAuth()
 
   SendUserList();
 
+  if (group->GetProtocol() == JAM_PROTO_JAMMR) {
+    SendChatMessage(QStringList("PRIVS") << privsToString(m_auth_privs));
+  }
 
   SendChatMessage(QStringList("TOPIC") << "" << group->m_topictext.Get());
 
