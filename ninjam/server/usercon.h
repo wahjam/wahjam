@@ -34,6 +34,7 @@
 #include <time.h>
 #include <QSignalMapper>
 #include <QTimer>
+#include <QStringList>
 #include "../netmsg.h"
 #include "../../WDL/string.h"
 #include "../../WDL/sha.h"
@@ -201,6 +202,7 @@ class User_Connection : public QObject
     void SendConfigChangeNotify(int bpm, int bpi);
 
     void Send(Net_Message *msg, bool deleteAfterSend = true);
+    void SendChatMessage(const QStringList &list);
 
     int OnRunAuth();
 
