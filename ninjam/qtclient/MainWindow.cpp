@@ -78,38 +78,26 @@ MainWindow::MainWindow(QWidget *parent)
 
   netManager = new QNetworkAccessManager(this);
 
-  connectAction = new QAction(tr("&Connect..."), this);
-  connect(connectAction, SIGNAL(triggered()), this, SLOT(ShowConnectDialog()));
-
-  disconnectAction = new QAction(tr("&Disconnect"), this);
-  connect(disconnectAction, SIGNAL(triggered()), this, SLOT(Disconnect()));
-
-  audioConfigAction = new QAction(tr("Configure &audio..."), this);
-  connect(audioConfigAction, SIGNAL(triggered()), this, SLOT(ShowAudioConfigDialog()));
-
-  QAction *exitAction = new QAction(tr("E&xit"), this);
+  QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
+  connectAction = fileMenu->addAction(tr("&Connect..."));
+  disconnectAction = fileMenu->addAction(tr("&Disconnect"));
+  audioConfigAction = fileMenu->addAction(tr("Configure &audio..."));
+  QAction *exitAction = fileMenu->addAction(tr("E&xit"));
   exitAction->setShortcuts(QKeySequence::Quit);
+  connect(connectAction, SIGNAL(triggered()), this, SLOT(ShowConnectDialog()));
+  connect(disconnectAction, SIGNAL(triggered()), this, SLOT(Disconnect()));
+  connect(audioConfigAction, SIGNAL(triggered()), this, SLOT(ShowAudioConfigDialog()));
   connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
 
-  QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
-  fileMenu->addAction(connectAction);
-  fileMenu->addAction(disconnectAction);
-  fileMenu->addAction(audioConfigAction);
-  fileMenu->addAction(exitAction);
-
   voteMenu = menuBar()->addMenu(tr("&Vote"));
-  QAction *voteBPMAction = new QAction(tr("BPM"), this);
-  QAction *voteBPIAction = new QAction(tr("BPI"), this);
+  QAction *voteBPMAction = voteMenu->addAction(tr("BPM"));
+  QAction *voteBPIAction = voteMenu->addAction(tr("BPI"));
   connect(voteBPMAction, SIGNAL(triggered()), this, SLOT(VoteBPMDialog()));
   connect(voteBPIAction, SIGNAL(triggered()), this, SLOT(VoteBPIDialog()));
-  voteMenu->addAction(voteBPMAction);
-  voteMenu->addAction(voteBPIAction);
-
-  QAction *aboutAction = new QAction(tr("&About..."), this);
-  connect(aboutAction, SIGNAL(triggered()), this, SLOT(ShowAboutDialog()));
 
   QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
-  helpMenu->addAction(aboutAction);
+  QAction *aboutAction = helpMenu->addAction(tr("&About..."));
+  connect(aboutAction, SIGNAL(triggered()), this, SLOT(ShowAboutDialog()));
 
   setupStatusBar();
 
