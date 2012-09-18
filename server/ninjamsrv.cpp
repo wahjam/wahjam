@@ -45,6 +45,7 @@
 
 #include "../common/netmsg.h"
 #include "../common/mpb.h"
+#include "common/UserPrivs.h"
 #include "usercon.h"
 #include "JammrUserLookup.h"
 
@@ -354,23 +355,7 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
     if (lp->getnumtokens()>3)
     {
       char *ptr=lp->gettoken_str(3);
-      while (*ptr)
-      {
-        if (*ptr == '*') p->priv_flag|=~PRIV_HIDDEN; // everything but hidden if * used
-        else if (*ptr == 'T' || *ptr == 't') p->priv_flag |= PRIV_TOPIC;
-        else if (*ptr == 'B' || *ptr == 'b') p->priv_flag |= PRIV_BPM;
-        else if (*ptr == 'C' || *ptr == 'c') p->priv_flag |= PRIV_CHATSEND;
-        else if (*ptr == 'K' || *ptr == 'k') p->priv_flag |= PRIV_KICK;        
-        else if (*ptr == 'R' || *ptr == 'r') p->priv_flag |= PRIV_RESERVE;        
-        else if (*ptr == 'M' || *ptr == 'm') p->priv_flag |= PRIV_ALLOWMULTI;
-        else if (*ptr == 'H' || *ptr == 'h') p->priv_flag |= PRIV_HIDDEN;       
-        else if (*ptr == 'V' || *ptr == 'v') p->priv_flag |= PRIV_VOTE;               
-        else 
-        {
-          qWarning("Unknown user priviledge flag '%c'",*ptr);
-        }
-        ptr++;
-      }
+      p->priv_flag = privsFromString(ptr);
     }
     else p->priv_flag=PRIV_CHATSEND|PRIV_VOTE;// default privs
     config->userlist.Add(p);

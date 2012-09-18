@@ -20,6 +20,8 @@
 #include <QCryptographicHash>
 #include <QDomDocument>
 
+#include "common/UserPrivs.h"
+
 #include "ninjamsrv.h"
 #include "JammrUserLookup.h"
 
@@ -79,28 +81,13 @@ void JammrUserLookup::requestFinished()
                                              QCryptographicHash::Sha1);
   memcpy(sha1buf_user, hash.data(), sizeof(sha1buf_user));
 
-  for (QDomNode priv = doc.elementsByTagName("privs").item(0).firstChild();
-      !priv.isNull();
-      priv = priv.nextSibling()) {
-    QString value = priv.firstChild().nodeValue();
-    if (value == "topic") {
-      privs |= PRIV_TOPIC;
-    } else if (value == "chatsend") {
-      privs |= PRIV_CHATSEND;
-    } else if (value == "bpm") {
-      privs |= PRIV_BPM;
-    } else if (value == "kick") {
-      privs |= PRIV_KICK;
-    } else if (value == "reserve") {
-      privs |= PRIV_RESERVE;
-    } else if (value == "allowmulti") {
-      privs |= PRIV_ALLOWMULTI;
-    } else if (value == "hidden") {
-      privs |= PRIV_HIDDEN;
-    } else if (value == "vote") {
-      privs |= PRIV_VOTE;
-    }
+  node = doc.elementsByTagName("privs").item(0);
+  if (node.isNull()) {
+    qCritical("User info lookup <privs> XML parsing failed");
+    emit completed();
+    return;
   }
+  privs = privsFromString(node.firstChild().nodeValue());
 
   user_valid = 1;
   emit completed();

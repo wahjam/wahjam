@@ -43,6 +43,7 @@
 #include "ninjamsrv.h"
 #include "usercon.h"
 #include "../common/mpb.h"
+#include "common/UserPrivs.h"
 
 #ifdef _WIN32
 #define strncasecmp strnicmp
