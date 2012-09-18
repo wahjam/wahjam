@@ -78,6 +78,9 @@ private slots:
   void XmitToggled(bool checked);
   void MetronomeToggled(bool checked);
   void Reconnect();
+  void AdminTopicDialog();
+  void AdminBPMDialog();
+  void AdminBPIDialog();
 
 private:
   static MainWindow *instance;
@@ -96,6 +99,10 @@ private:
   QAction *disconnectAction;
   QAction *audioConfigAction;
   QMenu *voteMenu;
+  QMenu *adminMenu;
+  QAction *adminTopicAction;
+  QAction *adminBPMAction;
+  QAction *adminBPIAction;
   QLabel *bpmLabel;
   QLabel *bpiLabel;
   MetronomeBar *metronomeBar;

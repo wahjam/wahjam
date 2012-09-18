@@ -107,6 +107,14 @@ MainWindow::MainWindow(QWidget *parent)
   connect(voteBPMAction, SIGNAL(triggered()), this, SLOT(VoteBPMDialog()));
   connect(voteBPIAction, SIGNAL(triggered()), this, SLOT(VoteBPIDialog()));
 
+  adminMenu = menuBar()->addMenu(tr("&Admin"));
+  adminTopicAction = adminMenu->addAction(tr("Set topic"));
+  adminBPMAction = adminMenu->addAction(tr("Set BPM"));
+  adminBPIAction = adminMenu->addAction(tr("Set BPI"));
+  connect(adminTopicAction, SIGNAL(triggered()), this, SLOT(AdminTopicDialog()));
+  connect(adminBPMAction, SIGNAL(triggered()), this, SLOT(AdminBPMDialog()));
+  connect(adminBPIAction, SIGNAL(triggered()), this, SLOT(AdminBPIDialog()));
+
   QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
   QAction *aboutAction = helpMenu->addAction(tr("&About..."));
   connect(aboutAction, SIGNAL(triggered()), this, SLOT(ShowAboutDialog()));
@@ -171,6 +179,10 @@ MainWindow::MainWindow(QWidget *parent)
   disconnectedState->assignProperty(connectAction, "enabled", true);
   disconnectedState->assignProperty(disconnectAction, "enabled", false);
   disconnectedState->assignProperty(audioConfigAction, "enabled", true);
+  disconnectedState->assignProperty(adminMenu, "enabled", false);
+  disconnectedState->assignProperty(adminTopicAction, "enabled", false);
+  disconnectedState->assignProperty(adminBPMAction, "enabled", false);
+  disconnectedState->assignProperty(adminBPIAction, "enabled", false);
 
   disconnectedState->addTransition(this, SIGNAL(Connecting()), connectingState);
   connectingState->addTransition(this, SIGNAL(Connected()), connectedState);
@@ -668,6 +680,10 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
   } else if (parms[0] == "PRIVS") {
     unsigned int privs = privsFromString(parms[1]);
     voteMenu->setEnabled(privs & PRIV_VOTE);
+    adminMenu->setEnabled(privs & (PRIV_TOPIC | PRIV_BPM));
+    adminTopicAction->setEnabled(privs & PRIV_TOPIC);
+    adminBPMAction->setEnabled(privs & PRIV_BPM);
+    adminBPIAction->setEnabled(privs & PRIV_BPM);
   } else {
     chatOutput->addInfoMessage(tr("Unrecognized command:"));
     for (i = 0; i < nparms; i++) {
@@ -778,4 +794,37 @@ void MainWindow::XmitToggled(bool checked)
 void MainWindow::MetronomeToggled(bool checked)
 {
   client.config_metronome_mute = !checked;
+}
+
+void MainWindow::AdminTopicDialog()
+{
+  bool ok;
+  QString newTopic = QInputDialog::getText(this, tr("Set topic"),
+      tr("New topic:"), QLineEdit::Normal, "", &ok);
+
+  if (ok && !newTopic.isEmpty()) {
+    SendChatMessage(QString("/topic %1").arg(newTopic));
+  }
+}
+
+void MainWindow::AdminBPMDialog()
+{
+  bool ok;
+  int bpm = QInputDialog::getInt(this, tr("Set BPM"),
+                                 tr("Tempo in beats per minute:"),
+                                 120, 40, 400, 1, &ok);
+  if (ok) {
+    SendChatMessage(QString("/bpm %1").arg(bpm));
+  }
+}
+
+void MainWindow::AdminBPIDialog()
+{
+  bool ok;
+  int bpi = QInputDialog::getInt(this, tr("Set BPI"),
+                                 tr("Interval length in beats:"),
+                                 16, 4, 64, 1, &ok);
+  if (ok) {
+    SendChatMessage(QString("/bpi %1").arg(bpi));
+  }
 }
