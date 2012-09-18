@@ -39,6 +39,7 @@
 #include "VSTProcessor.h"
 #include "VSTConfigDialog.h"
 #include "common/njmisc.h"
+#include "common/UserPrivs.h"
 
 MainWindow *MainWindow::instance; /* singleton */
 
@@ -159,7 +160,10 @@ MainWindow::MainWindow(QWidget *parent)
   connectedState = new QState(connectionStateMachine);
   disconnectedState = new QState(connectionStateMachine);
 
-  connectingState->assignProperty(voteMenu, "enabled", true);
+  /* Jammr has a PRIVS chat message that reports user privileges */
+  if (jammrApiUrl.isEmpty()) {
+    connectingState->assignProperty(voteMenu, "enabled", true);
+  }
   connectingState->assignProperty(connectAction, "enabled", false);
   connectingState->assignProperty(disconnectAction, "enabled", true);
   connectingState->assignProperty(audioConfigAction, "enabled", false);
@@ -661,6 +665,9 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
     chatOutput->addInfoMessage(tr("%1 has joined the server").arg(parms[1]));
   } else if (parms[0] == "PART") {
     chatOutput->addInfoMessage(tr("%1 has left the server").arg(parms[1]));
+  } else if (parms[0] == "PRIVS") {
+    unsigned int privs = privsFromString(parms[1]);
+    voteMenu->setEnabled(privs & PRIV_VOTE);
   } else {
     chatOutput->addInfoMessage(tr("Unrecognized command:"));
     for (i = 0; i < nparms; i++) {
