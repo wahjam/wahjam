@@ -82,7 +82,6 @@ MainWindow::MainWindow(QWidget *parent)
   connect(connectAction, SIGNAL(triggered()), this, SLOT(ShowConnectDialog()));
 
   disconnectAction = new QAction(tr("&Disconnect"), this);
-  disconnectAction->setEnabled(false);
   connect(disconnectAction, SIGNAL(triggered()), this, SLOT(Disconnect()));
 
   audioConfigAction = new QAction(tr("Configure &audio..."), this);
@@ -105,7 +104,6 @@ MainWindow::MainWindow(QWidget *parent)
   connect(voteBPIAction, SIGNAL(triggered()), this, SLOT(VoteBPIDialog()));
   voteMenu->addAction(voteBPMAction);
   voteMenu->addAction(voteBPIAction);
-  voteMenu->setEnabled(false);
 
   QAction *aboutAction = new QAction(tr("&About..."), this);
   connect(aboutAction, SIGNAL(triggered()), this, SLOT(ShowAboutDialog()));
