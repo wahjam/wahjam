@@ -81,6 +81,8 @@ private slots:
   void AdminTopicDialog();
   void AdminBPMDialog();
   void AdminBPIDialog();
+  void KickMenuAboutToShow();
+  void KickMenuTriggered(QAction *action);
 
 private:
   static MainWindow *instance;
@@ -103,6 +105,7 @@ private:
   QAction *adminTopicAction;
   QAction *adminBPMAction;
   QAction *adminBPIAction;
+  QMenu *kickMenu;
   QLabel *bpmLabel;
   QLabel *bpiLabel;
   MetronomeBar *metronomeBar;

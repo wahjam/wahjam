@@ -115,6 +115,11 @@ MainWindow::MainWindow(QWidget *parent)
   connect(adminBPMAction, SIGNAL(triggered()), this, SLOT(AdminBPMDialog()));
   connect(adminBPIAction, SIGNAL(triggered()), this, SLOT(AdminBPIDialog()));
 
+  kickMenu = adminMenu->addMenu(tr("Kick"));
+  connect(kickMenu, SIGNAL(aboutToShow()), this, SLOT(KickMenuAboutToShow()));
+  connect(kickMenu, SIGNAL(triggered(QAction *)), this,
+          SLOT(KickMenuTriggered(QAction *)));
+
   QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
   QAction *aboutAction = helpMenu->addAction(tr("&About..."));
   connect(aboutAction, SIGNAL(triggered()), this, SLOT(ShowAboutDialog()));
@@ -183,6 +188,7 @@ MainWindow::MainWindow(QWidget *parent)
   disconnectedState->assignProperty(adminTopicAction, "enabled", false);
   disconnectedState->assignProperty(adminBPMAction, "enabled", false);
   disconnectedState->assignProperty(adminBPIAction, "enabled", false);
+  disconnectedState->assignProperty(kickMenu, "enabled", false);
 
   disconnectedState->addTransition(this, SIGNAL(Connecting()), connectingState);
   connectingState->addTransition(this, SIGNAL(Connected()), connectedState);
@@ -680,10 +686,11 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
   } else if (parms[0] == "PRIVS") {
     unsigned int privs = privsFromString(parms[1]);
     voteMenu->setEnabled(privs & PRIV_VOTE);
-    adminMenu->setEnabled(privs & (PRIV_TOPIC | PRIV_BPM));
+    adminMenu->setEnabled(privs & (PRIV_TOPIC | PRIV_BPM | PRIV_KICK));
     adminTopicAction->setEnabled(privs & PRIV_TOPIC);
     adminBPMAction->setEnabled(privs & PRIV_BPM);
     adminBPIAction->setEnabled(privs & PRIV_BPM);
+    kickMenu->setEnabled(privs & PRIV_KICK);
   } else {
     chatOutput->addInfoMessage(tr("Unrecognized command:"));
     for (i = 0; i < nparms; i++) {
@@ -827,4 +834,21 @@ void MainWindow::AdminBPIDialog()
   if (ok) {
     SendChatMessage(QString("/bpi %1").arg(bpi));
   }
+}
+
+void MainWindow::KickMenuAboutToShow()
+{
+  kickMenu->clear();
+
+  for (int i = 0; i < client.GetNumUsers(); i++) {
+    const char *username = client.GetUserState(i);
+    if (username) {
+      kickMenu->addAction(username);
+    }
+  }
+}
+
+void MainWindow::KickMenuTriggered(QAction *action)
+{
+  SendChatMessage(QString("/kick %1").arg(action->text()));
 }
