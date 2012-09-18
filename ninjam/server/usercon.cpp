@@ -149,6 +149,20 @@ void User_Connection::Send(Net_Message *msg, bool deleteAfterSend)
   }
 }
 
+void User_Connection::SendChatMessage(const QStringList &list)
+{
+  mpb_chat_message newmsg;
+  QByteArray parmsUtf8[list.size()]; // holds string memory until method returns
+
+  Q_ASSERT(list.size() <= sizeof(newmsg.parms) / sizeof(newmsg.parms[0]));
+
+  for (int i = 0; i < list.size(); i++) {
+    parmsUtf8[i] = list.at(i).toUtf8();
+    newmsg.parms[i] = parmsUtf8[i].data();
+  }
+  Send(newmsg.build());
+}
+
 User_Connection::~User_Connection()
 {
 
@@ -229,13 +243,7 @@ int User_Connection::OnRunAuth()
       Send(mk.build());
     }
 
-    {
-      mpb_chat_message newmsg;
-      newmsg.parms[0]="TOPIC";
-      newmsg.parms[1]="";
-      newmsg.parms[2]=group->m_topictext.Get();
-      Send(newmsg.build());
-    }
+    SendChatMessage(QStringList("TOPIC") << "" << group->m_topictext.Get());
 
     {
       int cnt=0;
@@ -250,11 +258,7 @@ int User_Connection::OnRunAuth()
       sprintf(buf,"%d",cnt);
       sprintf(buf2,"%d",group->m_max_users);
 
-      mpb_chat_message newmsg;
-      newmsg.parms[0]="USERCOUNT";
-      newmsg.parms[1]=buf;;
-      newmsg.parms[2]=buf2;
-      Send(newmsg.build());
+      SendChatMessage(QStringList("USERCOUNT") << buf << buf2);
     }
 
     return 0;
@@ -344,13 +348,8 @@ int User_Connection::OnRunAuth()
   SendUserList();
 
 
-  {
-    mpb_chat_message newmsg;
-    newmsg.parms[0]="TOPIC";
-    newmsg.parms[1]="";
-    newmsg.parms[2]=group->m_topictext.Get();
-    Send(newmsg.build());
-  }
+  SendChatMessage(QStringList("TOPIC") << "" << group->m_topictext.Get());
+
   {
     mpb_chat_message newmsg;
     newmsg.parms[0]="JOIN";
@@ -926,13 +925,11 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
     WDL_PtrList<Net_Message> need_bcast;
     if (msg->parms[1] && !strncmp(msg->parms[1],"!vote",5)) // chat message
     {
-      if (!(con->m_auth_privs & PRIV_VOTE) || m_voting_threshold > 100 || m_voting_threshold < 1)
-      {
-        mpb_chat_message newmsg;
-        newmsg.parms[0]="MSG";
-        newmsg.parms[1]="";
-        newmsg.parms[2]=(char *)(m_voting_threshold > 100 || m_voting_threshold < 1? "[voting system] Voting not enabled" : "[voting system] No vote permission");
-        con->Send(newmsg.build());
+      if (m_voting_threshold > 100 || m_voting_threshold < 1) {
+        con->SendChatMessage(QStringList("MSG") << "" << "[voting system] Voting not enabled");
+        return;
+      } else if (!(con->m_auth_privs & PRIV_VOTE)) {
+        con->SendChatMessage(QStringList("MSG") << "" << "[voting system] No vote permission");
         return;
       }
       char *p=msg->parms[1];
@@ -954,11 +951,8 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
       }
       else
       {
-        mpb_chat_message newmsg;
-        newmsg.parms[0]="MSG";
-        newmsg.parms[1]="";
-        newmsg.parms[2]="[voting system] !vote requires <bpm|bpi> <value> parameters";
-        con->Send(newmsg.build());
+        con->SendChatMessage(QStringList("MSG") << "" <<
+            "[voting system] !vote requires <bpm|bpi> <value> parameters");
         return;
       }
       // print voting stats
@@ -1061,11 +1055,7 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
 
     if (!(con->m_auth_privs & PRIV_CHATSEND))
     {
-      mpb_chat_message newmsg;
-      newmsg.parms[0]="MSG";
-      newmsg.parms[1]="";
-      newmsg.parms[2]="No MSG permission";
-      con->Send(newmsg.build());
+      con->SendChatMessage(QStringList("MSG") << "" << "No MSG Permission");
     }
     else if (msg->parms[1] && *msg->parms[1])
     {
@@ -1094,11 +1084,7 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
   {
     if (!(con->m_auth_privs & PRIV_CHATSEND))
     {
-      mpb_chat_message newmsg;
-      newmsg.parms[0]="MSG";
-      newmsg.parms[1]="";
-      newmsg.parms[2]="No PRIVMSG permission";
-      con->Send(newmsg.build());
+      con->SendChatMessage(QStringList("MSG") << "" << "No PRIVMSG permission");
     }
     else if (msg->parms[1] && *msg->parms[1] && msg->parms[2] && *msg->parms[2])
     {
@@ -1108,24 +1094,16 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
       {
         if (!strcasecmp(msg->parms[1],m_users.Get(x)->m_username.Get()))
         {
-          mpb_chat_message newmsg;
-          newmsg.parms[0]="PRIVMSG";
-          newmsg.parms[1]=con->m_username.Get();
-          newmsg.parms[2]=msg->parms[2];
-          m_users.Get(x)->Send(newmsg.build());
-
+          m_users.Get(x)->SendChatMessage(QStringList("PRIVMSG") <<
+                                          con->m_username.Get() <<
+                                          msg->parms[2]);
           return;
         }
       }
 
       // send a privmsg back to sender, saying shit aint there
-      WDL_String buf("No such user: ");
-      buf.Append(msg->parms[1]);          
-      mpb_chat_message newmsg;
-      newmsg.parms[0]="MSG";
-      newmsg.parms[1]="";
-      newmsg.parms[2]=buf.Get();
-      con->Send(newmsg.build());
+      con->SendChatMessage(QStringList("MSG") << "" <<
+                           QString("No such user: %1").arg(msg->parms[1]));
     }
   }
   else if (!strcmp(msg->parms[0],"ADMIN")) // admin message
@@ -1137,11 +1115,8 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
       {
         if (!(con->m_auth_privs & PRIV_TOPIC))
         {
-          mpb_chat_message newmsg;
-          newmsg.parms[0]="MSG";
-          newmsg.parms[1]="";
-          newmsg.parms[2]="No TOPIC permission";
-          con->Send(newmsg.build());
+          con->SendChatMessage(QStringList("MSG") << "" <<
+                               "No TOPIC permission");
         }
         else
         {
@@ -1164,11 +1139,8 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
       {
         if (!(con->m_auth_privs & PRIV_KICK))
         {
-          mpb_chat_message newmsg;
-          newmsg.parms[0]="MSG";
-          newmsg.parms[1]="";
-          newmsg.parms[2]="No KICK permission";
-          con->Send(newmsg.build());
+          con->SendChatMessage(QStringList("MSG") << "" <<
+                               "No KICK permission");
         }
         else
         {
@@ -1206,16 +1178,8 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
             }
             if (!killcnt)
             {
-              WDL_String tmp;
-              tmp.Set("User \"");
-              tmp.Append(p);
-              tmp.Append("\" not found!\n");
-
-              mpb_chat_message newmsg;
-              newmsg.parms[0]="MSG";
-              newmsg.parms[1]="";
-              newmsg.parms[2]=tmp.Get();
-              con->Send(newmsg.build());
+              con->SendChatMessage(QStringList("MSG") << "" <<
+                                   QString("User \"%1\" not found!").arg(p));
             }
 
           }
@@ -1226,11 +1190,8 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
       {
         if (!(con->m_auth_privs & PRIV_BPM))
         {
-          mpb_chat_message newmsg;
-          newmsg.parms[0]="MSG";
-          newmsg.parms[1]="";
-          newmsg.parms[2]="No BPM/BPI permission";
-          con->Send(newmsg.build());
+          con->SendChatMessage(QStringList("MSG") << "" <<
+                               "No BPM/BPI permission");
         }
         else
         {
@@ -1241,19 +1202,13 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
           int v=atoi(p);
           if (isbpm && (v < 20 || v > 400))
           {
-            mpb_chat_message newmsg;
-            newmsg.parms[0]="MSG";
-            newmsg.parms[1]="";
-            newmsg.parms[2]="BPM parameter must be between 20 and 400";
-            con->Send(newmsg.build());
+            con->SendChatMessage(QStringList("MSG") << "" <<
+                                 "BPM parameter must be between 20 and 400");
           }
           else if (!isbpm && (v < 2 || v > 1024))
           {
-            mpb_chat_message newmsg;
-            newmsg.parms[0]="MSG";
-            newmsg.parms[1]="";
-            newmsg.parms[2]="BPI parameter must be between 2 and 1024";
-            con->Send(newmsg.build());
+            con->SendChatMessage(QStringList("MSG") << "" <<
+                                 "BPI parameter must be between 2 and 1024");
           }
           else
           {
@@ -1284,20 +1239,12 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
       }
       else
       {
-        mpb_chat_message newmsg;
-        newmsg.parms[0]="MSG";
-        newmsg.parms[1]="";
-        newmsg.parms[2]=adminerr;
-        con->Send(newmsg.build());
+        con->SendChatMessage(QStringList("MSG") << "" << adminerr);
       }
     }
     else
     {
-      mpb_chat_message newmsg;
-      newmsg.parms[0]="MSG";
-      newmsg.parms[1]="";
-      newmsg.parms[2]=adminerr;
-      con->Send(newmsg.build());
+      con->SendChatMessage(QStringList("MSG") << "" << adminerr);
     }
   }
   else // unknown message
