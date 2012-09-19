@@ -34,6 +34,7 @@
 #include "ConnectDialog.h"
 #include "JammrConnectDialog.h"
 #include "JammrLoginDialog.h"
+#include "JammrAccessControlDialog.h"
 #include "PortAudioConfigDialog.h"
 #include "VSTPlugin.h"
 #include "VSTProcessor.h"
@@ -111,9 +112,12 @@ MainWindow::MainWindow(QWidget *parent)
   adminTopicAction = adminMenu->addAction(tr("Set topic"));
   adminBPMAction = adminMenu->addAction(tr("Set BPM"));
   adminBPIAction = adminMenu->addAction(tr("Set BPI"));
+  adminAccessControlAction = adminMenu->addAction(tr("Access control..."));
   connect(adminTopicAction, SIGNAL(triggered()), this, SLOT(AdminTopicDialog()));
   connect(adminBPMAction, SIGNAL(triggered()), this, SLOT(AdminBPMDialog()));
   connect(adminBPIAction, SIGNAL(triggered()), this, SLOT(AdminBPIDialog()));
+  connect(adminAccessControlAction, SIGNAL(triggered()),
+          this, SLOT(AdminAccessControlDialog()));
 
   kickMenu = adminMenu->addMenu(tr("Kick"));
   connect(kickMenu, SIGNAL(aboutToShow()), this, SLOT(KickMenuAboutToShow()));
@@ -188,6 +192,8 @@ MainWindow::MainWindow(QWidget *parent)
   disconnectedState->assignProperty(adminTopicAction, "enabled", false);
   disconnectedState->assignProperty(adminBPMAction, "enabled", false);
   disconnectedState->assignProperty(adminBPIAction, "enabled", false);
+  disconnectedState->assignProperty(adminAccessControlAction,
+                                    "enabled", false);
   disconnectedState->assignProperty(kickMenu, "enabled", false);
 
   disconnectedState->addTransition(this, SIGNAL(Connecting()), connectingState);
@@ -690,6 +696,8 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
     adminTopicAction->setEnabled(privs & PRIV_TOPIC);
     adminBPMAction->setEnabled(privs & PRIV_BPM);
     adminBPIAction->setEnabled(privs & PRIV_BPM);
+    adminAccessControlAction->setEnabled(!jammrApiUrl.isEmpty() &&
+                                         (privs & PRIV_KICK));
     kickMenu->setEnabled(privs & PRIV_KICK);
   } else {
     chatOutput->addInfoMessage(tr("Unrecognized command:"));
@@ -834,6 +842,13 @@ void MainWindow::AdminBPIDialog()
   if (ok) {
     SendChatMessage(QString("/bpi %1").arg(bpi));
   }
+}
+
+void MainWindow::AdminAccessControlDialog()
+{
+  JammrAccessControlDialog accessControlDialog(netManager,
+      jammrApiUrl, client.GetHostName(), this);
+  accessControlDialog.exec();
 }
 
 void MainWindow::KickMenuAboutToShow()
