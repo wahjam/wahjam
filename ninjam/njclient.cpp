@@ -716,6 +716,13 @@ void NJClient::processMessage(Net_Message *msg)
             {
               repl.client_caps|=1;
             }
+
+            /* LicenseAgreementCallback() may block and dispatch events.  Check
+             * if the connection still exists.
+             */
+            if (!m_netcon) {
+              return;
+            }
           }
           m_netcon->SetKeepAlive(m_connection_keepalive);
 
@@ -984,7 +991,7 @@ void NJClient::netconDisconnected()
 
 void NJClient::netconMessagesReady()
 {
-  while (m_netcon->hasMessagesAvailable()) {
+  while (m_netcon && m_netcon->hasMessagesAvailable()) {
     Net_Message *msg = m_netcon->nextMessage();
     processMessage(msg);
     delete msg;
