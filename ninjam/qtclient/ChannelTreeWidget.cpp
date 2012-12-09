@@ -33,13 +33,13 @@ enum
 ChannelTreeWidget::ChannelTreeWidget(QWidget *parent)
   : QTreeWidget(parent)
 {
-  setHeaderLabels(QStringList("Name") << "Mute" << "Broadcast");
+  setHeaderLabels(QStringList("Name") << "Mute");
   setRootIsDecorated(false);
   setItemsExpandable(false);
   setSelectionMode(QAbstractItemView::NoSelection);
 
   QTreeWidgetItem *local = addRootItem("Local");
-  QTreeWidgetItem *metronome = addChannelItem(local, "Metronome", 0);
+  QTreeWidgetItem *metronome = addChannelItem(local, "Metronome");
   metronome->setData(0, ItemTypeRole, ItemTypeMetronome);
 
   connect(this, SIGNAL(itemChanged(QTreeWidgetItem*, int)),
@@ -54,27 +54,23 @@ QTreeWidgetItem *ChannelTreeWidget::addRootItem(const QString &text)
   return item;
 }
 
-QTreeWidgetItem *ChannelTreeWidget::addChannelItem(QTreeWidgetItem *parent, const QString &text, int flags)
+QTreeWidgetItem *ChannelTreeWidget::addChannelItem(QTreeWidgetItem *parent, const QString &text)
 {
   QTreeWidgetItem *channel = new QTreeWidgetItem(parent);
 
   channel->setText(0, text);
   channel->setCheckState(1, Qt::Unchecked);
-  if (flags & CF_BROADCAST) {
-    channel->setCheckState(2, Qt::Unchecked);
-  }
   return channel;
 }
 
-void ChannelTreeWidget::addLocalChannel(int ch, const QString &name, bool mute, bool broadcast)
+void ChannelTreeWidget::addLocalChannel(int ch, const QString &name, bool mute)
 {
   QTreeWidgetItem *local = topLevelItem(0);
-  QTreeWidgetItem *channel = addChannelItem(local, name, CF_BROADCAST);
+  QTreeWidgetItem *channel = addChannelItem(local, name);
 
   channel->setData(0, ItemTypeRole, ItemTypeLocalChannel);
   channel->setData(0, ChannelIndexRole, ch);
   channel->setCheckState(1, mute ? Qt::Checked : Qt::Unchecked);
-  channel->setCheckState(2, broadcast ? Qt::Checked : Qt::Unchecked);
 }
 
 void ChannelTreeWidget::handleItemChanged(QTreeWidgetItem *item, int column)
@@ -96,8 +92,6 @@ void ChannelTreeWidget::handleItemChanged(QTreeWidgetItem *item, int column)
     int ch = item->data(0, ChannelIndexRole).toInt(NULL);
     if (column == 1) {
       emit LocalChannelMuteChanged(ch, state);
-    } else if (column == 2) {
-      emit LocalChannelBroadcastChanged(ch, state);
     }
     break;
   }
@@ -139,7 +133,7 @@ void ChannelTreeWidget::RemoteChannelUpdater::addChannel(int channelidx, const Q
   if (channel) {
     channel->setText(0, name);
   } else {
-    channel = owner->addChannelItem(user, name, 0);
+    channel = owner->addChannelItem(user, name);
   }
 
   channel->setData(0, ItemTypeRole, ItemTypeRemoteChannel);

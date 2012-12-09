@@ -118,8 +118,6 @@ MainWindow::MainWindow(QWidget *parent)
           this, SLOT(MetronomeMuteChanged(bool)));
   connect(channelTree, SIGNAL(LocalChannelMuteChanged(int, bool)),
           this, SLOT(LocalChannelMuteChanged(int, bool)));
-  connect(channelTree, SIGNAL(LocalChannelBroadcastChanged(int, bool)),
-          this, SLOT(LocalChannelBroadcastChanged(int, bool)));
   connect(channelTree, SIGNAL(RemoteChannelMuteChanged(int, int, bool)),
           this, SLOT(RemoteChannelMuteChanged(int, int, bool)));
 
@@ -194,11 +192,11 @@ void MainWindow::setupChannelTree()
 {
   int i, ch;
   for (i = 0; (ch = client.EnumLocalChannels(i)) != -1; i++) {
-    bool broadcast, mute;
-    const char *name = client.GetLocalChannelInfo(ch, NULL, NULL, &broadcast);
+    bool mute;
+    const char *name = client.GetLocalChannelInfo(ch, NULL, NULL, NULL);
     client.GetLocalChannelMonitoring(ch, NULL, NULL, &mute, NULL);
 
-    channelTree->addLocalChannel(ch, QString::fromUtf8(name), mute, broadcast);
+    channelTree->addLocalChannel(ch, QString::fromUtf8(name), mute);
   }
 }
 
@@ -609,11 +607,6 @@ void MainWindow::MetronomeMuteChanged(bool mute)
 void MainWindow::LocalChannelMuteChanged(int ch, bool mute)
 {
   client.SetLocalChannelMonitoring(ch, false, 0, false, 0, true, mute, false, false);
-}
-
-void MainWindow::LocalChannelBroadcastChanged(int ch, bool broadcast)
-{
-  client.SetLocalChannelInfo(ch, NULL, false, 0, false, 0, true, broadcast);
 }
 
 void MainWindow::RemoteChannelMuteChanged(int useridx, int channelidx, bool mute)
