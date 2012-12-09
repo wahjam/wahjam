@@ -66,7 +66,6 @@ private slots:
   void ClientStatusChanged(int newStatus);
   void BeatsPerIntervalChanged(int bpm);
   void BeatsPerMinuteChanged(int bpi);
-  void MetronomeMuteChanged(bool mute);
   void LocalChannelMuteChanged(int ch, bool mute);
   void RemoteChannelMuteChanged(int useridx, int channelidx, bool mute);
   void ShowAboutDialog();

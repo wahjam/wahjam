@@ -21,8 +21,7 @@
 
 enum
 {
-  ItemTypeMetronome = 0,
-  ItemTypeLocalChannel,
+  ItemTypeLocalChannel = 0,
   ItemTypeRemoteChannel,
 
   ItemTypeRole = Qt::UserRole,
@@ -39,8 +38,6 @@ ChannelTreeWidget::ChannelTreeWidget(QWidget *parent)
   setSelectionMode(QAbstractItemView::NoSelection);
 
   QTreeWidgetItem *local = addRootItem("Local");
-  QTreeWidgetItem *metronome = addChannelItem(local, "Metronome");
-  metronome->setData(0, ItemTypeRole, ItemTypeMetronome);
 
   connect(this, SIGNAL(itemChanged(QTreeWidgetItem*, int)),
           this, SLOT(handleItemChanged(QTreeWidgetItem*, int)));
@@ -82,11 +79,6 @@ void ChannelTreeWidget::handleItemChanged(QTreeWidgetItem *item, int column)
 
   bool state = item->data(column, Qt::CheckStateRole).toBool();
   switch (itemType.toInt(NULL)) {
-  case ItemTypeMetronome:
-    if (column == 1) {
-      emit MetronomeMuteChanged(state);
-    }
-    break;
   case ItemTypeLocalChannel:
   {
     int ch = item->data(0, ChannelIndexRole).toInt(NULL);

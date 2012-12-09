@@ -56,7 +56,6 @@ public:
   };
 
 signals:
-  void MetronomeMuteChanged(bool mute);
   void LocalChannelMuteChanged(int ch, bool mute);
   void RemoteChannelMuteChanged(int useridx, int channelidx, bool mute);
 

@@ -114,8 +114,6 @@ MainWindow::MainWindow(QWidget *parent)
 
   channelTree = new ChannelTreeWidget(this);
   setupChannelTree();
-  connect(channelTree, SIGNAL(MetronomeMuteChanged(bool)),
-          this, SLOT(MetronomeMuteChanged(bool)));
   connect(channelTree, SIGNAL(LocalChannelMuteChanged(int, bool)),
           this, SLOT(LocalChannelMuteChanged(int, bool)));
   connect(channelTree, SIGNAL(RemoteChannelMuteChanged(int, int, bool)),
@@ -605,11 +603,6 @@ void MainWindow::SendChatMessage(const QString &line)
   if (!connected) {
     chatOutput->addErrorMessage("not connected to a server.");
   }
-}
-
-void MainWindow::MetronomeMuteChanged(bool mute)
-{
-  client.config_metronome_mute = mute;
 }
 
 void MainWindow::LocalChannelMuteChanged(int ch, bool mute)
