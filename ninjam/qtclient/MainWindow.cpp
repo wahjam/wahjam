@@ -210,6 +210,14 @@ void MainWindow::setupStatusBar()
   xmitButton->setChecked(true);
   statusBar()->addPermanentWidget(xmitButton);
 
+  QToolButton *metronomeButton = new QToolButton(this);
+  metronomeButton->setText("Metronome");
+  metronomeButton->setCheckable(true);
+  connect(metronomeButton, SIGNAL(toggled(bool)),
+          this, SLOT(MetronomeToggled(bool)));
+  metronomeButton->setChecked(true);
+  statusBar()->addPermanentWidget(metronomeButton);
+
   bpmLabel = new QLabel(this);
   bpmLabel->setFrameStyle(QFrame::Panel | QFrame::Sunken);
   statusBar()->addPermanentWidget(bpmLabel);
@@ -642,4 +650,9 @@ void MainWindow::XmitToggled(bool checked)
   for (i = 0; (ch = client.EnumLocalChannels(i)) != -1; i++) {
     client.SetLocalChannelInfo(ch, NULL, false, 0, false, 0, true, checked);
   }
+}
+
+void MainWindow::MetronomeToggled(bool checked)
+{
+  client.config_metronome_mute = !checked;
 }

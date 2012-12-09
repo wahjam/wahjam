@@ -73,6 +73,7 @@ private slots:
   void VoteBPMDialog();
   void VoteBPIDialog();
   void XmitToggled(bool checked);
+  void MetronomeToggled(bool checked);
 
 private:
   static MainWindow *instance;
