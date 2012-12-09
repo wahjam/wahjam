@@ -20,6 +20,7 @@
 #include <QMessageBox>
 #include <QVBoxLayout>
 #include <QPushButton>
+#include <QToolButton>
 #include <QSplitter>
 #include <QMenuBar>
 #include <QMenu>
@@ -113,12 +114,8 @@ MainWindow::MainWindow(QWidget *parent)
 
   channelTree = new ChannelTreeWidget(this);
   setupChannelTree();
-  connect(channelTree, SIGNAL(MetronomeMuteChanged(bool)),
-          this, SLOT(MetronomeMuteChanged(bool)));
   connect(channelTree, SIGNAL(LocalChannelMuteChanged(int, bool)),
           this, SLOT(LocalChannelMuteChanged(int, bool)));
-  connect(channelTree, SIGNAL(LocalChannelBroadcastChanged(int, bool)),
-          this, SLOT(LocalChannelBroadcastChanged(int, bool)));
   connect(channelTree, SIGNAL(RemoteChannelMuteChanged(int, int, bool)),
           this, SLOT(RemoteChannelMuteChanged(int, int, bool)));
 
@@ -193,16 +190,32 @@ void MainWindow::setupChannelTree()
 {
   int i, ch;
   for (i = 0; (ch = client.EnumLocalChannels(i)) != -1; i++) {
-    bool broadcast, mute;
-    const char *name = client.GetLocalChannelInfo(ch, NULL, NULL, &broadcast);
+    bool mute;
+    const char *name = client.GetLocalChannelInfo(ch, NULL, NULL, NULL);
     client.GetLocalChannelMonitoring(ch, NULL, NULL, &mute, NULL);
 
-    channelTree->addLocalChannel(ch, QString::fromUtf8(name), mute, broadcast);
+    channelTree->addLocalChannel(ch, QString::fromUtf8(name), mute);
   }
 }
 
 void MainWindow::setupStatusBar()
 {
+  QToolButton *xmitButton = new QToolButton(this);
+  xmitButton->setText("Xmit");
+  xmitButton->setCheckable(true);
+  connect(xmitButton, SIGNAL(toggled(bool)),
+          this, SLOT(XmitToggled(bool)));
+  xmitButton->setChecked(true);
+  statusBar()->addPermanentWidget(xmitButton);
+
+  QToolButton *metronomeButton = new QToolButton(this);
+  metronomeButton->setText("Metronome");
+  metronomeButton->setCheckable(true);
+  connect(metronomeButton, SIGNAL(toggled(bool)),
+          this, SLOT(MetronomeToggled(bool)));
+  metronomeButton->setChecked(true);
+  statusBar()->addPermanentWidget(metronomeButton);
+
   bpmLabel = new QLabel(this);
   bpmLabel->setFrameStyle(QFrame::Panel | QFrame::Sunken);
   statusBar()->addPermanentWidget(bpmLabel);
@@ -592,19 +605,9 @@ void MainWindow::SendChatMessage(const QString &line)
   }
 }
 
-void MainWindow::MetronomeMuteChanged(bool mute)
-{
-  client.config_metronome_mute = mute;
-}
-
 void MainWindow::LocalChannelMuteChanged(int ch, bool mute)
 {
   client.SetLocalChannelMonitoring(ch, false, 0, false, 0, true, mute, false, false);
-}
-
-void MainWindow::LocalChannelBroadcastChanged(int ch, bool broadcast)
-{
-  client.SetLocalChannelInfo(ch, NULL, false, 0, false, 0, true, broadcast);
 }
 
 void MainWindow::RemoteChannelMuteChanged(int useridx, int channelidx, bool mute)
@@ -634,3 +637,15 @@ void MainWindow::VoteBPIDialog()
   }
 }
 
+void MainWindow::XmitToggled(bool checked)
+{
+  int i, ch;
+  for (i = 0; (ch = client.EnumLocalChannels(i)) != -1; i++) {
+    client.SetLocalChannelInfo(ch, NULL, false, 0, false, 0, true, checked);
+  }
+}
+
+void MainWindow::MetronomeToggled(bool checked)
+{
+  client.config_metronome_mute = !checked;
+}

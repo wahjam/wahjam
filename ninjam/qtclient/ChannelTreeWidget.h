@@ -28,7 +28,7 @@ class ChannelTreeWidget : public QTreeWidget
 public:
   ChannelTreeWidget(QWidget *parent = 0);
 
-  void addLocalChannel(int ch, const QString &name, bool mute, bool broadcast);
+  void addLocalChannel(int ch, const QString &name, bool mute);
 
   /*
    * Remote user and channel updates must be performed by enumerating all users
@@ -56,21 +56,15 @@ public:
   };
 
 signals:
-  void MetronomeMuteChanged(bool mute);
   void LocalChannelMuteChanged(int ch, bool mute);
-  void LocalChannelBroadcastChanged(int ch, bool broadcast);
   void RemoteChannelMuteChanged(int useridx, int channelidx, bool mute);
 
 private slots:
   void handleItemChanged(QTreeWidgetItem *item, int column);
 
 private:
-  enum ChannelFlags {
-    CF_BROADCAST = 0x1,
-  };
-
   QTreeWidgetItem *addRootItem(const QString &text);
-  QTreeWidgetItem *addChannelItem(QTreeWidgetItem *parent, const QString &text, int flags);
+  QTreeWidgetItem *addChannelItem(QTreeWidgetItem *parent, const QString &text);
 };
 
 #endif /* _CHANNELTREEWIDGET_H */

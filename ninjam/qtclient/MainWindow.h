@@ -66,13 +66,13 @@ private slots:
   void ClientStatusChanged(int newStatus);
   void BeatsPerIntervalChanged(int bpm);
   void BeatsPerMinuteChanged(int bpi);
-  void MetronomeMuteChanged(bool mute);
   void LocalChannelMuteChanged(int ch, bool mute);
-  void LocalChannelBroadcastChanged(int ch, bool broadcast);
   void RemoteChannelMuteChanged(int useridx, int channelidx, bool mute);
   void ShowAboutDialog();
   void VoteBPMDialog();
   void VoteBPIDialog();
+  void XmitToggled(bool checked);
+  void MetronomeToggled(bool checked);
 
 private:
   static MainWindow *instance;
