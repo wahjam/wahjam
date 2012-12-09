@@ -73,6 +73,7 @@ private slots:
   void ShowAboutDialog();
   void VoteBPMDialog();
   void VoteBPIDialog();
+  void XmitToggled(bool checked);
 
 private:
   static MainWindow *instance;

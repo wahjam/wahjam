@@ -20,6 +20,7 @@
 #include <QMessageBox>
 #include <QVBoxLayout>
 #include <QPushButton>
+#include <QToolButton>
 #include <QSplitter>
 #include <QMenuBar>
 #include <QMenu>
@@ -203,6 +204,14 @@ void MainWindow::setupChannelTree()
 
 void MainWindow::setupStatusBar()
 {
+  QToolButton *xmitButton = new QToolButton(this);
+  xmitButton->setText("Xmit");
+  xmitButton->setCheckable(true);
+  connect(xmitButton, SIGNAL(toggled(bool)),
+          this, SLOT(XmitToggled(bool)));
+  xmitButton->setChecked(true);
+  statusBar()->addPermanentWidget(xmitButton);
+
   bpmLabel = new QLabel(this);
   bpmLabel->setFrameStyle(QFrame::Panel | QFrame::Sunken);
   statusBar()->addPermanentWidget(bpmLabel);
@@ -634,3 +643,10 @@ void MainWindow::VoteBPIDialog()
   }
 }
 
+void MainWindow::XmitToggled(bool checked)
+{
+  int i, ch;
+  for (i = 0; (ch = client.EnumLocalChannels(i)) != -1; i++) {
+    client.SetLocalChannelInfo(ch, NULL, false, 0, false, 0, true, checked);
+  }
+}
