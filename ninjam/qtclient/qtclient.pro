@@ -32,6 +32,7 @@ HEADERS += ../netmsg.h
 HEADERS += ../njclient.h
 HEADERS += logging.h
 HEADERS += ../audiostream.h
+HEADERS += ../VSTPlugin.h
 
 SOURCES += qtclient.cpp
 SOURCES += MainWindow.cpp
@@ -49,3 +50,4 @@ SOURCES += ../netmsg.cpp
 SOURCES += ../njclient.cpp
 SOURCES += ../njmisc.cpp
 SOURCES += ../audiostream_pa.cpp
+SOURCES += ../VSTPlugin.cpp
