@@ -33,6 +33,7 @@ HEADERS += ../njclient.h
 HEADERS += logging.h
 HEADERS += ../audiostream.h
 HEADERS += ../VSTPlugin.h
+HEADERS += ../VSTProcessor.h
 
 SOURCES += qtclient.cpp
 SOURCES += MainWindow.cpp
@@ -51,3 +52,4 @@ SOURCES += ../njclient.cpp
 SOURCES += ../njmisc.cpp
 SOURCES += ../audiostream_pa.cpp
 SOURCES += ../VSTPlugin.cpp
+SOURCES += ../VSTProcessor.cpp
