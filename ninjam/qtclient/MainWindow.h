@@ -34,8 +34,10 @@
 #include "ChannelTreeWidget.h"
 #include "MetronomeBar.h"
 #include "ChatOutput.h"
+#include "VSTConfigDialog.h"
 #include "../njclient.h"
 #include "../audiostream.h"
+#include "../VSTProcessor.h"
 
 class MainWindow : public QMainWindow
 {
@@ -55,6 +57,7 @@ signals:
 
 public slots:
   void ShowAudioConfigDialog();
+  void ShowVSTConfigDialog();
   void ShowConnectDialog();
   void Disconnect();
   void SendChatMessage(const QString &line);
@@ -79,6 +82,8 @@ private:
 
   NJClient client;
   audioStreamer *audio;
+  VSTProcessor *vstProcessor;
+  VSTConfigDialog *vstConfigDialog;
   QNetworkAccessManager *netManager;
   ChatOutput *chatOutput;
   QLineEdit *chatInput;

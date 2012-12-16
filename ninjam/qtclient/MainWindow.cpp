@@ -35,6 +35,9 @@
 #include "MainWindow.h"
 #include "ConnectDialog.h"
 #include "PortAudioConfigDialog.h"
+#include "../VSTPlugin.h"
+#include "../VSTProcessor.h"
+#include "VSTConfigDialog.h"
 #include "../njmisc.h"
 
 MainWindow *MainWindow::instance; /* singleton */
@@ -83,11 +86,13 @@ MainWindow::MainWindow(QWidget *parent)
   connectAction = fileMenu->addAction(tr("&Connect..."));
   disconnectAction = fileMenu->addAction(tr("&Disconnect"));
   audioConfigAction = fileMenu->addAction(tr("Configure &audio..."));
+  QAction *vstConfigAction = fileMenu->addAction(tr("Configure &VST..."));
   QAction *exitAction = fileMenu->addAction(tr("E&xit"));
   exitAction->setShortcuts(QKeySequence::Quit);
   connect(connectAction, SIGNAL(triggered()), this, SLOT(ShowConnectDialog()));
   connect(disconnectAction, SIGNAL(triggered()), this, SLOT(Disconnect()));
   connect(audioConfigAction, SIGNAL(triggered()), this, SLOT(ShowAudioConfigDialog()));
+  connect(vstConfigAction, SIGNAL(triggered()), this, SLOT(ShowVSTConfigDialog()));
   connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
 
   voteMenu = menuBar()->addMenu(tr("&Vote"));
@@ -178,6 +183,9 @@ MainWindow::MainWindow(QWidget *parent)
           metronomeBar, SLOT(setBeatsPerInterval(int)));
   connect(&client, SIGNAL(currentBeatChanged(int)),
           metronomeBar, SLOT(setCurrentBeat(int)));
+
+  vstProcessor = new VSTProcessor(this);
+  vstConfigDialog = new VSTConfigDialog(vstProcessor, this);
 }
 
 MainWindow::~MainWindow()
@@ -262,6 +270,8 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
     return;
   }
 
+  vstProcessor->attach(&client, 0);
+
   setWindowTitle(tr("Wahjam - %1").arg(host));
 
   client.Connect(host.toAscii().data(),
@@ -275,6 +285,8 @@ void MainWindow::Disconnect()
   audio = NULL;
 
   client.Disconnect();
+  vstProcessor->detach();
+
   QString workDirPath = QString::fromUtf8(client.GetWorkDir());
   bool keepWorkDir = client.config_savelocalaudio != -1;
   client.SetWorkDir(NULL);
@@ -384,6 +396,11 @@ void MainWindow::ShowAudioConfigDialog()
     settings->setValue("audio/inputDevice", audioDialog.inputDevice());
     settings->setValue("audio/outputDevice", audioDialog.outputDevice());
   }
+}
+
+void MainWindow::ShowVSTConfigDialog()
+{
+  vstConfigDialog->show();
 }
 
 void MainWindow::ShowAboutDialog()
