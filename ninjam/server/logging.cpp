@@ -73,7 +73,12 @@ void logInit(const QString &filename)
   if (!logfp) {
     logfp = stdout;
   }
+#ifdef Q_WS_WIN
+  /* Windows does not support line-buffering, so use no buffering */
+  setvbuf(logfp, NULL, _IONBF, 0);
+#else
   setvbuf(logfp, NULL, _IOLBF, 0); /* use line buffering */
+#endif
 
   qInstallMsgHandler(logMsgHandler);
 }
