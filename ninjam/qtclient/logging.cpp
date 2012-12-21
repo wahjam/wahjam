@@ -52,7 +52,7 @@ static void logMsgHandler(QtMsgType type, const char *msg)
 /* Called at startup */
 static void logSystemInformation()
 {
-  qDebug("CPU architecture %zu-bit %s", QSysInfo::WordSize,
+  qDebug("CPU architecture %d-bit %s", QSysInfo::WordSize,
          QSysInfo::ByteOrder == QSysInfo::LittleEndian ?
          "little-endian" : "big-endian");
 
