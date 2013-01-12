@@ -614,7 +614,7 @@ void NJClient::Disconnect()
   bool removedUsers = x;
 
   for (x = 0; x < m_downloads.GetSize(); x ++) delete m_downloads.Get(x);
-
+  m_downloads.Empty();
 
   for (x = 0; x < m_locchannels.GetSize(); x ++) 
   {
@@ -632,7 +632,6 @@ void NJClient::Disconnect()
 
     c->m_bq.Clear();
   }
-  m_downloads.Empty();
 
   m_wavebq->Clear();
 
