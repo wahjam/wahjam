@@ -123,6 +123,7 @@ public:
   void GetPosition(int *pos, int *length);  // positions in samples
   int GetLoopCount() { return m_loopcnt; }  
   unsigned int GetSessionPosition(); // returns milliseconds
+  int GetSampleRate() { return m_srate; }
 
   int GetNumUsers() { return m_remoteusers.GetSize(); }
   char *GetUserState(int idx, float *vol=0, float *pan=0, bool *mute=0);
