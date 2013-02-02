@@ -115,7 +115,45 @@ QString PortAudioConfigDialog::hostAPI() const
 void PortAudioConfigDialog::setHostAPI(const QString &name)
 {
   int i = hostAPIList->findText(name);
-  if (i >= 0) {
+  if (i != -1) {
+    hostAPIList->setCurrentIndex(i);
+    return;
+  }
+
+  /* Pick default host API based on this list of priorities */
+  const int hostAPIPriority[] = {
+    0, /* paInDevelopment */
+    1, /* paDirectSound */
+    0, /* paMME */
+    4, /* paASIO */
+    0, /* paSoundManager */
+    1, /* paCoreAudio */
+    0, /* <empty> */
+    0, /* paOSS */
+    1, /* paALSA */
+    0, /* paAL */
+    0, /* paBeOS */
+    3, /* paWDMKS */
+    2, /* paJACK */
+    2, /* paWASAPI */
+    0, /* paAudioScienceHPI */
+  };
+  const PaHostApiTypeId numTypes =
+    (PaHostApiTypeId)(sizeof(hostAPIPriority) / sizeof(hostAPIPriority[0]));
+  int pri = -1;
+
+  for (int j = 0; j < hostAPIList->count(); j++) {
+    PaHostApiIndex apiIndex = hostAPIList->itemData(j).toInt(NULL);
+    const PaHostApiInfo *hostAPIInfo = Pa_GetHostApiInfo(apiIndex);
+    if (!hostAPIInfo || hostAPIInfo->type >= numTypes) {
+      continue;
+    }
+    if (hostAPIPriority[hostAPIInfo->type] > pri) {
+      pri = hostAPIPriority[hostAPIInfo->type];
+      i = j;
+    }
+  }
+  if (i != -1) {
     hostAPIList->setCurrentIndex(i);
   }
 }
