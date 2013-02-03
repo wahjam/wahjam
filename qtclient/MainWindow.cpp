@@ -35,10 +35,10 @@
 #include "MainWindow.h"
 #include "ConnectDialog.h"
 #include "PortAudioConfigDialog.h"
-#include "../VSTPlugin.h"
-#include "../VSTProcessor.h"
+#include "ninjam/VSTPlugin.h"
+#include "ninjam/VSTProcessor.h"
 #include "VSTConfigDialog.h"
-#include "../njmisc.h"
+#include "ninjam/njmisc.h"
 
 MainWindow *MainWindow::instance; /* singleton */
 
