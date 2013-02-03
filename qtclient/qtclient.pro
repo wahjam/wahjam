@@ -9,9 +9,12 @@ DEFINES += COMMIT_ID=\'\"$$system(git rev-parse HEAD)\"\'
 
 TEMPLATE = app
 TARGET = wahjam
-DEPENDPATH += .
+DEPENDPATH += ..
 INCLUDEPATH += ..
 QT += network
+
+LIBS += -L../common -lcommon
+PRE_TARGETDEPS += ../common/libcommon.a
 
 QMAKE_CXXFLAGS += -Wno-write-strings
 CONFIG += link_pkgconfig
@@ -30,10 +33,7 @@ HEADERS += MetronomeBar.h
 HEADERS += ChatOutput.h
 HEADERS += AddVSTPluginDialog.h
 HEADERS += VSTConfigDialog.h
-HEADERS += ../common/netmsg.h
-HEADERS += ../common/njclient.h
 HEADERS += logging.h
-HEADERS += ../common/audiostream.h
 HEADERS += VSTPlugin.h
 HEADERS += VSTProcessor.h
 
@@ -48,10 +48,5 @@ SOURCES += ChatOutput.cpp
 SOURCES += AddVSTPluginDialog.cpp
 SOURCES += VSTConfigDialog.cpp
 SOURCES += logging.cpp
-SOURCES += ../common/mpb.cpp
-SOURCES += ../common/netmsg.cpp
-SOURCES += ../common/njclient.cpp
-SOURCES += ../common/njmisc.cpp
-SOURCES += ../common/audiostream_pa.cpp
 SOURCES += VSTPlugin.cpp
 SOURCES += VSTProcessor.cpp
