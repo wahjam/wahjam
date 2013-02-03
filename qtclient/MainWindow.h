@@ -37,7 +37,7 @@
 #include "VSTConfigDialog.h"
 #include "common/njclient.h"
 #include "common/audiostream.h"
-#include "common/VSTProcessor.h"
+#include "VSTProcessor.h"
 
 class MainWindow : public QMainWindow
 {

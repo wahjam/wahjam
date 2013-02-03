@@ -23,7 +23,7 @@
 #include <QFileDialog>
 #include <QLibrary>
 #include <QApplication>
-#include "common/VSTPlugin.h"
+#include "VSTPlugin.h"
 #include "AddVSTPluginDialog.h"
 
 AddVSTPluginDialog::AddVSTPluginDialog(QWidget *parent)

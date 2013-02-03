@@ -35,8 +35,8 @@
 #include "MainWindow.h"
 #include "ConnectDialog.h"
 #include "PortAudioConfigDialog.h"
-#include "common/VSTPlugin.h"
-#include "common/VSTProcessor.h"
+#include "VSTPlugin.h"
+#include "VSTProcessor.h"
 #include "VSTConfigDialog.h"
 #include "common/njmisc.h"
 

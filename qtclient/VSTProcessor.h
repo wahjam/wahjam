@@ -23,7 +23,7 @@
 #include <QTimer>
 #include <QMutex>
 #include "VSTPlugin.h"
-#include "njclient.h"
+#include "common/njclient.h"
 
 class VSTProcessor : public QObject
 {
