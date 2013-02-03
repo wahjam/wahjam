@@ -9,10 +9,13 @@ DEFINES += COMMIT_ID=\'\"$$system(git rev-parse HEAD)\"\'
 
 TEMPLATE = app
 TARGET = wahjamsrv
-DEPENDPATH += .
+DEPENDPATH += ..
 INCLUDEPATH += ..
 QT -= gui
 QT += network
+
+LIBS += -L../common -lcommon
+PRE_TARGETDEPS += ../common/libcommon.a
 
 # Code in common/ does not use wide characters
 win32:DEFINES -= UNICODE
@@ -30,16 +33,12 @@ HEADERS += usercon.h \
            Server.h \
            logging.h \
            ninjamsrv.h \
-           ../common/netmsg.h \
            ../WDL/queue.h \
            ../WDL/heapbuf.h \
-           ../common/mpb.h \
            ../WDL/string.h \
            ../WDL/ptrlist.h \
            ../WDL/lineparse.h
 SOURCES += ninjamsrv.cpp \
            logging.cpp \
            usercon.cpp \
-           Server.cpp \
-           ../common/netmsg.cpp \
-           ../common/mpb.cpp
+           Server.cpp
