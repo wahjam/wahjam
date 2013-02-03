@@ -46,7 +46,6 @@
 #include "../common/mpb.h"
 #include "usercon.h"
 
-#include "../WDL/rng.h"
 #include "../WDL/sha.h"
 #include "../WDL/lineparse.h"
 #include "../WDL/string.h"
@@ -613,17 +612,7 @@ int main(int argc, char **argv)
     exit(1);
   }
 
-#ifdef _WIN32
-  DWORD v=GetTickCount();
-  WDL_RNG_addentropy(&v,sizeof(v));
-  v=(DWORD)time(NULL);
-  WDL_RNG_addentropy(&v,sizeof(v));
-#else
-  time_t v=time(NULL);
-  WDL_RNG_addentropy(&v,sizeof(v));
-  int pid=getpid();
-  WDL_RNG_addentropy(&pid,sizeof(pid));
-
+#ifndef _WIN32
   if (g_config.setuid != -1) setuid(g_config.setuid);
 
   if (g_config.pidFilename.Get()[0])
@@ -631,7 +620,7 @@ int main(int argc, char **argv)
     FILE *fp=fopen(g_config.pidFilename.Get(),"w");
     if (fp)
     {
-      fprintf(fp,"%d\n",pid);
+      fprintf(fp,"%d\n",getpid());
       fclose(fp);
     }
     else qWarning("Error opening PID file '%s'", g_config.pidFilename.Get());
