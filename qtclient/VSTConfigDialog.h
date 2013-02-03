@@ -22,7 +22,7 @@
 #include <QDialog>
 #include <QListWidget>
 #include <QPushButton>
-#include "ninjam/VSTProcessor.h"
+#include "common/VSTProcessor.h"
 #include "AddVSTPluginDialog.h"
 
 class VSTConfigDialog : public QDialog

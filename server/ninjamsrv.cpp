@@ -42,8 +42,8 @@
 
 #include <QCoreApplication>
 
-#include "../ninjam/netmsg.h"
-#include "../ninjam/mpb.h"
+#include "../common/netmsg.h"
+#include "../common/mpb.h"
 #include "usercon.h"
 
 #include "../WDL/rng.h"

@@ -14,7 +14,7 @@ INCLUDEPATH += ..
 QT -= gui
 QT += network
 
-# Core ninjam/ code does not use wide characters
+# Code in common/ does not use wide characters
 win32:DEFINES -= UNICODE
 
 # Build console application
@@ -30,10 +30,10 @@ HEADERS += usercon.h \
            Server.h \
            logging.h \
            ninjamsrv.h \
-           ../ninjam/netmsg.h \
+           ../common/netmsg.h \
            ../WDL/queue.h \
            ../WDL/heapbuf.h \
-           ../ninjam/mpb.h \
+           ../common/mpb.h \
            ../WDL/string.h \
            ../WDL/sha.h \
            ../WDL/ptrlist.h \
@@ -43,7 +43,7 @@ SOURCES += ninjamsrv.cpp \
            logging.cpp \
            usercon.cpp \
            Server.cpp \
-           ../ninjam/netmsg.cpp \
-           ../ninjam/mpb.cpp \
+           ../common/netmsg.cpp \
+           ../common/mpb.cpp \
            ../WDL/sha.cpp \
            ../WDL/rng.cpp

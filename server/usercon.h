@@ -35,11 +35,11 @@
 #include <QSignalMapper>
 #include <QTimer>
 #include <QStringList>
-#include "../ninjam/netmsg.h"
+#include "../common/netmsg.h"
 #include "../WDL/string.h"
 #include "../WDL/sha.h"
 #include "../WDL/ptrlist.h"
-#include "../ninjam/mpb.h"
+#include "../common/mpb.h"
 
 #define MAX_USER_CHANNELS 32
 #define MAX_USERS 64

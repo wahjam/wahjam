@@ -35,9 +35,9 @@
 #include "MetronomeBar.h"
 #include "ChatOutput.h"
 #include "VSTConfigDialog.h"
-#include "ninjam/njclient.h"
-#include "ninjam/audiostream.h"
-#include "ninjam/VSTProcessor.h"
+#include "common/njclient.h"
+#include "common/audiostream.h"
+#include "common/VSTProcessor.h"
 
 class MainWindow : public QMainWindow
 {

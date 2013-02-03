@@ -40,7 +40,7 @@
 
 #include "ninjamsrv.h"
 #include "usercon.h"
-#include "../ninjam/mpb.h"
+#include "../common/mpb.h"
 
 #include "../WDL/rng.h"
 #include "../WDL/sha.h"

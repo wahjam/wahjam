@@ -17,7 +17,7 @@ QMAKE_CXXFLAGS += -Wno-write-strings
 CONFIG += link_pkgconfig
 PKGCONFIG += vorbis vorbisenc portaudio-2.0
 
-# Core ninjam/ code does not use wide characters
+# Code in common/ does not use wide characters
 win32:DEFINES -= UNICODE
 
 # Input
@@ -30,12 +30,12 @@ HEADERS += MetronomeBar.h
 HEADERS += ChatOutput.h
 HEADERS += AddVSTPluginDialog.h
 HEADERS += VSTConfigDialog.h
-HEADERS += ../ninjam/netmsg.h
-HEADERS += ../ninjam/njclient.h
+HEADERS += ../common/netmsg.h
+HEADERS += ../common/njclient.h
 HEADERS += logging.h
-HEADERS += ../ninjam/audiostream.h
-HEADERS += ../ninjam/VSTPlugin.h
-HEADERS += ../ninjam/VSTProcessor.h
+HEADERS += ../common/audiostream.h
+HEADERS += ../common/VSTPlugin.h
+HEADERS += ../common/VSTProcessor.h
 
 SOURCES += qtclient.cpp
 SOURCES += MainWindow.cpp
@@ -50,10 +50,10 @@ SOURCES += VSTConfigDialog.cpp
 SOURCES += logging.cpp
 SOURCES += ../WDL/rng.cpp
 SOURCES += ../WDL/sha.cpp
-SOURCES += ../ninjam/mpb.cpp
-SOURCES += ../ninjam/netmsg.cpp
-SOURCES += ../ninjam/njclient.cpp
-SOURCES += ../ninjam/njmisc.cpp
-SOURCES += ../ninjam/audiostream_pa.cpp
-SOURCES += ../ninjam/VSTPlugin.cpp
-SOURCES += ../ninjam/VSTProcessor.cpp
+SOURCES += ../common/mpb.cpp
+SOURCES += ../common/netmsg.cpp
+SOURCES += ../common/njclient.cpp
+SOURCES += ../common/njmisc.cpp
+SOURCES += ../common/audiostream_pa.cpp
+SOURCES += ../common/VSTPlugin.cpp
+SOURCES += ../common/VSTProcessor.cpp
