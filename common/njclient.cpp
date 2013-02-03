@@ -293,23 +293,6 @@ static void type_to_string(unsigned int t, char *out)
   else *out=0;
 }
 
-static unsigned int string_to_type(char *in)
-{
-  int n;
-  unsigned int ret=*in;
-  if (*in == ' ' || !is_type_char_valid(*in)) return 0;
-  in++;
-  for (n = 0; n < 3; n ++)
-  {
-    if (!is_type_char_valid(*in)) break;
-    ret|=(*in<<(8+8*n));
-    in++;
-  }
-  if (*in) return 0;
-  return ret;
-}
-
-
 void NJClient::makeFilenameFromGuid(WDL_String *s, unsigned char *guid)
 {
   char buf[256];
