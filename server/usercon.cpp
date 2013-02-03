@@ -40,10 +40,10 @@
 
 #include "ninjamsrv.h"
 #include "usercon.h"
-#include "../mpb.h"
+#include "../ninjam/mpb.h"
 
-#include "../../WDL/rng.h"
-#include "../../WDL/sha.h"
+#include "../WDL/rng.h"
+#include "../WDL/sha.h"
 
 
 #ifdef _WIN32

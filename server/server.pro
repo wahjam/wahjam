@@ -8,9 +8,9 @@ DEFINES += VERSION=\'\"$$VERSION\"\'
 DEFINES += COMMIT_ID=\'\"$$system(git rev-parse HEAD)\"\'
 
 TEMPLATE = app
-TARGET = 
+TARGET = wahjamsrv
 DEPENDPATH += .
-INCLUDEPATH += .
+INCLUDEPATH += ..
 QT -= gui
 QT += network
 
@@ -30,20 +30,20 @@ HEADERS += usercon.h \
            Server.h \
            logging.h \
            ninjamsrv.h \
-           ../netmsg.h \
-           ../../WDL/queue.h \
-           ../../WDL/heapbuf.h \
-           ../mpb.h \
-           ../../WDL/string.h \
-           ../../WDL/sha.h \
-           ../../WDL/ptrlist.h \
-           ../../WDL/rng.h \
-           ../../WDL/lineparse.h
+           ../ninjam/netmsg.h \
+           ../WDL/queue.h \
+           ../WDL/heapbuf.h \
+           ../ninjam/mpb.h \
+           ../WDL/string.h \
+           ../WDL/sha.h \
+           ../WDL/ptrlist.h \
+           ../WDL/rng.h \
+           ../WDL/lineparse.h
 SOURCES += ninjamsrv.cpp \
            logging.cpp \
            usercon.cpp \
            Server.cpp \
-           ../netmsg.cpp \
-           ../mpb.cpp \
-           ../../WDL/sha.cpp \
-           ../../WDL/rng.cpp
+           ../ninjam/netmsg.cpp \
+           ../ninjam/mpb.cpp \
+           ../WDL/sha.cpp \
+           ../WDL/rng.cpp

@@ -42,14 +42,14 @@
 
 #include <QCoreApplication>
 
-#include "../netmsg.h"
-#include "../mpb.h"
+#include "../ninjam/netmsg.h"
+#include "../ninjam/mpb.h"
 #include "usercon.h"
 
-#include "../../WDL/rng.h"
-#include "../../WDL/sha.h"
-#include "../../WDL/lineparse.h"
-#include "../../WDL/string.h"
+#include "../WDL/rng.h"
+#include "../WDL/sha.h"
+#include "../WDL/lineparse.h"
+#include "../WDL/string.h"
 
 #include "Server.h"
 #ifndef _WIN32
