@@ -1062,7 +1062,7 @@ int NJClient::Run() // nonzero if sleep ok
         // encode data
         if (!lc->m_enc)
         {
-          lc->m_enc = new I_NJEncoder(m_srate,1,lc->m_enc_bitrate_used = lc->bitrate,WDL_RNG_int32());
+          lc->m_enc = new I_NJEncoder(m_srate,1,lc->m_enc_bitrate_used = lc->bitrate,0);
         }
 
         if (lc->m_need_header)
@@ -2205,7 +2205,7 @@ void NJClient::SetOggOutFile(FILE *fp, int srate, int nch, int bitrate)
   if (fp)
   {
     //fucko
-    m_oggComp=new I_NJEncoder(srate,nch,bitrate,WDL_RNG_int32());
+    m_oggComp=new I_NJEncoder(srate,nch,bitrate,0);
     m_oggWrite=fp;
   }
 #endif
