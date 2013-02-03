@@ -44,9 +44,6 @@
 #include "usercon.h"
 #include "../common/mpb.h"
 
-#include "../WDL/sha.h"
-
-
 #ifdef _WIN32
 #define strncasecmp strnicmp
 #endif
@@ -220,16 +217,13 @@ int User_Connection::OnRunAuth()
   name.append(QString(" [%1]").arg(m_lookup->username.Get()));
 
   {
-    WDL_SHA1 shatmp;
+    QCryptographicHash shatmp(QCryptographicHash::Sha1);
 
-    shatmp.add(m_lookup->sha1buf_user,sizeof(m_lookup->sha1buf_user));
+    shatmp.addData((const char *)m_lookup->sha1buf_user, sizeof(m_lookup->sha1buf_user));
+    shatmp.addData((const char *)m_challenge, sizeof(m_challenge));
 
-    shatmp.add(m_challenge,sizeof(m_challenge));
-
-    char buf[WDL_SHA1SIZE];
-    shatmp.result(buf);
-
-    if ((m_lookup->reqpass && memcmp(buf,m_lookup->sha1buf_request,WDL_SHA1SIZE)) || !m_lookup->user_valid)
+    QByteArray result = shatmp.result();
+    if ((m_lookup->reqpass && memcmp(result.constData(), m_lookup->sha1buf_request, result.length())) || !m_lookup->user_valid)
     {
       qDebug("%s: Refusing user, invalid login/password", name.toLatin1().constData());
       mpb_server_auth_reply bh;

@@ -35,7 +35,6 @@ HEADERS += usercon.h \
            ../WDL/heapbuf.h \
            ../common/mpb.h \
            ../WDL/string.h \
-           ../WDL/sha.h \
            ../WDL/ptrlist.h \
            ../WDL/lineparse.h
 SOURCES += ninjamsrv.cpp \
@@ -43,5 +42,4 @@ SOURCES += ninjamsrv.cpp \
            usercon.cpp \
            Server.cpp \
            ../common/netmsg.cpp \
-           ../common/mpb.cpp \
-           ../WDL/sha.cpp
+           ../common/mpb.cpp
