@@ -29,6 +29,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <QUuid>
+#include <QCryptographicHash>
 #include "njclient.h"
 #include "mpb.h"
 #include "../WDL/pcmfmtcvt.h"
@@ -700,16 +701,16 @@ void NJClient::processMessage(Net_Message *msg)
           }
           m_netcon->SetKeepAlive(m_connection_keepalive);
 
-          WDL_SHA1 tmp;
-          tmp.add(m_user.Get(),strlen(m_user.Get()));
-          tmp.add(":",1);
-          tmp.add(m_pass.Get(),strlen(m_pass.Get()));
-          tmp.result(repl.passhash);
+          QCryptographicHash tmp(QCryptographicHash::Sha1);
+          tmp.addData(m_user.Get(), strlen(m_user.Get()));
+          tmp.addData(":", 1);
+          tmp.addData(m_pass.Get(), strlen(m_pass.Get()));
+          memcpy(repl.passhash, tmp.result().constData(), sizeof(repl.passhash));
 
           tmp.reset(); // new auth method is SHA1(SHA1(user:pass)+challenge)
-          tmp.add(repl.passhash,sizeof(repl.passhash));
-          tmp.add(cha.challenge,sizeof(cha.challenge));
-          tmp.result(repl.passhash);               
+          tmp.addData((const char *)repl.passhash, (int)sizeof(repl.passhash));
+          tmp.addData((const char *)cha.challenge, (int)sizeof(cha.challenge));
+          memcpy(repl.passhash, tmp.result().constData(), sizeof(repl.passhash));
 
           m_netcon->Send(repl.build());
 
