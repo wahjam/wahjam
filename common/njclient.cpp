@@ -28,6 +28,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <QUuid>
 #include "njclient.h"
 #include "mpb.h"
 #include "../WDL/pcmfmtcvt.h"
@@ -1069,7 +1070,8 @@ int NJClient::Run() // nonzero if sleep ok
         {
           lc->m_need_header=false;
           {
-            WDL_RNG_bytes(lc->m_curwritefile.guid,sizeof(lc->m_curwritefile.guid));
+            QUuid guid = QUuid::createUuid();
+            memcpy(lc->m_curwritefile.guid, guid.toRfc4122().constData(), sizeof(lc->m_curwritefile.guid));
             char guidstr[64];
             guidtostr(lc->m_curwritefile.guid,guidstr);
             writeLog("local %s %d\n",guidstr,lc->channel_idx);
