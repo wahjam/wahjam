@@ -48,7 +48,6 @@ SOURCES += ChatOutput.cpp
 SOURCES += AddVSTPluginDialog.cpp
 SOURCES += VSTConfigDialog.cpp
 SOURCES += logging.cpp
-SOURCES += ../WDL/rng.cpp
 SOURCES += ../WDL/sha.cpp
 SOURCES += ../common/mpb.cpp
 SOURCES += ../common/netmsg.cpp

@@ -334,15 +334,6 @@ NJClient::NJClient(QObject *parent)
   m_wavebq=new BufferQueue;
   m_loopcnt=0;
   m_srate=48000;
-#ifdef _WIN32
-  DWORD v=GetTickCount();
-  WDL_RNG_addentropy(&v,sizeof(v));
-  v=(DWORD)time(NULL);
-  WDL_RNG_addentropy(&v,sizeof(v));
-#else
-  time_t v=time(NULL);
-  WDL_RNG_addentropy(&v,sizeof(v));
-#endif
 
   config_autosubscribe=1;
   config_savelocalaudio=0;

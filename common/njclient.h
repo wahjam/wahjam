@@ -57,7 +57,6 @@
 #include "../WDL/string.h"
 #include "../WDL/ptrlist.h"
 #include "../WDL/sha.h"
-#include "../WDL/rng.h"
 #include "../WDL/mutex.h"
 
 #include "../WDL/wavwrite.h"
