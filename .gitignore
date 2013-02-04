@@ -1,6 +1,7 @@
 tags
 Makefile
 *.o
+*.a
 moc_*.cpp
 server/wahjamsrv
 qtclient/wahjam
