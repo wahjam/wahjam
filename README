@@ -11,10 +11,10 @@ This code is licensed GPL v2 or later:
 Source tree layout
 ------------------
 
-  ninjam/
-    qtclient/       Qt client (cross-platform)
-    server/         Server
-  WDL/              Common library
+  common/         Core code
+  qtclient/       GUI client using Qt framework
+  server/         Server
+  WDL/            Cockos common library, see www.cockos.com/wdl/
 
 How to build the Qt client
 --------------------------
@@ -25,7 +25,6 @@ Install Ogg and Vorbis audio codec libraries from http://xiph.org/.
 
 Then run the following commands:
 
-  cd ninjam/wahjam
   qmake
   make
 
@@ -33,14 +32,7 @@ On Windows the recommended build environment for libogg and libvorbis is MinGW
 and MSYS from http://www.mingw.org/.  Build libogg and libvorbis inside MSYS,
 then use the Qt build environment to compile qtclient.  You may need to add the
 MSYS include/ and lib/ paths as QMAKE_CXXFLAGS -I and LIBS -L flags in
-ninjam/qtclient/qtclient.pro.
-
-How to build the other software
--------------------------------
-
-To build a particular target change into its directory and run make(1).  For
-the Mac OS X cocoaclient an Xcode project is available.  For the Windows
-winclient a Visual Studio project is available.
+qtclient/qtclient.pro.
 
 Cross-compiling the Qt client for Windows
 -----------------------------------------
