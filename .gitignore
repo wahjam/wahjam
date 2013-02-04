@@ -1,7 +1,6 @@
 tags
+Makefile
 *.o
 moc_*.cpp
 server/wahjamsrv
-server/Makefile
-qtclient/Makefile
 qtclient/wahjam
