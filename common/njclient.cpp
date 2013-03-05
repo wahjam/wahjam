@@ -364,7 +364,7 @@ void NJClient::_reinit()
   output_peaklevel=0.0;
 
   m_connection_keepalive=0;
-  m_status=-1;
+  m_status=NJC_STATUS_PRECONNECT;
 
   m_in_auth=0;
 
@@ -648,17 +648,11 @@ void NJClient::Connect(char *host, char *user, char *pass)
   connect(m_netcon, SIGNAL(messagesReady()),
           this, SLOT(netconMessagesReady()));
 
-  m_status=0;
 }
 
 int NJClient::GetStatus()
 {
-  if (!m_status || m_status == -1) return NJC_STATUS_PRECONNECT;
-  if (m_status == 1000) return NJC_STATUS_CANTCONNECT;
-  if (m_status == 1001) return NJC_STATUS_INVALIDAUTH;
-  if (m_status == 1002) return NJC_STATUS_DISCONNECTED;
-
-  return NJC_STATUS_OK;
+  return m_status;
 }
 
 void NJClient::processMessage(Net_Message *msg)
@@ -673,7 +667,7 @@ void NJClient::processMessage(Net_Message *msg)
           if (cha.protocol_version < PROTO_VER_MIN || cha.protocol_version >= PROTO_VER_MAX)
           {
             m_errstr.Set("server is incorrect protocol version");
-            m_status = 1001;
+            m_status = NJC_STATUS_INVALIDAUTH;
             m_netcon->Kill();
             return;
           }
@@ -735,7 +729,7 @@ void NJClient::processMessage(Net_Message *msg)
               sci.build_add_rec(ch->name.Get(),0,0,0);
             }
             m_netcon->Send(sci.build());
-            m_status=2;
+            m_status=NJC_STATUS_OK;
             m_in_auth=0;
             m_max_localch=ar.maxchan;
             if (ar.errmsg)
@@ -747,7 +741,7 @@ void NJClient::processMessage(Net_Message *msg)
             {
               m_errstr.Set(ar.errmsg);
             }
-            m_status = 1001;
+            m_status = NJC_STATUS_INVALIDAUTH;
             m_netcon->Kill();
           }
         }
@@ -960,10 +954,14 @@ void NJClient::processMessage(Net_Message *msg)
 
 void NJClient::netconDisconnected()
 {
-  m_audio_enable=0;
-  if (m_in_auth)  m_status=1001;
-  if (m_status > 0 && m_status < 1000) m_status=1002;
-  if (m_status == 0) m_status=1000;
+  m_audio_enable = 0;
+  if (m_in_auth) {
+    m_status = NJC_STATUS_INVALIDAUTH;
+  } else if (m_status == NJC_STATUS_OK) {
+    m_status = NJC_STATUS_DISCONNECTED;
+  } else if (m_status == NJC_STATUS_PRECONNECT) {
+    m_status = NJC_STATUS_CANTCONNECT;
+  }
 }
 
 void NJClient::netconMessagesReady()
