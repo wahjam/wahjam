@@ -581,8 +581,10 @@ void NJClient::Disconnect()
   m_host.Set("");
   m_user.Set("");
   m_pass.Set("");
-  delete m_netcon;
-  m_netcon=0;
+  if (m_netcon) {
+    m_netcon->deleteLater();
+    m_netcon=0;
+  }
 
   int x;
   for (x=0;x<m_remoteusers.GetSize(); x++) delete m_remoteusers.Get(x);
