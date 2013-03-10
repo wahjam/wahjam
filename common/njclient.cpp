@@ -655,6 +655,14 @@ void NJClient::Connect(char *host, char *user, char *pass)
   emit statusChanged(m_status);
 }
 
+void NJClient::Reconnect()
+{
+  QByteArray host(m_host.Get());
+  QByteArray user(m_user.Get());
+  QByteArray pass(m_pass.Get());
+  Connect(host.data(), user.data(), pass.data());
+}
+
 int NJClient::GetStatus()
 {
   return m_status;

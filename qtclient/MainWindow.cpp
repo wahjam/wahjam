@@ -174,6 +174,11 @@ MainWindow::MainWindow(QWidget *parent)
   connectionStateMachine->setErrorState(disconnectedState);
   connectionStateMachine->start();
 
+  reconnectTimer = new QTimer(this);
+  reconnectTimer->setSingleShot(true);
+  connect(reconnectTimer, SIGNAL(timeout()), this, SLOT(Reconnect()));
+  resetReconnect();
+
   connect(&client, SIGNAL(userInfoChanged()),
           this, SLOT(UserInfoChanged()));
   connect(&client, SIGNAL(statusChanged(int)),
@@ -284,6 +289,8 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
 
 void MainWindow::Disconnect()
 {
+  resetReconnect();
+
   delete audio;
   audio = NULL;
 
@@ -306,6 +313,30 @@ void MainWindow::Disconnect()
   BeatsPerMinuteChanged(0);
   BeatsPerIntervalChanged(0);
   emit Disconnected();
+}
+
+void MainWindow::Reconnect()
+{
+  client.Reconnect();
+}
+
+bool MainWindow::tryReconnect()
+{
+  if (reconnectTries == 0) {
+    return false;
+  }
+
+  reconnectTries--;
+  reconnectTimer->start(reconnectMilliseconds);
+  reconnectMilliseconds *= 2;
+  return true;
+}
+
+void MainWindow::resetReconnect()
+{
+  reconnectTimer->stop();
+  reconnectTries = 5;
+  reconnectMilliseconds = 3000;
 }
 
 bool MainWindow::setupWorkDir()
@@ -471,6 +502,9 @@ void MainWindow::ClientStatusChanged(int newStatus)
     return;
 
   case NJClient::NJC_STATUS_CANTCONNECT:
+    if (tryReconnect()) {
+      return;
+    }
     statusMessage = tr("Error: connecting failed");
     break;
 
@@ -483,6 +517,7 @@ void MainWindow::ClientStatusChanged(int newStatus)
     break;
 
   case NJClient::NJC_STATUS_OK:
+    resetReconnect();
     emit Connected();
     return;
 
