@@ -458,27 +458,40 @@ void MainWindow::ClientStatusChanged(int newStatus)
   QString errstr = QString::fromUtf8(client.GetErrorStr());
   QString statusMessage;
 
-  if (newStatus == NJClient::NJC_STATUS_OK) {
-    QString host = QString::fromUtf8(client.GetHostName());
-    QString username = QString::fromUtf8(client.GetUserName());
+  switch (newStatus) {
+  case NJClient::NJC_STATUS_PRECONNECT:
+  case NJClient::NJC_STATUS_CONNECTING:
+  case NJClient::NJC_STATUS_AUTHENTICATING:
+    return; /* ignore */
 
-    statusMessage = tr("Connected to %1 as %2").arg(host, username);
-    emit Connected();
-  } else if (!errstr.isEmpty()) {
-    statusMessage = "Error: " + errstr;
-  } else if (newStatus == NJClient::NJC_STATUS_DISCONNECTED) {
-    statusMessage = tr("Error: unexpected disconnect");
-  } else if (newStatus == NJClient::NJC_STATUS_INVALIDAUTH) {
-    statusMessage = tr("Error: authentication failed");
-  } else if (newStatus == NJClient::NJC_STATUS_CANTCONNECT) {
+  case NJClient::NJC_STATUS_CANTCONNECT:
     statusMessage = tr("Error: connecting failed");
+    break;
+
+  case NJClient::NJC_STATUS_VERSIONMISMATCH:
+    statusMessage = tr("Error: client is outdated, please update");
+    break;
+
+  case NJClient::NJC_STATUS_INVALIDAUTH:
+    statusMessage = tr("Error: authentication failed");
+    break;
+
+  case NJClient::NJC_STATUS_OK:
+    emit Connected();
+    return;
+
+  case NJClient::NJC_STATUS_DISCONNECTED:
+    statusMessage = tr("Error: unexpected disconnect");
+    break;
+  }
+
+  /* Use NJClient's error message, if available */
+  if (!errstr.isEmpty()) {
+    statusMessage = "Error: " + errstr;
   }
 
   chatOutput->addInfoMessage(statusMessage);
-
-  if (newStatus < 0) {
-    Disconnect();
-  }
+  Disconnect();
 }
 
 void MainWindow::BeatsPerMinuteChanged(int bpm)

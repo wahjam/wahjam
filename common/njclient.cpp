@@ -364,9 +364,8 @@ void NJClient::_reinit()
   output_peaklevel=0.0;
 
   m_connection_keepalive=0;
-  m_status=NJC_STATUS_PRECONNECT;
 
-  m_in_auth=0;
+  m_status=NJC_STATUS_PRECONNECT;
 
   m_bpm=120;
   m_bpi=32;
@@ -383,6 +382,10 @@ void NJClient::_reinit()
   m_metronome_state=0;
   m_metronome_tmp=0;
   m_metronome_interval=0;
+
+  lastBpm = -1;
+  lastBpi = -1;
+  lastBeat = -1;
 
   m_issoloactive&=~1;
 
@@ -648,6 +651,8 @@ void NJClient::Connect(char *host, char *user, char *pass)
   connect(m_netcon, SIGNAL(messagesReady()),
           this, SLOT(netconMessagesReady()));
 
+  m_status = NJC_STATUS_CONNECTING;
+  emit statusChanged(m_status);
 }
 
 int NJClient::GetStatus()
@@ -667,8 +672,9 @@ void NJClient::processMessage(Net_Message *msg)
           if (cha.protocol_version < PROTO_VER_MIN || cha.protocol_version >= PROTO_VER_MAX)
           {
             m_errstr.Set("server is incorrect protocol version");
-            m_status = NJC_STATUS_INVALIDAUTH;
+            m_status = NJC_STATUS_VERSIONMISMATCH;
             m_netcon->Kill();
+            emit statusChanged(m_status);
             return;
           }
 
@@ -710,7 +716,8 @@ void NJClient::processMessage(Net_Message *msg)
 
           m_netcon->Send(repl.build());
 
-          m_in_auth=1;
+          m_status = NJC_STATUS_AUTHENTICATING;
+          emit statusChanged(m_status);
         }
       }
       break;
@@ -730,7 +737,6 @@ void NJClient::processMessage(Net_Message *msg)
             }
             m_netcon->Send(sci.build());
             m_status=NJC_STATUS_OK;
-            m_in_auth=0;
             m_max_localch=ar.maxchan;
             if (ar.errmsg)
               m_user.Set(ar.errmsg); // server gave us an updated name
@@ -744,6 +750,7 @@ void NJClient::processMessage(Net_Message *msg)
             m_status = NJC_STATUS_INVALIDAUTH;
             m_netcon->Kill();
           }
+          emit statusChanged(m_status);
         }
       }
       break;
@@ -955,13 +962,18 @@ void NJClient::processMessage(Net_Message *msg)
 void NJClient::netconDisconnected()
 {
   m_audio_enable = 0;
-  if (m_in_auth) {
-    m_status = NJC_STATUS_INVALIDAUTH;
-  } else if (m_status == NJC_STATUS_OK) {
-    m_status = NJC_STATUS_DISCONNECTED;
-  } else if (m_status == NJC_STATUS_PRECONNECT) {
+  switch (m_status) {
+  case NJC_STATUS_CONNECTING:
     m_status = NJC_STATUS_CANTCONNECT;
+    break;
+  case NJC_STATUS_AUTHENTICATING:
+  case NJC_STATUS_OK:
+    m_status = NJC_STATUS_DISCONNECTED;
+    break;
+  default:
+    return; /* we must have closed netcon ourselves, no status change */
   }
+  emit statusChanged(m_status);
 }
 
 void NJClient::netconMessagesReady()
@@ -1194,26 +1206,9 @@ int NJClient::Run() // nonzero if sleep ok
 
 void NJClient::tick()
 {
-  // Values that we watch for changes
-  static int lastStatus = GetStatus();
-  static int lastBpm = -1;
-  static int lastBpi = -1;
-  static int lastBeat = -1;
-
   while (!Run());
 
-  int status = GetStatus();
-  if (status != lastStatus) {
-    emit statusChanged(status);
-    lastStatus = status;
-
-    // Ensure we emit signals once client connects
-    lastBpm = -1;
-    lastBpi = -1;
-    lastBeat = -1;
-  }
-
-  if (status == NJClient::NJC_STATUS_OK) {
+  if (GetStatus() == NJClient::NJC_STATUS_OK) {
     int bpm = GetActualBPM();
     if (bpm != lastBpm) {
       emit beatsPerMinuteChanged(bpm);
