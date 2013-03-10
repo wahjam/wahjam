@@ -107,7 +107,16 @@ public:
 
   float GetOutputPeak();
 
-  enum { NJC_STATUS_DISCONNECTED=-3,NJC_STATUS_INVALIDAUTH=-2, NJC_STATUS_CANTCONNECT=-1, NJC_STATUS_OK=0, NJC_STATUS_PRECONNECT};
+  enum {
+    NJC_STATUS_PRECONNECT,
+    NJC_STATUS_CONNECTING,
+    NJC_STATUS_CANTCONNECT,
+    NJC_STATUS_VERSIONMISMATCH,
+    NJC_STATUS_AUTHENTICATING,
+    NJC_STATUS_INVALIDAUTH,
+    NJC_STATUS_OK,
+    NJC_STATUS_DISCONNECTED,
+  };
   int GetStatus();
 
   void SetWorkDir(char *path);
@@ -226,6 +235,11 @@ protected:
   int m_interval_length;
   int m_interval_pos, m_metronome_state, m_metronome_tmp,m_metronome_interval;
   double m_metronome_pos;
+
+  // Values that we watch for changes
+  int lastBpm;
+  int lastBpi;
+  int lastBeat;
 
   DecodeState *start_decode(unsigned char *guid, unsigned int fourcc=0);
 
