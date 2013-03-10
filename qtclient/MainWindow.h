@@ -77,6 +77,7 @@ private slots:
   void VoteBPIDialog();
   void XmitToggled(bool checked);
   void MetronomeToggled(bool checked);
+  void Reconnect();
 
 private:
   static MainWindow *instance;
@@ -100,11 +101,16 @@ private:
   QState *connectingState;
   QState *connectedState;
   QState *disconnectedState;
+  QTimer *reconnectTimer;
+  int reconnectTries;
+  int reconnectMilliseconds;
 
   void setupChannelTree();
   void setupStatusBar();
   bool setupWorkDir();
   void cleanupWorkDir(const QString &path);
+  bool tryReconnect();
+  void resetReconnect();
   void OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
   void chatAddLine(const QString &prefix, const QString &content,
                    const QString &href = "", const QString &linktext = "");

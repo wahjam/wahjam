@@ -84,6 +84,7 @@ public:
 
   void Connect(char *host, char *user, char *pass);
   void Disconnect();
+  void Reconnect();
 
   char *GetErrorStr() { return m_errstr.Get(); }
 
