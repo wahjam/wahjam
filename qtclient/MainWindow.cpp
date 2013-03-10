@@ -152,20 +152,23 @@ MainWindow::MainWindow(QWidget *parent)
 
   /* Connection State */
   connectionStateMachine = new QStateMachine(this);
+  connectingState = new QState(connectionStateMachine);
   connectedState = new QState(connectionStateMachine);
   disconnectedState = new QState(connectionStateMachine);
 
-  connectedState->assignProperty(voteMenu, "enabled", true);
-  connectedState->assignProperty(connectAction, "enabled", false);
-  connectedState->assignProperty(disconnectAction, "enabled", true);
-  connectedState->assignProperty(audioConfigAction, "enabled", false);
+  connectingState->assignProperty(voteMenu, "enabled", true);
+  connectingState->assignProperty(connectAction, "enabled", false);
+  connectingState->assignProperty(disconnectAction, "enabled", true);
+  connectingState->assignProperty(audioConfigAction, "enabled", false);
   disconnectedState->assignProperty(voteMenu, "enabled", false);
   disconnectedState->assignProperty(connectAction, "enabled", true);
   disconnectedState->assignProperty(disconnectAction, "enabled", false);
   disconnectedState->assignProperty(audioConfigAction, "enabled", true);
 
+  disconnectedState->addTransition(this, SIGNAL(Connecting()), connectingState);
+  connectingState->addTransition(this, SIGNAL(Connected()), connectedState);
+  connectingState->addTransition(this, SIGNAL(Disconnected()), disconnectedState);
   connectedState->addTransition(this, SIGNAL(Disconnected()), disconnectedState);
-  disconnectedState->addTransition(this, SIGNAL(Connected()), connectedState);
 
   connectionStateMachine->setInitialState(disconnectedState);
   connectionStateMachine->setErrorState(disconnectedState);
@@ -460,9 +463,12 @@ void MainWindow::ClientStatusChanged(int newStatus)
 
   switch (newStatus) {
   case NJClient::NJC_STATUS_PRECONNECT:
-  case NJClient::NJC_STATUS_CONNECTING:
   case NJClient::NJC_STATUS_AUTHENTICATING:
     return; /* ignore */
+
+  case NJClient::NJC_STATUS_CONNECTING:
+    emit Connecting();
+    return;
 
   case NJClient::NJC_STATUS_CANTCONNECT:
     statusMessage = tr("Error: connecting failed");

@@ -52,6 +52,7 @@ public:
   static MainWindow *GetInstance();
 
 signals:
+  void Connecting();
   void Connected();
   void Disconnected();
 
@@ -96,6 +97,7 @@ private:
   QLabel *bpiLabel;
   MetronomeBar *metronomeBar;
   QStateMachine *connectionStateMachine;
+  QState *connectingState;
   QState *connectedState;
   QState *disconnectedState;
 
