@@ -37,14 +37,12 @@
 #include <ctype.h>
 
 #include <QHostAddress>
+#include <QCryptographicHash>
+#include <QUuid>
 
 #include "ninjamsrv.h"
 #include "usercon.h"
-#include "../mpb.h"
-
-#include "../../WDL/rng.h"
-#include "../../WDL/sha.h"
-
+#include "../common/mpb.h"
 
 #ifdef _WIN32
 #define strncasecmp strnicmp
@@ -108,7 +106,13 @@ User_Connection::User_Connection(QTcpSocket *sock, User_Group *grp) : group(grp)
   connect(&m_netcon, SIGNAL(messagesReady()), this, SLOT(netconMessagesReady()));
   connect(&m_netcon, SIGNAL(disconnected()), this, SIGNAL(disconnected()));
 
-  WDL_RNG_bytes(m_challenge,sizeof(m_challenge));
+  /* An RFC4122 UUID has some non-random bits so apply SHA1 so that no bit can
+   * be predicted.
+   */
+  QByteArray challenge =
+    QCryptographicHash::hash(QUuid::createUuid().toRfc4122(),
+                             QCryptographicHash::Sha1);
+  memcpy(m_challenge, challenge.constData(), sizeof(m_challenge));
 
   mpb_server_auth_challenge ch;
   memcpy(ch.challenge,m_challenge,sizeof(ch.challenge));
@@ -213,16 +217,13 @@ int User_Connection::OnRunAuth()
   name.append(QString(" [%1]").arg(m_lookup->username.Get()));
 
   {
-    WDL_SHA1 shatmp;
+    QCryptographicHash shatmp(QCryptographicHash::Sha1);
 
-    shatmp.add(m_lookup->sha1buf_user,sizeof(m_lookup->sha1buf_user));
+    shatmp.addData((const char *)m_lookup->sha1buf_user, sizeof(m_lookup->sha1buf_user));
+    shatmp.addData((const char *)m_challenge, sizeof(m_challenge));
 
-    shatmp.add(m_challenge,sizeof(m_challenge));
-
-    char buf[WDL_SHA1SIZE];
-    shatmp.result(buf);
-
-    if ((m_lookup->reqpass && memcmp(buf,m_lookup->sha1buf_request,WDL_SHA1SIZE)) || !m_lookup->user_valid)
+    QByteArray result = shatmp.result();
+    if ((m_lookup->reqpass && memcmp(result.constData(), m_lookup->sha1buf_request, result.length())) || !m_lookup->user_valid)
     {
       qDebug("%s: Refusing user, invalid login/password", name.toLatin1().constData());
       mpb_server_auth_reply bh;

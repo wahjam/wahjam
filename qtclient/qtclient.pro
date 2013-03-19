@@ -9,15 +9,18 @@ DEFINES += COMMIT_ID=\'\"$$system(git rev-parse HEAD)\"\'
 
 TEMPLATE = app
 TARGET = wahjam
-DEPENDPATH += .
-INCLUDEPATH += .
+DEPENDPATH += ..
+INCLUDEPATH += ..
 QT += network
+
+LIBS += -L../common -lcommon
+PRE_TARGETDEPS += ../common/libcommon.a
 
 QMAKE_CXXFLAGS += -Wno-write-strings
 CONFIG += link_pkgconfig
 PKGCONFIG += vorbis vorbisenc portaudio-2.0
 
-# Core ninjam/ code does not use wide characters
+# Code in common/ does not use wide characters
 win32:DEFINES -= UNICODE
 
 # Input
@@ -30,12 +33,9 @@ HEADERS += MetronomeBar.h
 HEADERS += ChatOutput.h
 HEADERS += AddVSTPluginDialog.h
 HEADERS += VSTConfigDialog.h
-HEADERS += ../netmsg.h
-HEADERS += ../njclient.h
 HEADERS += logging.h
-HEADERS += ../audiostream.h
-HEADERS += ../VSTPlugin.h
-HEADERS += ../VSTProcessor.h
+HEADERS += VSTPlugin.h
+HEADERS += VSTProcessor.h
 
 SOURCES += qtclient.cpp
 SOURCES += MainWindow.cpp
@@ -48,12 +48,5 @@ SOURCES += ChatOutput.cpp
 SOURCES += AddVSTPluginDialog.cpp
 SOURCES += VSTConfigDialog.cpp
 SOURCES += logging.cpp
-SOURCES += ../../WDL/rng.cpp
-SOURCES += ../../WDL/sha.cpp
-SOURCES += ../mpb.cpp
-SOURCES += ../netmsg.cpp
-SOURCES += ../njclient.cpp
-SOURCES += ../njmisc.cpp
-SOURCES += ../audiostream_pa.cpp
-SOURCES += ../VSTPlugin.cpp
-SOURCES += ../VSTProcessor.cpp
+SOURCES += VSTPlugin.cpp
+SOURCES += VSTProcessor.cpp

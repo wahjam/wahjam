@@ -23,8 +23,8 @@
 #include <QTcpServer>
 #include <QTimer>
 
-#include "../../WDL/string.h"
-#include "../../WDL/ptrlist.h"
+#include "../WDL/string.h"
+#include "../WDL/ptrlist.h"
 #include "usercon.h"
 
 class UserPassEntry

@@ -8,13 +8,16 @@ DEFINES += VERSION=\'\"$$VERSION\"\'
 DEFINES += COMMIT_ID=\'\"$$system(git rev-parse HEAD)\"\'
 
 TEMPLATE = app
-TARGET = 
-DEPENDPATH += .
-INCLUDEPATH += .
+TARGET = wahjamsrv
+DEPENDPATH += ..
+INCLUDEPATH += ..
 QT -= gui
 QT += network
 
-# Core ninjam/ code does not use wide characters
+LIBS += -L../common -lcommon
+PRE_TARGETDEPS += ../common/libcommon.a
+
+# Code in common/ does not use wide characters
 win32:DEFINES -= UNICODE
 
 # Build console application
@@ -30,20 +33,12 @@ HEADERS += usercon.h \
            Server.h \
            logging.h \
            ninjamsrv.h \
-           ../netmsg.h \
-           ../../WDL/queue.h \
-           ../../WDL/heapbuf.h \
-           ../mpb.h \
-           ../../WDL/string.h \
-           ../../WDL/sha.h \
-           ../../WDL/ptrlist.h \
-           ../../WDL/rng.h \
-           ../../WDL/lineparse.h
+           ../WDL/queue.h \
+           ../WDL/heapbuf.h \
+           ../WDL/string.h \
+           ../WDL/ptrlist.h \
+           ../WDL/lineparse.h
 SOURCES += ninjamsrv.cpp \
            logging.cpp \
            usercon.cpp \
-           Server.cpp \
-           ../netmsg.cpp \
-           ../mpb.cpp \
-           ../../WDL/sha.cpp \
-           ../../WDL/rng.cpp
+           Server.cpp

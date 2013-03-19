@@ -35,11 +35,10 @@
 #include <QSignalMapper>
 #include <QTimer>
 #include <QStringList>
-#include "../netmsg.h"
-#include "../../WDL/string.h"
-#include "../../WDL/sha.h"
-#include "../../WDL/ptrlist.h"
-#include "../mpb.h"
+#include "../common/netmsg.h"
+#include "../WDL/string.h"
+#include "../WDL/ptrlist.h"
+#include "../common/mpb.h"
 
 #define MAX_USER_CHANNELS 32
 #define MAX_USERS 64
@@ -75,13 +74,13 @@ public:
   unsigned int privs;
   int max_channels;
   int is_status;
-  unsigned char sha1buf_user[WDL_SHA1SIZE];
+  unsigned char sha1buf_user[20];
 
   WDL_String hostmask;
   WDL_String username; // can modify this to change the username
 
 
-  unsigned char sha1buf_request[WDL_SHA1SIZE]; // don't use, internal for User_Connection
+  unsigned char sha1buf_request[20]; // don't use, internal for User_Connection
 
 signals:
   void completed();

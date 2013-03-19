@@ -22,7 +22,7 @@
 #include <QMessageBox>
 
 #include "logging.h"
-#include "../audiostream.h"
+#include "common/audiostream.h"
 #include "MainWindow.h"
 
 QSettings *settings;

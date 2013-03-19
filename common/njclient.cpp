@@ -28,6 +28,8 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <QUuid>
+#include <QCryptographicHash>
 #include "njclient.h"
 #include "mpb.h"
 #include "../WDL/pcmfmtcvt.h"
@@ -292,23 +294,6 @@ static void type_to_string(unsigned int t, char *out)
   else *out=0;
 }
 
-static unsigned int string_to_type(char *in)
-{
-  int n;
-  unsigned int ret=*in;
-  if (*in == ' ' || !is_type_char_valid(*in)) return 0;
-  in++;
-  for (n = 0; n < 3; n ++)
-  {
-    if (!is_type_char_valid(*in)) break;
-    ret|=(*in<<(8+8*n));
-    in++;
-  }
-  if (*in) return 0;
-  return ret;
-}
-
-
 void NJClient::makeFilenameFromGuid(WDL_String *s, unsigned char *guid)
 {
   char buf[256];
@@ -333,15 +318,6 @@ NJClient::NJClient(QObject *parent)
   m_wavebq=new BufferQueue;
   m_loopcnt=0;
   m_srate=48000;
-#ifdef _WIN32
-  DWORD v=GetTickCount();
-  WDL_RNG_addentropy(&v,sizeof(v));
-  v=(DWORD)time(NULL);
-  WDL_RNG_addentropy(&v,sizeof(v));
-#else
-  time_t v=time(NULL);
-  WDL_RNG_addentropy(&v,sizeof(v));
-#endif
 
   config_autosubscribe=1;
   config_savelocalaudio=0;
@@ -725,16 +701,16 @@ void NJClient::processMessage(Net_Message *msg)
           }
           m_netcon->SetKeepAlive(m_connection_keepalive);
 
-          WDL_SHA1 tmp;
-          tmp.add(m_user.Get(),strlen(m_user.Get()));
-          tmp.add(":",1);
-          tmp.add(m_pass.Get(),strlen(m_pass.Get()));
-          tmp.result(repl.passhash);
+          QCryptographicHash tmp(QCryptographicHash::Sha1);
+          tmp.addData(m_user.Get(), strlen(m_user.Get()));
+          tmp.addData(":", 1);
+          tmp.addData(m_pass.Get(), strlen(m_pass.Get()));
+          memcpy(repl.passhash, tmp.result().constData(), sizeof(repl.passhash));
 
           tmp.reset(); // new auth method is SHA1(SHA1(user:pass)+challenge)
-          tmp.add(repl.passhash,sizeof(repl.passhash));
-          tmp.add(cha.challenge,sizeof(cha.challenge));
-          tmp.result(repl.passhash);               
+          tmp.addData((const char *)repl.passhash, (int)sizeof(repl.passhash));
+          tmp.addData((const char *)cha.challenge, (int)sizeof(cha.challenge));
+          memcpy(repl.passhash, tmp.result().constData(), sizeof(repl.passhash));
 
           m_netcon->Send(repl.build());
 
@@ -1062,14 +1038,15 @@ int NJClient::Run() // nonzero if sleep ok
         // encode data
         if (!lc->m_enc)
         {
-          lc->m_enc = new I_NJEncoder(m_srate,1,lc->m_enc_bitrate_used = lc->bitrate,WDL_RNG_int32());
+          lc->m_enc = new I_NJEncoder(m_srate,1,lc->m_enc_bitrate_used = lc->bitrate,0);
         }
 
         if (lc->m_need_header)
         {
           lc->m_need_header=false;
           {
-            WDL_RNG_bytes(lc->m_curwritefile.guid,sizeof(lc->m_curwritefile.guid));
+            QUuid guid = QUuid::createUuid();
+            memcpy(lc->m_curwritefile.guid, guid.toRfc4122().constData(), sizeof(lc->m_curwritefile.guid));
             char guidstr[64];
             guidtostr(lc->m_curwritefile.guid,guidstr);
             writeLog("local %s %d\n",guidstr,lc->channel_idx);
@@ -2205,7 +2182,7 @@ void NJClient::SetOggOutFile(FILE *fp, int srate, int nch, int bitrate)
   if (fp)
   {
     //fucko
-    m_oggComp=new I_NJEncoder(srate,nch,bitrate,WDL_RNG_int32());
+    m_oggComp=new I_NJEncoder(srate,nch,bitrate,0);
     m_oggWrite=fp;
   }
 #endif

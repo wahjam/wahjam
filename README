@@ -11,10 +11,10 @@ This code is licensed GPL v2 or later:
 Source tree layout
 ------------------
 
-  ninjam/
-    qtclient/       Qt client (cross-platform)
-    server/         Server
-  WDL/              Common library
+  common/         Core code
+  qtclient/       GUI client using Qt framework
+  server/         Server
+  WDL/            Cockos common library, see www.cockos.com/wdl/
 
 How to build the Qt client
 --------------------------
@@ -25,7 +25,6 @@ Install Ogg and Vorbis audio codec libraries from http://xiph.org/.
 
 Then run the following commands:
 
-  cd ninjam/wahjam
   qmake
   make
 
@@ -33,14 +32,7 @@ On Windows the recommended build environment for libogg and libvorbis is MinGW
 and MSYS from http://www.mingw.org/.  Build libogg and libvorbis inside MSYS,
 then use the Qt build environment to compile qtclient.  You may need to add the
 MSYS include/ and lib/ paths as QMAKE_CXXFLAGS -I and LIBS -L flags in
-ninjam/qtclient/qtclient.pro.
-
-How to build the other software
--------------------------------
-
-To build a particular target change into its directory and run make(1).  For
-the Mac OS X cocoaclient an Xcode project is available.  For the Windows
-winclient a Visual Studio project is available.
+qtclient/qtclient.pro.
 
 Cross-compiling the Qt client for Windows
 -----------------------------------------
@@ -49,25 +41,22 @@ The MinGW compiler can be used as a cross-compiler to build Windows executables
 from a Linux host.  This allows us to set up a Linux build server capable of
 building Windows executables.
 
-The mingw-cross-env project provides a cross-compiler and many popular
-libraries, including Wahjam's dependencies on ogg, vorbis, the Qt framework,
-and PortAudio.  At the time of writing the latest release of mingw-cross-env
-had some dead URLs so the current development version was used from their
-mercurial repository.
+The mxe project provides a cross-compiler and many popular libraries, including
+Wahjam's dependencies on ogg, vorbis, the Qt framework, and PortAudio.
 
-1. Clone mingw-cross-env:
+1. Clone mxe:
 
-  hg clone http://hg.savannah.nongnu.org/hgweb/mingw-cross-env
+  git clone -b stable https://github.com/mxe/mxe.git
 
 1. Build the cross-compiler and dependencies:
 
-  cd mingw-cross-env
+  cd mxe
   make gcc ogg vorbis qt portaudio
 
 1. If you encounter any build errors try reducing optional dependencies.
 
 For example, try disabling SQL drivers and DBUS on the ./configure line in
-mingw-cross-env/src/qt.mk.
+mxe/src/qt.mk.
 
 NINJAM fork information:
 
