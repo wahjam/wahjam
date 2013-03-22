@@ -13,8 +13,7 @@ DEPENDPATH += ..
 INCLUDEPATH += ..
 QT += network
 
-LIBS += -L../common -lcommon
-PRE_TARGETDEPS += ../common/libcommon.a
+include(../common/libcommon.pri)
 
 QMAKE_CXXFLAGS += -Wno-write-strings
 CONFIG += link_pkgconfig
