@@ -88,11 +88,11 @@ intptr_t VSTPlugin::vstAudioMasterCallback(AEffect *plugin, int32_t op,
     return 0;
 
   case audioMasterGetVendorString:
-    strcpy((char*)ptrarg, "Wahjam Project");
+    strcpy((char*)ptrarg, ORGNAME);
     return 1;
 
   case audioMasterGetProductString:
-    strcpy((char*)ptrarg, "Wahjam");
+    strcpy((char*)ptrarg, APPNAME);
     return 1;
 
   case audioMasterGetVendorVersion:

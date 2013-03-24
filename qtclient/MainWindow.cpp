@@ -106,7 +106,7 @@ MainWindow::MainWindow(QWidget *parent)
   setupStatusBar();
   client.config_metronome_mute = !metronomeButton->isChecked();
 
-  setWindowTitle(tr("Wahjam"));
+  setWindowTitle(tr(APPNAME));
 
   chatOutput = new ChatOutput(this);
   chatOutput->connect(chatOutput, SIGNAL(anchorClicked(const QUrl&)),
@@ -279,7 +279,7 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
 
   vstProcessor->attach(&client, 0);
 
-  setWindowTitle(tr("Wahjam - %1").arg(host));
+  setWindowTitle(tr(APPNAME " - %1").arg(host));
 
   client.Connect(host.toAscii().data(),
                  user.toUtf8().data(),
@@ -307,7 +307,7 @@ void MainWindow::Disconnect()
     chatOutput->addInfoMessage(tr("Disconnected"));
   }
 
-  setWindowTitle(tr("Wahjam"));
+  setWindowTitle(tr(APPNAME));
 
   BeatsPerMinuteChanged(0);
   BeatsPerIntervalChanged(0);
@@ -444,14 +444,14 @@ void MainWindow::ShowVSTConfigDialog()
 
 void MainWindow::ShowAboutDialog()
 {
-  QMessageBox::about(this, tr("About Wahjam"),
-      tr("<h1>Wahjam version %1</h1>"
-         "<p><b>Website:</b> <a href=\"http://wahjam.org/\">http://wahjam.org/</a></p>"
-         "<p><b>Git commit:</b> <a href=\"http://github.com/wahjam/wahjam/commit/%2\">%2</a></p>"
+  QMessageBox::about(this, tr("About " APPNAME),
+      tr("<h1>%1 version %2</h1>"
+         "<p><b>Website:</b> <a href=\"http://%3/\">http://%3/</a></p>"
+         "<p><b>Git commit:</b> <a href=\"http://github.com/wahjam/wahjam/commit/%4\">%4</a></p>"
          "<p>Based on <a href=\"http://ninjam.com/\">NINJAM</a>.</p>"
          "<p>Licensed under the GNU General Public License version 2, see "
          "<a href=\"http://www.gnu.org/licenses/gpl-2.0.html\">"
-         "http://www.gnu.org/licenses/gpl-2.0.html</a> for details.</p>").arg(VERSION, COMMIT_ID));
+         "http://www.gnu.org/licenses/gpl-2.0.html</a> for details.</p>").arg(APPNAME, VERSION, ORGDOMAIN, COMMIT_ID));
 }
 
 void MainWindow::UserInfoChanged()

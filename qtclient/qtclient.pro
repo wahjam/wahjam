@@ -3,9 +3,30 @@
 ######################################################################
 
 # Version number in <major>.<minor>.<patch> form
-VERSION = 0.9.0
-DEFINES += VERSION=\'\"$$VERSION\"\'
-DEFINES += COMMIT_ID=\'\"$$system(git rev-parse HEAD)\"\'
+isEmpty(VERSION) {
+        VERSION = 0.9.0
+}
+
+# Application name displayed to user
+isEmpty(APPNAME) {
+        APPNAME = "Wahjam"
+}
+
+# Organization name used for Qt settings
+isEmpty(ORGNAME) {
+        ORGNAME = "Wahjam Project"
+}
+
+# Organization domain displayed to user and used for Qt settings
+isEmpty(ORGDOMAIN) {
+        ORGDOMAIN = "wahjam.org"
+}
+
+DEFINES += "VERSION=\'\"$$VERSION\"\'"
+DEFINES += "COMMIT_ID=\'\"$$system(git rev-parse HEAD)\"\'"
+DEFINES += "APPNAME=\'\"$$APPNAME\"\'"
+DEFINES += "ORGNAME=\'\"$$ORGNAME\"\'"
+DEFINES += "ORGDOMAIN=\'\"$$ORGDOMAIN\"\'"
 
 TEMPLATE = app
 TARGET = wahjam
