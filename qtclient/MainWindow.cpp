@@ -218,6 +218,7 @@ void MainWindow::setupStatusBar()
   QToolButton *xmitButton = new QToolButton(this);
   xmitButton->setText("Send");
   xmitButton->setCheckable(true);
+  xmitButton->setToolTip(tr("Send audio to other users"));
   connect(xmitButton, SIGNAL(toggled(bool)),
           this, SLOT(XmitToggled(bool)));
   xmitButton->setChecked(true);
@@ -226,16 +227,19 @@ void MainWindow::setupStatusBar()
   QToolButton *metronomeButton = new QToolButton(this);
   metronomeButton->setText("Metronome");
   metronomeButton->setCheckable(true);
+  metronomeButton->setToolTip(tr("Enable metronome"));
   connect(metronomeButton, SIGNAL(toggled(bool)),
           this, SLOT(MetronomeToggled(bool)));
   metronomeButton->setChecked(true);
   statusBar()->addPermanentWidget(metronomeButton);
 
   bpmLabel = new QLabel(this);
+  bpmLabel->setToolTip(tr("Beats per minute (tempo)"));
   bpmLabel->setFrameStyle(QFrame::Panel | QFrame::Sunken);
   statusBar()->addPermanentWidget(bpmLabel);
 
   bpiLabel = new QLabel(this);
+  bpiLabel->setToolTip(tr("Beats per interval"));
   bpiLabel->setFrameStyle(QFrame::Panel | QFrame::Sunken);
   statusBar()->addPermanentWidget(bpiLabel);
 }
