@@ -19,7 +19,6 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QVBoxLayout>
-#include <QPushButton>
 #include <QToolButton>
 #include <QSplitter>
 #include <QMenuBar>
