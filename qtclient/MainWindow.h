@@ -23,6 +23,7 @@
 #include <QWidget>
 #include <QLineEdit>
 #include <QLabel>
+#include <QToolButton>
 #include <QMutex>
 #include <QAction>
 #include <QUrl>
@@ -97,6 +98,8 @@ private:
   QLabel *bpmLabel;
   QLabel *bpiLabel;
   MetronomeBar *metronomeBar;
+  QToolButton *xmitButton;
+  QToolButton *metronomeButton;
   QStateMachine *connectionStateMachine;
   QState *connectingState;
   QState *connectedState;
