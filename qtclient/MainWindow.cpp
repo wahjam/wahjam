@@ -19,7 +19,6 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QVBoxLayout>
-#include <QToolButton>
 #include <QSplitter>
 #include <QMenuBar>
 #include <QMenu>
@@ -198,6 +197,9 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
   Disconnect();
+
+  settings->setValue("main/enableXmit", xmitButton->isChecked());
+  settings->setValue("main/enableMetronome", metronomeButton->isChecked());
 }
 
 /* Must be called with client mutex held or before client thread is started */
@@ -215,22 +217,25 @@ void MainWindow::setupChannelTree()
 
 void MainWindow::setupStatusBar()
 {
-  QToolButton *xmitButton = new QToolButton(this);
+  bool enableXmit = settings->value("main/enableXmit", true).toBool();
+  bool enableMetronome = settings->value("main/enableMetronome", true).toBool();
+
+  xmitButton = new QToolButton(this);
   xmitButton->setText("Send");
   xmitButton->setCheckable(true);
   xmitButton->setToolTip(tr("Send audio to other users"));
   connect(xmitButton, SIGNAL(toggled(bool)),
           this, SLOT(XmitToggled(bool)));
-  xmitButton->setChecked(true);
+  xmitButton->setChecked(enableXmit);
   statusBar()->addPermanentWidget(xmitButton);
 
-  QToolButton *metronomeButton = new QToolButton(this);
+  metronomeButton = new QToolButton(this);
   metronomeButton->setText("Metronome");
   metronomeButton->setCheckable(true);
   metronomeButton->setToolTip(tr("Enable metronome"));
   connect(metronomeButton, SIGNAL(toggled(bool)),
           this, SLOT(MetronomeToggled(bool)));
-  metronomeButton->setChecked(true);
+  metronomeButton->setChecked(enableMetronome);
   statusBar()->addPermanentWidget(metronomeButton);
 
   bpmLabel = new QLabel(this);
