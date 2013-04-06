@@ -216,7 +216,7 @@ void MainWindow::setupChannelTree()
 void MainWindow::setupStatusBar()
 {
   QToolButton *xmitButton = new QToolButton(this);
-  xmitButton->setText("Xmit");
+  xmitButton->setText("Send");
   xmitButton->setCheckable(true);
   connect(xmitButton, SIGNAL(toggled(bool)),
           this, SLOT(XmitToggled(bool)));
