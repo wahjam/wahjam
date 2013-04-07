@@ -21,6 +21,7 @@
 #include <QFormLayout>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QLabel>
 #include "PortAudioConfigDialog.h"
 
 PortAudioConfigDialog::PortAudioConfigDialog(QWidget *parent)
@@ -28,6 +29,9 @@ PortAudioConfigDialog::PortAudioConfigDialog(QWidget *parent)
 {
   inputDeviceList = new QComboBox;
   inputDeviceList->setEditable(false);
+
+  unmuteLocalChannelsBox = new QCheckBox(tr("Play back my audio"));
+  unmuteLocalChannelsBox->setToolTip(tr("Disable if you play an acoustic instrument"));
 
   outputDeviceList = new QComboBox;
   outputDeviceList->setEditable(false);
@@ -47,9 +51,12 @@ PortAudioConfigDialog::PortAudioConfigDialog(QWidget *parent)
   QFormLayout *formLayout = new QFormLayout;
   formLayout->setSpacing(5);
   formLayout->setContentsMargins(2, 2, 2, 2);
-  formLayout->addRow(tr("Audio &system:"), hostAPIList);
   formLayout->addRow(tr("&Input device:"), inputDeviceList);
+  formLayout->addRow(new QLabel, unmuteLocalChannelsBox);
   formLayout->addRow(tr("&Output device:"), outputDeviceList);
+  formLayout->addRow(new QLabel); /* just a spacer */
+  formLayout->addRow(new QLabel(tr("<b>Troubleshooting:</b> If you experience audio problems, try selecting another audio system.")));
+  formLayout->addRow(tr("Audio &system:"), hostAPIList);
   vlayout->addLayout(formLayout);
   QHBoxLayout *hlayout = new QHBoxLayout;
   hlayout->setSpacing(0);
@@ -169,6 +176,16 @@ void PortAudioConfigDialog::setInputDevice(const QString &name)
   if (i >= 0) {
     inputDeviceList->setCurrentIndex(i);
   }
+}
+
+bool PortAudioConfigDialog::unmuteLocalChannels() const
+{
+  return unmuteLocalChannelsBox->isChecked();
+}
+
+void PortAudioConfigDialog::setUnmuteLocalChannels(bool unmute)
+{
+  unmuteLocalChannelsBox->setChecked(unmute);
 }
 
 QString PortAudioConfigDialog::outputDevice() const

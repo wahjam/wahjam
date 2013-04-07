@@ -118,9 +118,6 @@ MainWindow::MainWindow(QWidget *parent)
                      this, SLOT(ChatInputReturnPressed()));
 
   channelTree = new ChannelTreeWidget(this);
-  setupChannelTree();
-  connect(channelTree, SIGNAL(LocalChannelMuteChanged(int, bool)),
-          this, SLOT(LocalChannelMuteChanged(int, bool)));
   connect(channelTree, SIGNAL(RemoteChannelMuteChanged(int, int, bool)),
           this, SLOT(RemoteChannelMuteChanged(int, int, bool)));
 
@@ -201,19 +198,6 @@ MainWindow::~MainWindow()
   Disconnect();
 }
 
-/* Must be called with client mutex held or before client thread is started */
-void MainWindow::setupChannelTree()
-{
-  int i, ch;
-  for (i = 0; (ch = client.EnumLocalChannels(i)) != -1; i++) {
-    bool mute;
-    const char *name = client.GetLocalChannelInfo(ch, NULL, NULL, NULL);
-    client.GetLocalChannelMonitoring(ch, NULL, NULL, &mute, NULL);
-
-    channelTree->addLocalChannel(ch, QString::fromUtf8(name), mute);
-  }
-}
-
 void MainWindow::setupStatusBar()
 {
   QToolButton *xmitButton = new QToolButton(this);
@@ -250,6 +234,7 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
 
   QString hostAPI = settings->value("audio/hostAPI").toString();
   QString inputDevice = settings->value("audio/inputDevice").toString();
+  bool unmuteLocalChannels = settings->value("audio/unmuteLocalChannels", true).toBool();
   QString outputDevice = settings->value("audio/outputDevice").toString();
   audio = create_audioStreamer_PortAudio(hostAPI.toLocal8Bit().data(),
                                          inputDevice.toLocal8Bit().data(),
@@ -276,6 +261,11 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
 
     ShowAudioConfigDialog();
     return;
+  }
+
+  int i, ch;
+  for (i = 0; (ch = client.EnumLocalChannels(i)) != -1; i++) {
+    client.SetLocalChannelMonitoring(ch, false, 0, false, 0, true, !unmuteLocalChannels, false, false);
   }
 
   vstProcessor->attach(&client, 0);
@@ -423,11 +413,13 @@ void MainWindow::ShowAudioConfigDialog()
 
   audioDialog.setHostAPI(settings->value("audio/hostAPI").toString());
   audioDialog.setInputDevice(settings->value("audio/inputDevice").toString());
+  audioDialog.setUnmuteLocalChannels(settings->value("audio/unmuteLocalChannels", true).toBool());
   audioDialog.setOutputDevice(settings->value("audio/outputDevice").toString());
 
   if (audioDialog.exec() == QDialog::Accepted) {
     settings->setValue("audio/hostAPI", audioDialog.hostAPI());
     settings->setValue("audio/inputDevice", audioDialog.inputDevice());
+    settings->setValue("audio/unmuteLocalChannels", audioDialog.unmuteLocalChannels());
     settings->setValue("audio/outputDevice", audioDialog.outputDevice());
   }
 }
@@ -674,11 +666,6 @@ void MainWindow::SendChatMessage(const QString &line)
   if (!connected) {
     chatOutput->addErrorMessage("not connected to a server.");
   }
-}
-
-void MainWindow::LocalChannelMuteChanged(int ch, bool mute)
-{
-  client.SetLocalChannelMonitoring(ch, false, 0, false, 0, true, mute, false, false);
 }
 
 void MainWindow::RemoteChannelMuteChanged(int useridx, int channelidx, bool mute)
