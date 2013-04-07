@@ -21,12 +21,14 @@
 
 #include <QDialog>
 #include <QComboBox>
+#include <QCheckBox>
 
 class PortAudioConfigDialog : public QDialog
 {
   Q_OBJECT
   Q_PROPERTY(QString hostAPI READ hostAPI WRITE setHostAPI)
   Q_PROPERTY(QString inputDevice READ inputDevice WRITE setInputDevice)
+  Q_PROPERTY(bool unmuteLocalChannels READ unmuteLocalChannels WRITE setUnmuteLocalChannels)
   Q_PROPERTY(QString outputDevice READ outputDevice WRITE setOutputDevice)
 
 public:
@@ -36,6 +38,8 @@ public:
   void setHostAPI(const QString &name);
   QString inputDevice() const;
   void setInputDevice(const QString &name);
+  bool unmuteLocalChannels() const;
+  void setUnmuteLocalChannels(bool unmute);
   QString outputDevice() const;
   void setOutputDevice(const QString &name);
 
@@ -45,6 +49,7 @@ private slots:
 private:
   QComboBox *hostAPIList;
   QComboBox *inputDeviceList;
+  QCheckBox *unmuteLocalChannelsBox;
   QComboBox *outputDeviceList;
 };
 
