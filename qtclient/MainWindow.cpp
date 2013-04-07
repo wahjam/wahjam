@@ -250,6 +250,7 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
 
   QString hostAPI = settings->value("audio/hostAPI").toString();
   QString inputDevice = settings->value("audio/inputDevice").toString();
+  bool unmuteLocalChannels = settings->value("audio/unmuteLocalChannels", true).toBool();
   QString outputDevice = settings->value("audio/outputDevice").toString();
   audio = create_audioStreamer_PortAudio(hostAPI.toLocal8Bit().data(),
                                          inputDevice.toLocal8Bit().data(),
@@ -276,6 +277,11 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
 
     ShowAudioConfigDialog();
     return;
+  }
+
+  int i, ch;
+  for (i = 0; (ch = client.EnumLocalChannels(i)) != -1; i++) {
+    client.SetLocalChannelMonitoring(ch, false, 0, false, 0, true, !unmuteLocalChannels, false, false);
   }
 
   vstProcessor->attach(&client, 0);
@@ -423,11 +429,13 @@ void MainWindow::ShowAudioConfigDialog()
 
   audioDialog.setHostAPI(settings->value("audio/hostAPI").toString());
   audioDialog.setInputDevice(settings->value("audio/inputDevice").toString());
+  audioDialog.setUnmuteLocalChannels(settings->value("audio/unmuteLocalChannels", true).toBool());
   audioDialog.setOutputDevice(settings->value("audio/outputDevice").toString());
 
   if (audioDialog.exec() == QDialog::Accepted) {
     settings->setValue("audio/hostAPI", audioDialog.hostAPI());
     settings->setValue("audio/inputDevice", audioDialog.inputDevice());
+    settings->setValue("audio/unmuteLocalChannels", audioDialog.unmuteLocalChannels());
     settings->setValue("audio/outputDevice", audioDialog.outputDevice());
   }
 }
