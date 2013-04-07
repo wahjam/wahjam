@@ -28,8 +28,6 @@ class ChannelTreeWidget : public QTreeWidget
 public:
   ChannelTreeWidget(QWidget *parent = 0);
 
-  void addLocalChannel(int ch, const QString &name, bool mute);
-
   /*
    * Remote user and channel updates must be performed by enumerating all users
    * and their channels each time.  Any users or channels present in the last
@@ -56,7 +54,6 @@ public:
   };
 
 signals:
-  void LocalChannelMuteChanged(int ch, bool mute);
   void RemoteChannelMuteChanged(int useridx, int channelidx, bool mute);
 
 private slots:

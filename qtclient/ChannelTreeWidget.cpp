@@ -21,11 +21,7 @@
 
 enum
 {
-  ItemTypeLocalChannel = 0,
-  ItemTypeRemoteChannel,
-
-  ItemTypeRole = Qt::UserRole,
-  ChannelIndexRole,
+  ChannelIndexRole = Qt::UserRole,
   UserIndexRole,
 };
 
@@ -36,8 +32,6 @@ ChannelTreeWidget::ChannelTreeWidget(QWidget *parent)
   setRootIsDecorated(false);
   setItemsExpandable(false);
   setSelectionMode(QAbstractItemView::NoSelection);
-
-  QTreeWidgetItem *local = addRootItem("Local");
 
   connect(this, SIGNAL(itemChanged(QTreeWidgetItem*, int)),
           this, SLOT(handleItemChanged(QTreeWidgetItem*, int)));
@@ -60,47 +54,18 @@ QTreeWidgetItem *ChannelTreeWidget::addChannelItem(QTreeWidgetItem *parent, cons
   return channel;
 }
 
-void ChannelTreeWidget::addLocalChannel(int ch, const QString &name, bool mute)
-{
-  QTreeWidgetItem *local = topLevelItem(0);
-  QTreeWidgetItem *channel = addChannelItem(local, name);
-
-  channel->setData(0, ItemTypeRole, ItemTypeLocalChannel);
-  channel->setData(0, ChannelIndexRole, ch);
-  channel->setCheckState(1, mute ? Qt::Checked : Qt::Unchecked);
-}
-
 void ChannelTreeWidget::handleItemChanged(QTreeWidgetItem *item, int column)
 {
-  QVariant itemType = item->data(0, ItemTypeRole);
-  if (!itemType.isValid()) {
-    return;
-  }
-
   bool state = item->data(column, Qt::CheckStateRole).toBool();
-  switch (itemType.toInt(NULL)) {
-  case ItemTypeLocalChannel:
-  {
-    int ch = item->data(0, ChannelIndexRole).toInt(NULL);
-    if (column == 1) {
-      emit LocalChannelMuteChanged(ch, state);
-    }
-    break;
-  }
-  case ItemTypeRemoteChannel:
-  {
-    int useridx = item->data(0, UserIndexRole).toInt(NULL);
-    int channelidx = item->data(0, ChannelIndexRole).toInt(NULL);
-    if (column == 1) {
-      emit RemoteChannelMuteChanged(useridx, channelidx, state);
-    }
-    break;
-  }
+  int useridx = item->data(0, UserIndexRole).toInt(NULL);
+  int channelidx = item->data(0, ChannelIndexRole).toInt(NULL);
+  if (column == 1) {
+    emit RemoteChannelMuteChanged(useridx, channelidx, state);
   }
 }
 
 ChannelTreeWidget::RemoteChannelUpdater::RemoteChannelUpdater(ChannelTreeWidget *owner_)
-  : owner(owner_), toplevelidx(0), childidx(-1)
+  : owner(owner_), toplevelidx(-1), childidx(-1)
 {
 }
 
@@ -128,7 +93,6 @@ void ChannelTreeWidget::RemoteChannelUpdater::addChannel(int channelidx, const Q
     channel = owner->addChannelItem(user, name);
   }
 
-  channel->setData(0, ItemTypeRole, ItemTypeRemoteChannel);
   channel->setData(0, UserIndexRole, useridx);
   channel->setData(0, ChannelIndexRole, channelidx);
   channel->setCheckState(1, mute ? Qt::Checked : Qt::Unchecked);
@@ -137,12 +101,14 @@ void ChannelTreeWidget::RemoteChannelUpdater::addChannel(int channelidx, const Q
 /* Delete unused channels from previous user */
 void ChannelTreeWidget::RemoteChannelUpdater::prunePreviousUser()
 {
-  if (toplevelidx > 0) {
-    QTreeWidgetItem *user = owner->topLevelItem(toplevelidx);
-    while (user->childCount() > childidx + 1) {
-      QTreeWidgetItem *channel = user->takeChild(user->childCount() - 1);
-      delete channel;
-    }
+  if (toplevelidx == -1) {
+    return;
+  }
+
+  QTreeWidgetItem *user = owner->topLevelItem(toplevelidx);
+  while (user->childCount() > childidx + 1) {
+    QTreeWidgetItem *channel = user->takeChild(user->childCount() - 1);
+    delete channel;
   }
 }
 
