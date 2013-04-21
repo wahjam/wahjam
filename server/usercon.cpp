@@ -794,11 +794,18 @@ User_Group::~User_Group()
 
 void User_Group::SetLogDir(const char *path) // NULL to not log
 {
+  if (m_logfp) {
+    fclose(m_logfp);
+  }
+  m_logfp = NULL;
+
+  if (m_logdir.Get()[0]) {
+    qDebug("Finished archiving session '%s'", m_logdir.Get());
+  }
+  m_logdir.Set("");
+
   if (!path || !*path)
   {
-    if (m_logfp) fclose(m_logfp);
-    m_logfp=0;
-    m_logdir.Set("");
     return;
   }
 
@@ -828,6 +835,8 @@ void User_Group::SetLogDir(const char *path) // NULL to not log
     mkdir(tmp.Get(),0755);
 #endif
   }
+
+  qDebug("Archiving session '%s'", path);
 }
 
 void User_Group::Broadcast(Net_Message *msg, User_Connection *nosend)

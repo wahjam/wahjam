@@ -189,7 +189,6 @@ void Server::updateNextSession()
 
   if (cnt < 16 )
   {
-    qDebug("Archiving session '%s'", sessionPath.toLatin1().constData());
     group->SetLogDir(sessionPath.toLocal8Bit().constData());
     setActiveSessionUpdateTimer();
   }
