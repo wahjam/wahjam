@@ -357,6 +357,10 @@ bool MainWindow::setupWorkDir()
 
     if (basedir.mkdir(filename)) {
       client.SetWorkDir(basedir.filePath(filename).toUtf8().data());
+      if (client.config_savelocalaudio != -1) {
+        QDir workdir(basedir.filePath(filename));
+        client.SetLogFile(workdir.filePath("clipsort.log").toUtf8().data());
+      }
       return true;
     }
   }
