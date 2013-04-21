@@ -788,8 +788,7 @@ User_Group::~User_Group()
     delete m_users.Get(x);
   }
   m_users.Empty();
-  if (m_logfp) fclose(m_logfp);
-  m_logfp=0;
+  SetLogDir(NULL);
 }
 
 
