@@ -104,6 +104,7 @@ MainWindow::MainWindow(QWidget *parent)
   connect(aboutAction, SIGNAL(triggered()), this, SLOT(ShowAboutDialog()));
 
   setupStatusBar();
+  client.config_metronome_mute = !metronomeButton->isChecked();
 
   setWindowTitle(tr("Wahjam"));
 
