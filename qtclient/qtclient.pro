@@ -22,6 +22,13 @@ isEmpty(ORGDOMAIN) {
         ORGDOMAIN = "wahjam.org"
 }
 
+# Qt client binary name
+isEmpty(QTCLIENT_TARGET) {
+	TARGET = wahjam
+} else {
+	TARGET = $$QTCLIENT_TARGET
+}
+
 DEFINES += "VERSION=\'\"$$VERSION\"\'"
 DEFINES += "COMMIT_ID=\'\"$$system(git rev-parse HEAD)\"\'"
 DEFINES += "APPNAME=\'\"$$APPNAME\"\'"
@@ -32,7 +39,6 @@ DEFINES += "JAMMR_REGISTER_URL=\'\"$$JAMMR_REGISTER_URL\"\'"
 DEFINES += "JAMMR_UPGRADE_URL=\'\"$$JAMMR_UPGRADE_URL\"\'"
 
 TEMPLATE = app
-TARGET = wahjam
 DEPENDPATH += ..
 INCLUDEPATH += ..
 QT += network xml
