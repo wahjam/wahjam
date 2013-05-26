@@ -37,6 +37,8 @@ DEFINES += "ORGDOMAIN=\'\"$$ORGDOMAIN\"\'"
 DEFINES += "JAMMR_API_URL=\'\"$$JAMMR_API_URL\"\'"
 DEFINES += "JAMMR_REGISTER_URL=\'\"$$JAMMR_REGISTER_URL\"\'"
 DEFINES += "JAMMR_UPGRADE_URL=\'\"$$JAMMR_UPGRADE_URL\"\'"
+DEFINES += "JAMMR_UPDATE_URL=\'\"$$JAMMR_UPDATE_URL\"\'"
+DEFINES += "JAMMR_DOWNLOAD_URL=\'\"$$JAMMR_DOWNLOAD_URL\"\'"
 
 TEMPLATE = app
 DEPENDPATH += ..
@@ -66,6 +68,7 @@ HEADERS += VSTConfigDialog.h
 HEADERS += JammrLoginDialog.h
 HEADERS += JammrServerBrowser.h
 HEADERS += JammrAccessControlDialog.h
+HEADERS += JammrUpdateChecker.h
 HEADERS += NINJAMServerBrowser.h
 HEADERS += logging.h
 HEADERS += VSTPlugin.h
@@ -85,6 +88,7 @@ SOURCES += VSTConfigDialog.cpp
 SOURCES += JammrLoginDialog.cpp
 SOURCES += JammrServerBrowser.cpp
 SOURCES += JammrAccessControlDialog.cpp
+SOURCES += JammrUpdateChecker.cpp
 SOURCES += NINJAMServerBrowser.cpp
 SOURCES += logging.cpp
 SOURCES += VSTPlugin.cpp

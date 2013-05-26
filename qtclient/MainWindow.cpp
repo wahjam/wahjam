@@ -35,6 +35,7 @@
 #include "JammrConnectDialog.h"
 #include "JammrLoginDialog.h"
 #include "JammrAccessControlDialog.h"
+#include "JammrUpdateChecker.h"
 #include "PortAudioConfigDialog.h"
 #include "VSTPlugin.h"
 #include "VSTProcessor.h"
@@ -82,12 +83,17 @@ MainWindow::MainWindow(QWidget *parent)
   client.SetLocalChannelInfo(0, "channel0", true, 0, false, 0, true, true);
   client.SetLocalChannelMonitoring(0, false, 0.0f, false, 0.0f, false, false, false, false);
 
+  netManager = new QNetworkAccessManager(this);
+
   jammrApiUrl = settings->value("jammr/apiUrl", JAMMR_API_URL).toUrl();
   if (!jammrApiUrl.isEmpty()) {
     client.SetProtocol(JAM_PROTO_JAMMR);
-  }
 
-  netManager = new QNetworkAccessManager(this);
+    JammrUpdateChecker *updateChecker = new JammrUpdateChecker(this, netManager);
+    updateChecker->setUpdateUrl(settings->value("jammr/updateUrl", JAMMR_UPDATE_URL).toUrl());
+    updateChecker->setDownloadUrl(settings->value("jammr/downloadUrl", JAMMR_DOWNLOAD_URL).toUrl());
+    updateChecker->start();
+  }
 
   QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
   connectAction = fileMenu->addAction(tr("&Connect..."));
