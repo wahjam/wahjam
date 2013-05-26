@@ -28,6 +28,8 @@ class ChannelTreeWidget : public QTreeWidget
 public:
   ChannelTreeWidget(QWidget *parent = 0);
 
+  QSize sizeHint() const;
+
   /*
    * Remote user and channel updates must be performed by enumerating all users
    * and their channels each time.  Any users or channels present in the last
