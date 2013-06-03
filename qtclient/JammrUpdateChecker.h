@@ -1,6 +1,5 @@
 /*
-    Copyright (C) 2005-2007 Cockos Incorporated
-    Copyright (C) 2012 Stefan Hajnoczi <stefanha@gmail.com>
+    Copyright (C) 2013 Stefan Hajnoczi <stefanha@gmail.com>
 
     Wahjam is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,13 +16,33 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _NINJAMSRV_H_
-#define _NINJAMSRV_H_
+#ifndef _JAMMRUPDATECHECKER_H_
+#define _JAMMRUPDATECHECKER_H_
 
+#include <QWidget>
+#include <QUrl>
 #include <QNetworkAccessManager>
+#include <QNetworkReply>
 
-extern QNetworkAccessManager *netmanager;
+class JammrUpdateChecker : public QObject
+{
+  Q_OBJECT
 
-bool reloadConfig(int argc, char **argv, bool firstTime);
+public:
+  JammrUpdateChecker(QWidget *parent_, QNetworkAccessManager *netManager_);
+  void setUpdateUrl(const QUrl &updateUrl_);
+  void setDownloadUrl(const QUrl &downloadUrl_);
+  void start();
 
-#endif /* _NINJAMSRV_H_ */
+private slots:
+  void requestFinished();
+
+private:
+  QWidget *parent;
+  QNetworkAccessManager *netManager;
+  QUrl updateUrl;
+  QUrl downloadUrl;
+  QNetworkReply *reply;
+};
+
+#endif /* _JAMMRUPDATECHECKER_H_ */

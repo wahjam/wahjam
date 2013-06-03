@@ -30,10 +30,20 @@
 
 #include "netmsg.h"
 
+enum JamProtocol {
+  JAM_PROTO_NINJAM,
+  JAM_PROTO_JAMMR,
+};
 
-#define PROTO_VER_MIN 0x00020000
-#define PROTO_VER_MAX 0x0002ffff
-#define PROTO_VER_CUR 0x00020000
+/* NINJAM protocol */
+#define PROTO_NINJAM_VER_MIN 0x00020000
+#define PROTO_NINJAM_VER_MAX 0x0002ffff
+#define PROTO_NINJAM_VER_CUR 0x00020000
+
+/* Jammr protocol */
+#define PROTO_JAMMR_VER_MIN 0x80000000
+#define PROTO_JAMMR_VER_MAX 0x8000ffff
+#define PROTO_JAMMR_VER_CUR 0x80000000
 
 
 #define MESSAGE_SERVER_AUTH_CHALLENGE 0x00

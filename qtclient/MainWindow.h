@@ -78,11 +78,19 @@ private slots:
   void XmitToggled(bool checked);
   void MetronomeToggled(bool checked);
   void Reconnect();
+  void AdminTopicDialog();
+  void AdminBPMDialog();
+  void AdminBPIDialog();
+  void AdminAccessControlDialog();
+  void KickMenuAboutToShow();
+  void KickMenuTriggered(QAction *action);
 
 private:
   static MainWindow *instance;
 
   NJClient client;
+  QUrl jammrApiUrl;
+  QString jammrAuthToken;
   audioStreamer *audio;
   VSTProcessor *vstProcessor;
   VSTConfigDialog *vstConfigDialog;
@@ -94,6 +102,12 @@ private:
   QAction *disconnectAction;
   QAction *audioConfigAction;
   QMenu *voteMenu;
+  QMenu *adminMenu;
+  QAction *adminTopicAction;
+  QAction *adminBPMAction;
+  QAction *adminBPIAction;
+  QAction *adminAccessControlAction;
+  QMenu *kickMenu;
   QLabel *bpmLabel;
   QLabel *bpiLabel;
   MetronomeBar *metronomeBar;
@@ -113,6 +127,8 @@ private:
   void cleanupWorkDir(const QString &path);
   bool tryReconnect();
   void resetReconnect();
+  void ShowNINJAMConnectDialog();
+  void ShowJammrConnectDialog();
   void OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
   void chatAddLine(const QString &prefix, const QString &content,
                    const QString &href = "", const QString &linktext = "");

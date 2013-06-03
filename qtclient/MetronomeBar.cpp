@@ -77,7 +77,7 @@ QSize MetronomeBar::sizeHint() const
 
 QSize MetronomeBar::minimumSizeHint() const
 {
-  return QSize(bpi * 8, 8);
+  return QSize(bpi * 24, 24);
 }
 
 void MetronomeBar::paintEvent(QPaintEvent *event)

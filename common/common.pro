@@ -8,9 +8,11 @@ SOURCES = audiostream_pa.cpp \
           mpb.cpp \
           netmsg.cpp \
           njclient.cpp \
-          njmisc.cpp
+          njmisc.cpp \
+          UserPrivs.cpp
 HEADERS = audiostream.h \
           mpb.h \
           netmsg.h \
           njclient.h \
-          njmisc.h
+          njmisc.h \
+          UserPrivs.h

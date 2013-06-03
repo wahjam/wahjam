@@ -45,7 +45,9 @@
 
 #include "../common/netmsg.h"
 #include "../common/mpb.h"
+#include "common/UserPrivs.h"
 #include "usercon.h"
+#include "JammrUserLookup.h"
 
 #include "../WDL/lineparse.h"
 #include "../WDL/string.h"
@@ -58,6 +60,8 @@
 #include "ninjamsrv.h"
 
 static const char *startupmessage = "Wahjam Server " VERSION " (" COMMIT_ID ") built on " __DATE__ " at " __TIME__ " starting up...\n" "Copyright (C) 2005-2007, Cockos, Inc.\nCopyright (C) 2011-2012, Wahjam contributors\n";
+
+QNetworkAccessManager *netmanager;
 
 static ServerConfig g_config;
 static Server *g_server;
@@ -174,6 +178,18 @@ public:
 
 static IUserInfoLookup *myCreateUserLookup(char *username)
 {
+  if (g_config.statusUser.Get()[0] &&
+      !strcmp(username, g_config.statusUser.Get())) {
+    return new localUserInfoLookup(username);
+  }
+
+  if (!g_config.jammrApiUrl.isEmpty()) {
+    return new JammrUserLookup(g_config.jammrApiUrl,
+                               g_config.jammrServerName,
+                               g_config.maxchUser,
+                               username);
+  }
+
   return new localUserInfoLookup(username);
 }
 
@@ -339,23 +355,7 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
     if (lp->getnumtokens()>3)
     {
       char *ptr=lp->gettoken_str(3);
-      while (*ptr)
-      {
-        if (*ptr == '*') p->priv_flag|=~PRIV_HIDDEN; // everything but hidden if * used
-        else if (*ptr == 'T' || *ptr == 't') p->priv_flag |= PRIV_TOPIC;
-        else if (*ptr == 'B' || *ptr == 'b') p->priv_flag |= PRIV_BPM;
-        else if (*ptr == 'C' || *ptr == 'c') p->priv_flag |= PRIV_CHATSEND;
-        else if (*ptr == 'K' || *ptr == 'k') p->priv_flag |= PRIV_KICK;        
-        else if (*ptr == 'R' || *ptr == 'r') p->priv_flag |= PRIV_RESERVE;        
-        else if (*ptr == 'M' || *ptr == 'm') p->priv_flag |= PRIV_ALLOWMULTI;
-        else if (*ptr == 'H' || *ptr == 'h') p->priv_flag |= PRIV_HIDDEN;       
-        else if (*ptr == 'V' || *ptr == 'v') p->priv_flag |= PRIV_VOTE;               
-        else 
-        {
-          qWarning("Unknown user priviledge flag '%c'",*ptr);
-        }
-        ptr++;
-      }
+      p->priv_flag = privsFromString(ptr);
     }
     else p->priv_flag=PRIV_CHATSEND|PRIV_VOTE;// default privs
     config->userlist.Add(p);
@@ -416,6 +416,14 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
     }
     config->allowAnonChat = x;
   }
+  else if (token == QString("JammrApi").toLower())
+  {
+    if (lp->getnumtokens() != 5) return -1;
+    config->jammrApiUrl = lp->gettoken_str(1);
+    config->jammrApiUrl.setUserName(lp->gettoken_str(2));
+    config->jammrApiUrl.setPassword(lp->gettoken_str(3));
+    config->jammrServerName = lp->gettoken_str(4);
+  }
   else return -3;
   return 0;
 }
@@ -457,6 +465,8 @@ static int ReadConfig(ServerConfig *config, char *configfile)
   config->license.Set("");
   config->defaultTopic.Set("");
   config->acl.clear();
+  config->jammrApiUrl.clear();
+  config->jammrServerName.clear();
 
   int x;
   for(x=0; x < config->userlist.GetSize(); x++)
@@ -600,6 +610,8 @@ int main(int argc, char **argv)
   {
     usage(argv[0]);
   }
+
+  netmanager = new QNetworkAccessManager(&app);
 
   g_server = new Server(myCreateUserLookup);
 

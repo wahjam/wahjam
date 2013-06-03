@@ -25,7 +25,7 @@
 ConnectDialog::ConnectDialog(QNetworkAccessManager *netManager, QWidget *parent)
   : QDialog(parent)
 {
-  serverBrowser = new ServerBrowser(netManager, this);
+  serverBrowser = new NINJAMServerBrowser(netManager, this);
   connect(serverBrowser, SIGNAL(serverItemClicked(const QString &)),
           this, SLOT(setHost(const QString &)));
   connect(serverBrowser, SIGNAL(serverItemActivated(const QString &)),

@@ -16,7 +16,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include <QRegExp>
 #include "ServerBrowser.h"
 
 
@@ -26,7 +25,6 @@
 ServerBrowser::ServerBrowser(QNetworkAccessManager *manager_, QWidget *parent)
   : QTreeWidget(parent), netManager(manager_)
 {
-  setHeaderLabels(QStringList() << "Server" << "Tempo" << "Users");
   setRootIsDecorated(false);
   setItemsExpandable(false);
   setColumnWidth(0, 200);
@@ -39,9 +37,7 @@ ServerBrowser::ServerBrowser(QNetworkAccessManager *manager_, QWidget *parent)
 
 void ServerBrowser::loadServerList(const QUrl &url)
 {
-  QNetworkRequest request(url);
-
-  reply = netManager->get(request);
+  reply = sendNetworkRequest(url);
 
   connect(reply, SIGNAL(finished()),
           this, SLOT(completeDownloadServerList()));
@@ -52,12 +48,12 @@ void ServerBrowser::loadServerList(const QUrl &url)
 
 void ServerBrowser::onItemClicked(QTreeWidgetItem *item, int column)
 {
-  emit serverItemClicked(item->data(0, Qt::DisplayRole).toString());
+  emit serverItemClicked(item->data(0, Qt::UserRole).toString());
 }
 
 void ServerBrowser::onItemActivated(QTreeWidgetItem *item, int column)
 {
-  emit serverItemActivated(item->data(0, Qt::DisplayRole).toString());
+  emit serverItemActivated(item->data(0, Qt::UserRole).toString());
 }
 
 void ServerBrowser::completeDownloadServerList()
@@ -66,20 +62,3 @@ void ServerBrowser::completeDownloadServerList()
 
   parseServerList(&stream);
 }
-
-void ServerBrowser::parseServerList(QTextStream *stream)
-{
-  QRegExp serverPattern("SERVER\\s+\"([^\"]+)\"\\s+\"([^\"]+)\"\\s+\"([^\"]+)\".*");
-
-  while (!stream->atEnd()) {
-    if (!serverPattern.exactMatch(stream->readLine())) {
-      continue;
-    }
-
-    QTreeWidgetItem *item = new QTreeWidgetItem(this);
-    item->setText(0, serverPattern.cap(1)); // server
-    item->setText(1, serverPattern.cap(2)); // bpm/bpi
-    item->setText(2, serverPattern.cap(3)); // member list
-  }
-}
-

@@ -140,6 +140,6 @@ void logInit(const QString &filename)
 
   qInstallMsgHandler(logMsgHandler);
 
-  qDebug("Wahjam %s (%s)", VERSION, COMMIT_ID);
+  qDebug(APPNAME " %s (%s)", VERSION, COMMIT_ID);
   logSystemInformation();
 }

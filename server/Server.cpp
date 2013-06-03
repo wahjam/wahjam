@@ -102,8 +102,12 @@ bool Server::setConfig(ServerConfig *config_)
   group->m_voting_timeout = config->votingTimeout;
   group->m_allow_hidden_users = config->allowHiddenUsers;
 
-  /* Do not change back to default BPM/BPI if already running */
+  /* Only set certain settings when not active */
   if (!listener.isListening()) {
+    group->SetProtocol(config->jammrApiUrl.isEmpty() ?
+                       JAM_PROTO_NINJAM :
+                       JAM_PROTO_JAMMR);
+
     group->SetConfig(config->defaultBPI, config->defaultBPM);
   }
 
@@ -189,7 +193,6 @@ void Server::updateNextSession()
 
   if (cnt < 16 )
   {
-    qDebug("Archiving session '%s'", sessionPath.toLatin1().constData());
     group->SetLogDir(sessionPath.toLocal8Bit().constData());
     setActiveSessionUpdateTimer();
   }

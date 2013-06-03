@@ -32,11 +32,16 @@
 
 #include "MainWindow.h"
 #include "ConnectDialog.h"
+#include "JammrConnectDialog.h"
+#include "JammrLoginDialog.h"
+#include "JammrAccessControlDialog.h"
+#include "JammrUpdateChecker.h"
 #include "PortAudioConfigDialog.h"
 #include "VSTPlugin.h"
 #include "VSTProcessor.h"
 #include "VSTConfigDialog.h"
 #include "common/njmisc.h"
+#include "common/UserPrivs.h"
 
 MainWindow *MainWindow::instance; /* singleton */
 
@@ -80,6 +85,16 @@ MainWindow::MainWindow(QWidget *parent)
 
   netManager = new QNetworkAccessManager(this);
 
+  jammrApiUrl = settings->value("jammr/apiUrl", JAMMR_API_URL).toUrl();
+  if (!jammrApiUrl.isEmpty()) {
+    client.SetProtocol(JAM_PROTO_JAMMR);
+
+    JammrUpdateChecker *updateChecker = new JammrUpdateChecker(this, netManager);
+    updateChecker->setUpdateUrl(settings->value("jammr/updateUrl", JAMMR_UPDATE_URL).toUrl());
+    updateChecker->setDownloadUrl(settings->value("jammr/downloadUrl", JAMMR_DOWNLOAD_URL).toUrl());
+    updateChecker->start();
+  }
+
   QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
   connectAction = fileMenu->addAction(tr("&Connect..."));
   disconnectAction = fileMenu->addAction(tr("&Disconnect"));
@@ -99,6 +114,22 @@ MainWindow::MainWindow(QWidget *parent)
   connect(voteBPMAction, SIGNAL(triggered()), this, SLOT(VoteBPMDialog()));
   connect(voteBPIAction, SIGNAL(triggered()), this, SLOT(VoteBPIDialog()));
 
+  adminMenu = menuBar()->addMenu(tr("&Admin"));
+  adminTopicAction = adminMenu->addAction(tr("Set topic"));
+  adminBPMAction = adminMenu->addAction(tr("Set BPM"));
+  adminBPIAction = adminMenu->addAction(tr("Set BPI"));
+  adminAccessControlAction = adminMenu->addAction(tr("Access control..."));
+  connect(adminTopicAction, SIGNAL(triggered()), this, SLOT(AdminTopicDialog()));
+  connect(adminBPMAction, SIGNAL(triggered()), this, SLOT(AdminBPMDialog()));
+  connect(adminBPIAction, SIGNAL(triggered()), this, SLOT(AdminBPIDialog()));
+  connect(adminAccessControlAction, SIGNAL(triggered()),
+          this, SLOT(AdminAccessControlDialog()));
+
+  kickMenu = adminMenu->addMenu(tr("Kick"));
+  connect(kickMenu, SIGNAL(aboutToShow()), this, SLOT(KickMenuAboutToShow()));
+  connect(kickMenu, SIGNAL(triggered(QAction *)), this,
+          SLOT(KickMenuTriggered(QAction *)));
+
   QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
   QAction *aboutAction = helpMenu->addAction(tr("&About..."));
   connect(aboutAction, SIGNAL(triggered()), this, SLOT(ShowAboutDialog()));
@@ -106,7 +137,7 @@ MainWindow::MainWindow(QWidget *parent)
   setupStatusBar();
   client.config_metronome_mute = !metronomeButton->isChecked();
 
-  setWindowTitle(tr("Wahjam"));
+  setWindowTitle(tr(APPNAME));
 
   chatOutput = new ChatOutput(this);
   chatOutput->connect(chatOutput, SIGNAL(anchorClicked(const QUrl&)),
@@ -152,7 +183,10 @@ MainWindow::MainWindow(QWidget *parent)
   connectedState = new QState(connectionStateMachine);
   disconnectedState = new QState(connectionStateMachine);
 
-  connectingState->assignProperty(voteMenu, "enabled", true);
+  /* Jammr has a PRIVS chat message that reports user privileges */
+  if (jammrApiUrl.isEmpty()) {
+    connectingState->assignProperty(voteMenu, "enabled", true);
+  }
   connectingState->assignProperty(connectAction, "enabled", false);
   connectingState->assignProperty(disconnectAction, "enabled", true);
   connectingState->assignProperty(audioConfigAction, "enabled", false);
@@ -160,6 +194,13 @@ MainWindow::MainWindow(QWidget *parent)
   disconnectedState->assignProperty(connectAction, "enabled", true);
   disconnectedState->assignProperty(disconnectAction, "enabled", false);
   disconnectedState->assignProperty(audioConfigAction, "enabled", true);
+  disconnectedState->assignProperty(adminMenu, "enabled", false);
+  disconnectedState->assignProperty(adminTopicAction, "enabled", false);
+  disconnectedState->assignProperty(adminBPMAction, "enabled", false);
+  disconnectedState->assignProperty(adminBPIAction, "enabled", false);
+  disconnectedState->assignProperty(adminAccessControlAction,
+                                    "enabled", false);
+  disconnectedState->assignProperty(kickMenu, "enabled", false);
 
   disconnectedState->addTransition(this, SIGNAL(Connecting()), connectingState);
   connectingState->addTransition(this, SIGNAL(Connected()), connectedState);
@@ -279,7 +320,7 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
 
   vstProcessor->attach(&client, 0);
 
-  setWindowTitle(tr("Wahjam - %1").arg(host));
+  setWindowTitle(tr(APPNAME " - %1").arg(host));
 
   client.Connect(host.toAscii().data(),
                  user.toUtf8().data(),
@@ -307,7 +348,7 @@ void MainWindow::Disconnect()
     chatOutput->addInfoMessage(tr("Disconnected"));
   }
 
-  setWindowTitle(tr("Wahjam"));
+  setWindowTitle(tr(APPNAME));
 
   BeatsPerMinuteChanged(0);
   BeatsPerIntervalChanged(0);
@@ -388,7 +429,7 @@ void MainWindow::cleanupWorkDir(const QString &path)
   workDir.rmdir(name);
 }
 
-void MainWindow::ShowConnectDialog()
+void MainWindow::ShowNINJAMConnectDialog()
 {
   const QUrl url("http://autosong.ninjam.com/serverlist.php");
   ConnectDialog connectDialog(netManager);
@@ -420,6 +461,47 @@ void MainWindow::ShowConnectDialog()
   Connect(connectDialog.host(), user, connectDialog.pass());
 }
 
+void MainWindow::ShowJammrConnectDialog()
+{
+  /* Request login details if we haven't stashed them */
+  if (jammrApiUrl.userName().isEmpty()) {
+    QUrl registerUrl = settings->value("jammr/registerUrl", JAMMR_REGISTER_URL).toUrl();
+    JammrLoginDialog loginDialog(netManager, jammrApiUrl, registerUrl);
+
+    loginDialog.setUsername(settings->value("jammr/user").toString());
+
+    if (loginDialog.exec() != QDialog::Accepted) {
+      return;
+    }
+
+    settings->setValue("jammr/user", loginDialog.username());
+
+    /* Stash login details into the API URL so others can use them */
+    jammrApiUrl.setUserName(loginDialog.username());
+    jammrApiUrl.setPassword(loginDialog.password());
+    jammrAuthToken = loginDialog.token();
+  }
+
+  QUrl upgradeUrl = settings->value("jammr/upgradeUrl", JAMMR_UPGRADE_URL).toUrl();
+  JammrConnectDialog connectDialog(netManager, jammrApiUrl, upgradeUrl);
+  connectDialog.resize(600, 500);
+
+  if (connectDialog.exec() != QDialog::Accepted) {
+    return;
+  }
+
+  Connect(connectDialog.host(), jammrApiUrl.userName(), jammrAuthToken);
+}
+
+void MainWindow::ShowConnectDialog()
+{
+  if (jammrApiUrl.isEmpty()) {
+    ShowNINJAMConnectDialog();
+  } else {
+    ShowJammrConnectDialog();
+  }
+}
+
 void MainWindow::ShowAudioConfigDialog()
 {
   PortAudioConfigDialog audioDialog;
@@ -444,14 +526,14 @@ void MainWindow::ShowVSTConfigDialog()
 
 void MainWindow::ShowAboutDialog()
 {
-  QMessageBox::about(this, tr("About Wahjam"),
-      tr("<h1>Wahjam version %1</h1>"
-         "<p><b>Website:</b> <a href=\"http://wahjam.org/\">http://wahjam.org/</a></p>"
-         "<p><b>Git commit:</b> <a href=\"http://github.com/wahjam/wahjam/commit/%2\">%2</a></p>"
+  QMessageBox::about(this, tr("About " APPNAME),
+      tr("<h1>%1 version %2</h1>"
+         "<p><b>Website:</b> <a href=\"http://%3/\">http://%3/</a></p>"
+         "<p><b>Git commit:</b> <a href=\"http://github.com/wahjam/wahjam/commit/%4\">%4</a></p>"
          "<p>Based on <a href=\"http://ninjam.com/\">NINJAM</a>.</p>"
          "<p>Licensed under the GNU General Public License version 2, see "
          "<a href=\"http://www.gnu.org/licenses/gpl-2.0.html\">"
-         "http://www.gnu.org/licenses/gpl-2.0.html</a> for details.</p>").arg(VERSION, COMMIT_ID));
+         "http://www.gnu.org/licenses/gpl-2.0.html</a> for details.</p>").arg(APPNAME, VERSION, ORGDOMAIN, COMMIT_ID));
 }
 
 void MainWindow::UserInfoChanged()
@@ -519,6 +601,10 @@ void MainWindow::ClientStatusChanged(int newStatus)
 
   case NJClient::NJC_STATUS_INVALIDAUTH:
     statusMessage = tr("Error: authentication failed");
+
+    /* Clear stashed Jammr REST API credentials */
+    jammrApiUrl.setUserInfo("");
+    jammrAuthToken.clear();
     break;
 
   case NJClient::NJC_STATUS_OK:
@@ -609,6 +695,16 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
     chatOutput->addInfoMessage(tr("%1 has joined the server").arg(parms[1]));
   } else if (parms[0] == "PART") {
     chatOutput->addInfoMessage(tr("%1 has left the server").arg(parms[1]));
+  } else if (parms[0] == "PRIVS") {
+    unsigned int privs = privsFromString(parms[1]);
+    voteMenu->setEnabled(privs & PRIV_VOTE);
+    adminMenu->setEnabled(privs & (PRIV_TOPIC | PRIV_BPM | PRIV_KICK));
+    adminTopicAction->setEnabled(privs & PRIV_TOPIC);
+    adminBPMAction->setEnabled(privs & PRIV_BPM);
+    adminBPIAction->setEnabled(privs & PRIV_BPM);
+    adminAccessControlAction->setEnabled(!jammrApiUrl.isEmpty() &&
+                                         (privs & PRIV_KICK));
+    kickMenu->setEnabled(privs & PRIV_KICK);
   } else {
     chatOutput->addInfoMessage(tr("Unrecognized command:"));
     for (i = 0; i < nparms; i++) {
@@ -719,4 +815,61 @@ void MainWindow::XmitToggled(bool checked)
 void MainWindow::MetronomeToggled(bool checked)
 {
   client.config_metronome_mute = !checked;
+}
+
+void MainWindow::AdminTopicDialog()
+{
+  bool ok;
+  QString newTopic = QInputDialog::getText(this, tr("Set topic"),
+      tr("New topic:"), QLineEdit::Normal, "", &ok);
+
+  if (ok && !newTopic.isEmpty()) {
+    SendChatMessage(QString("/topic %1").arg(newTopic));
+  }
+}
+
+void MainWindow::AdminBPMDialog()
+{
+  bool ok;
+  int bpm = QInputDialog::getInt(this, tr("Set BPM"),
+                                 tr("Tempo in beats per minute:"),
+                                 120, 40, 400, 1, &ok);
+  if (ok) {
+    SendChatMessage(QString("/bpm %1").arg(bpm));
+  }
+}
+
+void MainWindow::AdminBPIDialog()
+{
+  bool ok;
+  int bpi = QInputDialog::getInt(this, tr("Set BPI"),
+                                 tr("Interval length in beats:"),
+                                 16, 4, 64, 1, &ok);
+  if (ok) {
+    SendChatMessage(QString("/bpi %1").arg(bpi));
+  }
+}
+
+void MainWindow::AdminAccessControlDialog()
+{
+  JammrAccessControlDialog accessControlDialog(netManager,
+      jammrApiUrl, client.GetHostName(), this);
+  accessControlDialog.exec();
+}
+
+void MainWindow::KickMenuAboutToShow()
+{
+  kickMenu->clear();
+
+  for (int i = 0; i < client.GetNumUsers(); i++) {
+    const char *username = client.GetUserState(i);
+    if (username) {
+      kickMenu->addAction(username);
+    }
+  }
+}
+
+void MainWindow::KickMenuTriggered(QAction *action)
+{
+  SendChatMessage(QString("/kick %1").arg(action->text()));
 }

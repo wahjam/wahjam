@@ -32,9 +32,9 @@ int main(int argc, char *argv[])
   QApplication app(argc, argv);
 
   /* These are used by QSettings persistent settings */
-  app.setOrganizationName("Wahjam Project");
-  app.setOrganizationDomain("wahjam.org");
-  app.setApplicationName("Wahjam");
+  app.setOrganizationName(ORGNAME);
+  app.setOrganizationDomain(ORGDOMAIN);
+  app.setApplicationName(APPNAME);
 
   /* Instantiate QSettings now that application information has been set */
   settings = new QSettings(&app);

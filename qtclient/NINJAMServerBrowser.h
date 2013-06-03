@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2005-2007 Cockos Incorporated
+    Copyright (C) 2012 Ikkei Shimomura (tea) <Ikkei.Shimomura@gmail.com>
     Copyright (C) 2012 Stefan Hajnoczi <stefanha@gmail.com>
 
     Wahjam is free software; you can redistribute it and/or modify
@@ -17,13 +17,22 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _NINJAMSRV_H_
-#define _NINJAMSRV_H_
+#ifndef _NINJAMSERVERBROWSER_H
+#define _NINJAMSERVERBROWSER_H
 
-#include <QNetworkAccessManager>
 
-extern QNetworkAccessManager *netmanager;
+#include "ServerBrowser.h"
 
-bool reloadConfig(int argc, char **argv, bool firstTime);
 
-#endif /* _NINJAMSRV_H_ */
+class NINJAMServerBrowser : public ServerBrowser
+{
+  Q_OBJECT
+
+public:
+  NINJAMServerBrowser(QNetworkAccessManager *manager_, QWidget *parent=0);
+  QNetworkReply *sendNetworkRequest(const QUrl &url);
+  void parseServerList(QTextStream *stream);
+};
+
+#endif
+

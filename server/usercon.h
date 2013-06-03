@@ -45,15 +45,6 @@
 #define MAX_UPLOADS 32
 #define MAX_DOWNLOADS 128
 
-#define PRIV_TOPIC 1
-#define PRIV_CHATSEND 2
-#define PRIV_BPM 4
-#define PRIV_KICK 8
-#define PRIV_RESERVE 16
-#define PRIV_ALLOWMULTI 32 // allows multiple users by the same name (subsequent users append -X to them)
-#define PRIV_HIDDEN 64   // hidden user, doesn't count for a slot, too
-#define PRIV_VOTE 128
-
 #define MAX_BPM 400
 #define MAX_BPI 64
 #define MIN_BPM 40
@@ -104,6 +95,8 @@ class User_Group : public QObject
     void SetLicenseText(char *text) { m_licensetext.Set(text); }
     void Broadcast(Net_Message *msg, User_Connection *nosend=0);
 
+    void SetProtocol(JamProtocol proto);
+    JamProtocol GetProtocol() const;
 
     void SetLogDir(const char *path); // NULL to not log
 
@@ -139,6 +132,7 @@ class User_Group : public QObject
 
   private:
     QSignalMapper signalMapper;
+    JamProtocol protocol;
 };
 
 
