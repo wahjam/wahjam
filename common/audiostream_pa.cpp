@@ -23,6 +23,17 @@
 #include <QtGlobal>
 #include "audiostream.h"
 
+static void logPortAudioError(const char *msg, PaError error)
+{
+  if (error == paUnanticipatedHostError) {
+    const PaHostErrorInfo *info = Pa_GetLastHostErrorInfo();
+    qCritical("%s: unanticipated host error: %s (%ld)",
+              msg, info->errorText, info->errorCode);
+  } else {
+    qCritical("%s: %s", msg, Pa_GetErrorText(error));
+  }
+}
+
 class PortAudioStreamer : public audioStreamer
 {
 public:
@@ -101,7 +112,7 @@ bool PortAudioStreamer::Start(const PaStreamParameters *inputParams,
                         paPrimeOutputBuffersUsingStreamCallback,
                         streamCallbackTrampoline, this);
   if (error != paNoError) {
-    qCritical("Pa_OpenStream() failed: %s", Pa_GetErrorText(error));
+    logPortAudioError("Pa_OpenStream() failed", error);
     stream = NULL;
     return false;
   }
@@ -112,7 +123,7 @@ bool PortAudioStreamer::Start(const PaStreamParameters *inputParams,
 
   error = Pa_StartStream(stream);
   if (error != paNoError) {
-    qCritical("Pa_StartStream() failed: %s", Pa_GetErrorText(error));
+    logPortAudioError("Pa_StartStream() failed", error);
     Pa_CloseStream(stream);
     stream = NULL;
     return false;
@@ -290,7 +301,7 @@ bool portAudioInit()
 {
   PaError error = Pa_Initialize();
   if (error != paNoError) {
-    qCritical("Pa_Initialize() failed: %s", Pa_GetErrorText(error));
+    logPortAudioError("Pa_Initialize() failed", error);
     return false;
   }
   atexit(portAudioCleanup);
