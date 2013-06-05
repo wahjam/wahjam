@@ -110,6 +110,21 @@ bool PortAudioStreamer::Start(const PaStreamParameters *inputParams,
 {
   PaError error;
 
+  qDebug("Trying Pa_OpenStream() with sampleRate %g innch %d outnch %d",
+         sampleRate, inputParams->channelCount, outputParams->channelCount);
+  const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(inputParams->device);
+  if (deviceInfo) {
+    const PaHostApiInfo *hostApiInfo = Pa_GetHostApiInfo(deviceInfo->hostApi);
+    qDebug("Input device: %s (%s)", deviceInfo->name,
+           hostApiInfo ? hostApiInfo->name : "<invalid host api>");
+  }
+  deviceInfo = Pa_GetDeviceInfo(outputParams->device);
+  if (deviceInfo) {
+    const PaHostApiInfo *hostApiInfo = Pa_GetHostApiInfo(deviceInfo->hostApi);
+    qDebug("Output device: %s (%s)", deviceInfo->name,
+           hostApiInfo ? hostApiInfo->name : "<invalid host api>");
+  }
+
   error = Pa_OpenStream(&stream, inputParams, outputParams,
                         sampleRate, paFramesPerBufferUnspecified,
                         paPrimeOutputBuffersUsingStreamCallback,
