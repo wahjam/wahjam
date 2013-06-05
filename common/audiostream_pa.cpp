@@ -41,7 +41,8 @@ public:
   ~PortAudioStreamer();
 
   bool Start(const PaStreamParameters *inputParams,
-             const PaStreamParameters *outputParams);
+             const PaStreamParameters *outputParams,
+             double sampleRate);
   void Stop();
 
   const char *GetChannelName(int idx);
@@ -77,8 +78,9 @@ int PortAudioStreamer::streamCallback(const void *input, void *output,
 {
   float **inbuf = (float**)input; // const-cast due to SPLPROC prototype
   float **outbuf = static_cast<float**>(output);
+  const PaStreamInfo *info = Pa_GetStreamInfo(stream);
 
-  splproc(inbuf, m_innch, outbuf, m_outnch, frameCount, m_srate);
+  splproc(inbuf, m_innch, outbuf, m_outnch, frameCount, info->sampleRate);
   return paContinue;
 }
 
@@ -103,12 +105,13 @@ PortAudioStreamer::~PortAudioStreamer()
 
 /* Returns true on success, false on failure */
 bool PortAudioStreamer::Start(const PaStreamParameters *inputParams,
-                              const PaStreamParameters *outputParams)
+                              const PaStreamParameters *outputParams,
+                              double sampleRate)
 {
   PaError error;
 
   error = Pa_OpenStream(&stream, inputParams, outputParams,
-                        m_srate, paFramesPerBufferUnspecified,
+                        sampleRate, paFramesPerBufferUnspecified,
                         paPrimeOutputBuffersUsingStreamCallback,
                         streamCallbackTrampoline, this);
   if (error != paNoError) {
@@ -117,6 +120,7 @@ bool PortAudioStreamer::Start(const PaStreamParameters *inputParams,
     return false;
   }
 
+  m_srate = sampleRate;
   m_innch = inputParams->channelCount;
   m_outnch = outputParams->channelCount;
   m_bps = 32;
@@ -198,7 +202,7 @@ static const PaDeviceInfo *findDeviceInfo(PaHostApiIndex hostAPI, const char *na
 
 static bool setupParameters(const char *hostAPI, const char *inputDevice,
     const char *outputDevice, PaStreamParameters *inputParams,
-    PaStreamParameters *outputParams)
+    PaStreamParameters *outputParams, double *sampleRate)
 {
   PaHostApiIndex hostAPIIndex;
   if (!findHostAPIInfo(hostAPI, &hostAPIIndex)) {
@@ -231,20 +235,37 @@ static bool setupParameters(const char *hostAPI, const char *inputDevice,
 
   inputParams->hostApiSpecificStreamInfo = NULL;
   outputParams->hostApiSpecificStreamInfo = NULL;
-  return true;
+
+  PaError error;
+  double sampleRates[] = {
+    qMax(inputDeviceInfo->defaultSampleRate,
+         outputDeviceInfo->defaultSampleRate),
+    qMin(inputDeviceInfo->defaultSampleRate,
+         outputDeviceInfo->defaultSampleRate),
+  };
+  for (size_t i = 0; i < sizeof(sampleRates) / sizeof(sampleRates[0]); i++) {
+    error = Pa_IsFormatSupported(inputParams, outputParams, sampleRates[i]);
+    if (error == paFormatIsSupported) {
+      *sampleRate = sampleRates[i];
+      return true;
+    }
+  }
+  return false;
 }
 
 audioStreamer *create_audioStreamer_PortAudio(const char *hostAPI,
     const char *inputDevice, const char *outputDevice, SPLPROC proc)
 {
   PaStreamParameters inputParams, outputParams;
+  double sampleRate;
   if (!setupParameters(hostAPI, inputDevice, outputDevice,
-                       &inputParams, &outputParams)) {
+                       &inputParams, &outputParams,
+                       &sampleRate)) {
     return NULL;
   }
 
   PortAudioStreamer *streamer = new PortAudioStreamer(proc);
-  if (!streamer->Start(&inputParams, &outputParams)) {
+  if (!streamer->Start(&inputParams, &outputParams, sampleRate)) {
     delete streamer;
     return NULL;
   }
