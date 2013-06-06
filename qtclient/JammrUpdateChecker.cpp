@@ -60,6 +60,12 @@ void JammrUpdateChecker::requestFinished()
     return;
   }
 
+  int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+  if (statusCode != 200 /* HTTP SUCCESS */) {
+    qCritical("Update checker HTTP reply failed (status=%d)", statusCode);
+    return;
+  }
+
   QString latestVersion = QString::fromUtf8(reply->readAll()).trimmed();
   qDebug("Update checker finished, current \"%s\" latest \"%s\"",
          VERSION, latestVersion.toLatin1().data());
