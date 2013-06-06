@@ -19,6 +19,7 @@
 #include <QNetworkRequest>
 #include <QMessageBox>
 #include <QDesktopServices>
+#include <QCoreApplication>
 
 #include "JammrUpdateChecker.h"
 
@@ -75,10 +76,11 @@ void JammrUpdateChecker::requestFinished()
 
   QMessageBox::StandardButton button = QMessageBox::information(parent,
       tr("Updates available..."),
-      tr("It is recommended that you update to version %1.  Download updates now?").arg(latestVersion),
+      tr("It is recommended that you update to version %1.  Close jammr and download updates now?").arg(latestVersion),
       QMessageBox::Yes | QMessageBox::No,
       QMessageBox::Yes);
   if (button == QMessageBox::Yes) {
     QDesktopServices::openUrl(downloadUrl);
+    QCoreApplication::quit();
   }
 }
