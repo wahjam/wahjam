@@ -84,6 +84,7 @@ private slots:
   void AdminAccessControlDialog();
   void KickMenuAboutToShow();
   void KickMenuTriggered(QAction *action);
+  void Startup();
 
 private:
   static MainWindow *instance;

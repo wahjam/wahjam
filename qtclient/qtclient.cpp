@@ -66,15 +66,5 @@ int main(int argc, char *argv[])
   MainWindow mainWindow;
   mainWindow.show();
 
-  /* Show the connection dialog right away, except on first start when the user
-   * needs to configure their audio before playing.
-   */
-  if (settings->contains("app/lastLaunchVersion")) {
-    mainWindow.ShowConnectDialog();
-  } else {
-    mainWindow.ShowAudioConfigDialog();
-  }
-  settings->setValue("app/lastLaunchVersion", VERSION);
-
   return app.exec();
 }

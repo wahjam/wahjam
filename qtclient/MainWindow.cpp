@@ -231,6 +231,8 @@ MainWindow::MainWindow(QWidget *parent)
 
   vstProcessor = new VSTProcessor(this);
   vstConfigDialog = new VSTConfigDialog(vstProcessor, this);
+
+  QTimer::singleShot(0, this, SLOT(Startup()));
 }
 
 MainWindow::~MainWindow()
@@ -273,6 +275,20 @@ void MainWindow::setupStatusBar()
   bpiLabel->setToolTip(tr("Beats per interval"));
   bpiLabel->setFrameStyle(QFrame::Panel | QFrame::Sunken);
   statusBar()->addPermanentWidget(bpiLabel);
+}
+
+/* Idle processing once event loop has started */
+void MainWindow::Startup()
+{
+  /* Show the connection dialog right away, except on first start when the user
+   * needs to configure their audio before playing.
+   */
+  if (settings->contains("app/lastLaunchVersion")) {
+    ShowConnectDialog();
+  } else {
+    ShowAudioConfigDialog();
+  }
+  settings->setValue("app/lastLaunchVersion", VERSION);
 }
 
 void MainWindow::Connect(const QString &host, const QString &user, const QString &pass)
