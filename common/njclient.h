@@ -61,6 +61,7 @@
 #include "../WDL/wavwrite.h"
 
 #include "netmsg.h"
+#include "mpb.h"
 
 
 class I_NJEncoder;
@@ -122,6 +123,8 @@ public:
 
   void SetWorkDir(char *path);
   char *GetWorkDir() { return m_workdir.Get(); }
+
+  void SetProtocol(JamProtocol proto) { protocol = proto; }
 
   char *GetUserName() { return m_user.Get(); }
   char *GetHostName() { return m_host.Get(); }
@@ -221,6 +224,8 @@ protected:
 #endif
 
   WDL_String m_user, m_pass, m_host;
+
+  JamProtocol protocol;
 
   int m_in_auth;
   int m_bpm,m_bpi;

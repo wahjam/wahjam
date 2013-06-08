@@ -28,7 +28,6 @@
 #include <QTreeWidgetItem>
 
 #include <QNetworkAccessManager>
-#include <QNetworkRequest>
 #include <QNetworkReply>
 
 
@@ -38,8 +37,9 @@ class ServerBrowser : public QTreeWidget
 
 public:
   ServerBrowser(QNetworkAccessManager *manager_, QWidget *parent=0);
+  virtual ~ServerBrowser() {}
   void loadServerList(const QUrl &url);
-  void parseServerList(QTextStream *stream);
+  virtual void parseServerList(QTextStream *stream) = 0;
 
 signals:
   void serverItemClicked(const QString &hostname);
@@ -50,8 +50,12 @@ private slots:
   void onItemClicked(QTreeWidgetItem *item, int column);
   void onItemActivated(QTreeWidgetItem *item, int column);
 
-private:
+protected:
+  virtual QNetworkReply *sendNetworkRequest(const QUrl &url) = 0;
+
   QNetworkAccessManager *netManager;
+
+private:
   QNetworkReply *reply;
 };
 

@@ -1,5 +1,4 @@
 /*
-    Copyright (C) 2005-2007 Cockos Incorporated
     Copyright (C) 2012 Stefan Hajnoczi <stefanha@gmail.com>
 
     Wahjam is free software; you can redistribute it and/or modify
@@ -17,13 +16,23 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _NINJAMSRV_H_
-#define _NINJAMSRV_H_
+#ifndef _USERPRIVS_H_
+#define _USERPRIVS_H_
 
-#include <QNetworkAccessManager>
+#include <QString>
 
-extern QNetworkAccessManager *netmanager;
+enum {
+  PRIV_TOPIC = 1,       // may set topic
+  PRIV_CHATSEND = 2,    // may send chat messages
+  PRIV_BPM = 4,         // may set bpm/bpi (overrides vote)
+  PRIV_KICK = 8,        // may kick users
+  PRIV_RESERVE = 16,    // user does not count towards slot limit
+  PRIV_ALLOWMULTI = 32, // may connect multiple times with same name (subsequent users append -X to them)
+  PRIV_HIDDEN = 64,     // hidden user, doesn't count for a slot, too
+  PRIV_VOTE = 128,      // may vote
+};
 
-bool reloadConfig(int argc, char **argv, bool firstTime);
+unsigned int privsFromString(const QString &s);
+QString privsToString(unsigned int privs);
 
-#endif /* _NINJAMSRV_H_ */
+#endif /* _USERPRIVS_H_ */

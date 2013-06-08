@@ -37,6 +37,11 @@ ChannelTreeWidget::ChannelTreeWidget(QWidget *parent)
           this, SLOT(handleItemChanged(QTreeWidgetItem*, int)));
 }
 
+QSize ChannelTreeWidget::sizeHint() const
+{
+  return QSize(800, 600);
+}
+
 QTreeWidgetItem *ChannelTreeWidget::addRootItem(const QString &text)
 {
   QTreeWidgetItem *item = new QTreeWidgetItem(this);

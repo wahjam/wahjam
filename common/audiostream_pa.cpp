@@ -23,6 +23,17 @@
 #include <QtGlobal>
 #include "audiostream.h"
 
+static void logPortAudioError(const char *msg, PaError error)
+{
+  if (error == paUnanticipatedHostError) {
+    const PaHostErrorInfo *info = Pa_GetLastHostErrorInfo();
+    qCritical("%s: unanticipated host error: %s (%ld)",
+              msg, info->errorText, info->errorCode);
+  } else {
+    qCritical("%s: %s", msg, Pa_GetErrorText(error));
+  }
+}
+
 class PortAudioStreamer : public audioStreamer
 {
 public:
@@ -30,7 +41,8 @@ public:
   ~PortAudioStreamer();
 
   bool Start(const PaStreamParameters *inputParams,
-             const PaStreamParameters *outputParams);
+             const PaStreamParameters *outputParams,
+             double sampleRate);
   void Stop();
 
   const char *GetChannelName(int idx);
@@ -66,8 +78,9 @@ int PortAudioStreamer::streamCallback(const void *input, void *output,
 {
   float **inbuf = (float**)input; // const-cast due to SPLPROC prototype
   float **outbuf = static_cast<float**>(output);
+  const PaStreamInfo *info = Pa_GetStreamInfo(stream);
 
-  splproc(inbuf, m_innch, outbuf, m_outnch, frameCount, m_srate);
+  splproc(inbuf, m_innch, outbuf, m_outnch, frameCount, info->sampleRate);
   return paContinue;
 }
 
@@ -92,27 +105,44 @@ PortAudioStreamer::~PortAudioStreamer()
 
 /* Returns true on success, false on failure */
 bool PortAudioStreamer::Start(const PaStreamParameters *inputParams,
-                              const PaStreamParameters *outputParams)
+                              const PaStreamParameters *outputParams,
+                              double sampleRate)
 {
   PaError error;
 
+  qDebug("Trying Pa_OpenStream() with sampleRate %g innch %d outnch %d",
+         sampleRate, inputParams->channelCount, outputParams->channelCount);
+  const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(inputParams->device);
+  if (deviceInfo) {
+    const PaHostApiInfo *hostApiInfo = Pa_GetHostApiInfo(deviceInfo->hostApi);
+    qDebug("Input device: %s (%s)", deviceInfo->name,
+           hostApiInfo ? hostApiInfo->name : "<invalid host api>");
+  }
+  deviceInfo = Pa_GetDeviceInfo(outputParams->device);
+  if (deviceInfo) {
+    const PaHostApiInfo *hostApiInfo = Pa_GetHostApiInfo(deviceInfo->hostApi);
+    qDebug("Output device: %s (%s)", deviceInfo->name,
+           hostApiInfo ? hostApiInfo->name : "<invalid host api>");
+  }
+
   error = Pa_OpenStream(&stream, inputParams, outputParams,
-                        m_srate, paFramesPerBufferUnspecified,
+                        sampleRate, paFramesPerBufferUnspecified,
                         paPrimeOutputBuffersUsingStreamCallback,
                         streamCallbackTrampoline, this);
   if (error != paNoError) {
-    qCritical("Pa_OpenStream() failed: %s", Pa_GetErrorText(error));
+    logPortAudioError("Pa_OpenStream() failed", error);
     stream = NULL;
     return false;
   }
 
+  m_srate = sampleRate;
   m_innch = inputParams->channelCount;
   m_outnch = outputParams->channelCount;
   m_bps = 32;
 
   error = Pa_StartStream(stream);
   if (error != paNoError) {
-    qCritical("Pa_StartStream() failed: %s", Pa_GetErrorText(error));
+    logPortAudioError("Pa_StartStream() failed", error);
     Pa_CloseStream(stream);
     stream = NULL;
     return false;
@@ -187,7 +217,7 @@ static const PaDeviceInfo *findDeviceInfo(PaHostApiIndex hostAPI, const char *na
 
 static bool setupParameters(const char *hostAPI, const char *inputDevice,
     const char *outputDevice, PaStreamParameters *inputParams,
-    PaStreamParameters *outputParams)
+    PaStreamParameters *outputParams, double *sampleRate)
 {
   PaHostApiIndex hostAPIIndex;
   if (!findHostAPIInfo(hostAPI, &hostAPIIndex)) {
@@ -220,20 +250,37 @@ static bool setupParameters(const char *hostAPI, const char *inputDevice,
 
   inputParams->hostApiSpecificStreamInfo = NULL;
   outputParams->hostApiSpecificStreamInfo = NULL;
-  return true;
+
+  PaError error;
+  double sampleRates[] = {
+    qMax(inputDeviceInfo->defaultSampleRate,
+         outputDeviceInfo->defaultSampleRate),
+    qMin(inputDeviceInfo->defaultSampleRate,
+         outputDeviceInfo->defaultSampleRate),
+  };
+  for (size_t i = 0; i < sizeof(sampleRates) / sizeof(sampleRates[0]); i++) {
+    error = Pa_IsFormatSupported(inputParams, outputParams, sampleRates[i]);
+    if (error == paFormatIsSupported) {
+      *sampleRate = sampleRates[i];
+      return true;
+    }
+  }
+  return false;
 }
 
 audioStreamer *create_audioStreamer_PortAudio(const char *hostAPI,
     const char *inputDevice, const char *outputDevice, SPLPROC proc)
 {
   PaStreamParameters inputParams, outputParams;
+  double sampleRate;
   if (!setupParameters(hostAPI, inputDevice, outputDevice,
-                       &inputParams, &outputParams)) {
+                       &inputParams, &outputParams,
+                       &sampleRate)) {
     return NULL;
   }
 
   PortAudioStreamer *streamer = new PortAudioStreamer(proc);
-  if (!streamer->Start(&inputParams, &outputParams)) {
+  if (!streamer->Start(&inputParams, &outputParams, sampleRate)) {
     delete streamer;
     return NULL;
   }
@@ -290,7 +337,7 @@ bool portAudioInit()
 {
   PaError error = Pa_Initialize();
   if (error != paNoError) {
-    qCritical("Pa_Initialize() failed: %s", Pa_GetErrorText(error));
+    logPortAudioError("Pa_Initialize() failed", error);
     return false;
   }
   atexit(portAudioCleanup);

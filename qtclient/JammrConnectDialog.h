@@ -16,48 +16,45 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _CONNECTDIALOG_H_
-#define _CONNECTDIALOG_H_
+#ifndef _JAMMRCONNECTDIALOG_H_
+#define _JAMMRCONNECTDIALOG_H_
 
+#include <QUrl>
 #include <QDialog>
-#include <QLineEdit>
-#include <QCheckBox>
-#include <QComboBox>
+#include <QPushButton>
 #include <QNetworkAccessManager>
-#include "NINJAMServerBrowser.h"
+#include <QNetworkReply>
 
-class ConnectDialog : public QDialog
+#include "JammrServerBrowser.h"
+
+class JammrConnectDialog : public QDialog
 {
   Q_OBJECT
   Q_PROPERTY(QString host READ host WRITE setHost)
-  Q_PROPERTY(QString user READ user WRITE setUser)
-  Q_PROPERTY(bool isPublicServer READ isPublicServer WRITE setIsPublicServer)
-  Q_PROPERTY(QString pass READ pass)
 
 public:
-  ConnectDialog(QNetworkAccessManager *netManager, QWidget *parent = 0);
+  JammrConnectDialog(QNetworkAccessManager *netManager_, const QUrl &apiUrl_,
+                     const QUrl &upgradeUrl_, QWidget *parent = 0);
   QString host() const;
-  QString user() const;
-  bool isPublicServer() const;
-  QString pass() const;
 
 public slots:
   void setHost(const QString &host);
-  void setUser(const QString &user);
-  void setRecentHostsList(const QStringList &hosts);
-  void setIsPublicServer(bool isPublicServer);
-  void loadServerList(const QUrl &url);
+  void loadServerList();
+  void createJam();
 
 private slots:
-  void publicServerStateChanged(int state);
   void onServerSelected(const QString &host);
+  void createJamFinished();
 
 private:
-  NINJAMServerBrowser *serverBrowser;
-  QComboBox *hostEdit;
-  QLineEdit *userEdit;
-  QCheckBox *publicCheckbox;
-  QLineEdit *passEdit;
+  QNetworkAccessManager *netManager;
+  JammrServerBrowser *serverBrowser;
+  QPushButton *connectButton;
+  QPushButton *newJamButton;
+  QString selectedHost;
+  QUrl apiUrl;
+  QUrl upgradeUrl;
+  QNetworkReply *reply;
 };
 
-#endif /* _CONNECTDIALOG_H_ */
+#endif /* _JAMMRCONNECTDIALOG_H_ */
