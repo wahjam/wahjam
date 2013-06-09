@@ -57,6 +57,8 @@ PKGCONFIG += vorbis vorbisenc portaudio-2.0
 # Code in common/ does not use wide characters
 win32:DEFINES -= UNICODE
 
+mac:ICON = $${TARGET}.icns
+
 # Input
 HEADERS += MainWindow.h
 HEADERS += ConnectDialog.h
