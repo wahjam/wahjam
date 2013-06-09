@@ -110,8 +110,12 @@ bool PortAudioStreamer::Start(const PaStreamParameters *inputParams,
 {
   PaError error;
 
-  qDebug("Trying Pa_OpenStream() with sampleRate %g innch %d outnch %d",
-         sampleRate, inputParams->channelCount, outputParams->channelCount);
+  qDebug("Trying Pa_OpenStream() with sampleRate %g inputLatency %g outputLatency %g innch %d outnch %d",
+         sampleRate,
+         inputParams->suggestedLatency,
+         outputParams->suggestedLatency,
+         inputParams->channelCount,
+         outputParams->channelCount);
   const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(inputParams->device);
   if (deviceInfo) {
     const PaHostApiInfo *hostApiInfo = Pa_GetHostApiInfo(deviceInfo->hostApi);
@@ -146,6 +150,14 @@ bool PortAudioStreamer::Start(const PaStreamParameters *inputParams,
     Pa_CloseStream(stream);
     stream = NULL;
     return false;
+  }
+
+  const PaStreamInfo *streamInfo = Pa_GetStreamInfo(stream);
+  if (streamInfo) {
+    qDebug("Stream started with sampleRate %g inputLatency %g outputLatency %g",
+           streamInfo->sampleRate,
+           streamInfo->inputLatency,
+           streamInfo->outputLatency);
   }
 
   return true;
