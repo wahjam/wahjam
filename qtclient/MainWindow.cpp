@@ -280,15 +280,17 @@ void MainWindow::setupStatusBar()
 /* Idle processing once event loop has started */
 void MainWindow::Startup()
 {
-  /* Show the connection dialog right away, except on first start when the user
-   * needs to configure their audio before playing.
-   */
-  if (settings->contains("app/lastLaunchVersion")) {
-    ShowConnectDialog();
-  } else {
+  /* Maybe we will show a "What's new?" dialog after update in the future */
+  settings->setValue("app/lastLaunchVersion", VERSION);
+
+  /* Pop up audio configuration dialog, if necessary */
+  if (!settings->contains("audio/hostAPI") ||
+      !settings->contains("audio/inputDevice") ||
+      !settings->contains("audio/outputDevice")) {
     ShowAudioConfigDialog();
   }
-  settings->setValue("app/lastLaunchVersion", VERSION);
+
+  ShowConnectDialog();
 }
 
 void MainWindow::Connect(const QString &host, const QString &user, const QString &pass)
