@@ -286,7 +286,9 @@ void MainWindow::Startup()
   /* Pop up audio configuration dialog, if necessary */
   if (!settings->contains("audio/hostAPI") ||
       !settings->contains("audio/inputDevice") ||
-      !settings->contains("audio/outputDevice")) {
+      !settings->contains("audio/outputDevice") ||
+      !settings->contains("audio/sampleRate") ||
+      !settings->contains("audio/latency")) {
     ShowAudioConfigDialog();
   }
 
@@ -304,9 +306,12 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
   QString inputDevice = settings->value("audio/inputDevice").toString();
   bool unmuteLocalChannels = settings->value("audio/unmuteLocalChannels", true).toBool();
   QString outputDevice = settings->value("audio/outputDevice").toString();
+  double sampleRate = settings->value("audio/sampleRate").toDouble();
+  double latency = settings->value("audio/latency").toDouble();
   audio = create_audioStreamer_PortAudio(hostAPI.toLocal8Bit().data(),
                                          inputDevice.toLocal8Bit().data(),
                                          outputDevice.toLocal8Bit().data(),
+                                         sampleRate, latency,
                                          OnSamplesTrampoline);
   if (!audio)
   {
@@ -528,12 +533,16 @@ void MainWindow::ShowAudioConfigDialog()
   audioDialog.setInputDevice(settings->value("audio/inputDevice").toString());
   audioDialog.setUnmuteLocalChannels(settings->value("audio/unmuteLocalChannels", true).toBool());
   audioDialog.setOutputDevice(settings->value("audio/outputDevice").toString());
+  audioDialog.setSampleRate(settings->value("audio/sampleRate").toDouble());
+  audioDialog.setLatency(settings->value("audio/latency").toDouble());
 
   if (audioDialog.exec() == QDialog::Accepted) {
     settings->setValue("audio/hostAPI", audioDialog.hostAPI());
     settings->setValue("audio/inputDevice", audioDialog.inputDevice());
     settings->setValue("audio/unmuteLocalChannels", audioDialog.unmuteLocalChannels());
     settings->setValue("audio/outputDevice", audioDialog.outputDevice());
+    settings->setValue("audio/sampleRate", audioDialog.sampleRate());
+    settings->setValue("audio/latency", audioDialog.latency());
   }
 }
 

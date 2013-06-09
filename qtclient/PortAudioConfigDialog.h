@@ -22,6 +22,7 @@
 #include <QDialog>
 #include <QComboBox>
 #include <QCheckBox>
+#include <QPushButton>
 
 class PortAudioConfigDialog : public QDialog
 {
@@ -30,6 +31,8 @@ class PortAudioConfigDialog : public QDialog
   Q_PROPERTY(QString inputDevice READ inputDevice WRITE setInputDevice)
   Q_PROPERTY(bool unmuteLocalChannels READ unmuteLocalChannels WRITE setUnmuteLocalChannels)
   Q_PROPERTY(QString outputDevice READ outputDevice WRITE setOutputDevice)
+  Q_PROPERTY(double sampleRate READ sampleRate WRITE setSampleRate)
+  Q_PROPERTY(double latency READ latency WRITE setLatency)
 
 public:
   PortAudioConfigDialog(QWidget *parent = 0);
@@ -42,8 +45,15 @@ public:
   void setUnmuteLocalChannels(bool unmute);
   QString outputDevice() const;
   void setOutputDevice(const QString &name);
+  double sampleRate() const;
+  void setSampleRate(double sampleRate);
+  double latency() const;
+  void setLatency(double latency);
 
 private slots:
+  void deviceIndexChanged(int index);
+  void sampleRateIndexChanged(int index);
+  void latencyIndexChanged(int index);
   void hostAPIIndexChanged(int index);
 
 private:
@@ -51,6 +61,16 @@ private:
   QComboBox *inputDeviceList;
   QCheckBox *unmuteLocalChannelsBox;
   QComboBox *outputDeviceList;
+  QComboBox *sampleRateList;
+  QComboBox *latencyList;
+  QPushButton *applyButton;
+  int validateSettingsEntryCount;
+
+  void willValidateSettings();
+  void validateSettings();
+  void autoselectSampleRate();
+  void autoselectLatency();
+  void setupLatencyList();
 };
 
 #endif /* _PORTAUDIOCONFIGDIALOG_H_ */
