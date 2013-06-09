@@ -110,8 +110,12 @@ bool PortAudioStreamer::Start(const PaStreamParameters *inputParams,
 {
   PaError error;
 
-  qDebug("Trying Pa_OpenStream() with sampleRate %g innch %d outnch %d",
-         sampleRate, inputParams->channelCount, outputParams->channelCount);
+  qDebug("Trying Pa_OpenStream() with sampleRate %g inputLatency %g outputLatency %g innch %d outnch %d",
+         sampleRate,
+         inputParams->suggestedLatency,
+         outputParams->suggestedLatency,
+         inputParams->channelCount,
+         outputParams->channelCount);
   const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(inputParams->device);
   if (deviceInfo) {
     const PaHostApiInfo *hostApiInfo = Pa_GetHostApiInfo(deviceInfo->hostApi);
@@ -146,6 +150,14 @@ bool PortAudioStreamer::Start(const PaStreamParameters *inputParams,
     Pa_CloseStream(stream);
     stream = NULL;
     return false;
+  }
+
+  const PaStreamInfo *streamInfo = Pa_GetStreamInfo(stream);
+  if (streamInfo) {
+    qDebug("Stream started with sampleRate %g inputLatency %g outputLatency %g",
+           streamInfo->sampleRate,
+           streamInfo->inputLatency,
+           streamInfo->outputLatency);
   }
 
   return true;
@@ -217,7 +229,7 @@ static const PaDeviceInfo *findDeviceInfo(PaHostApiIndex hostAPI, const char *na
 
 static bool setupParameters(const char *hostAPI, const char *inputDevice,
     const char *outputDevice, PaStreamParameters *inputParams,
-    PaStreamParameters *outputParams, double *sampleRate)
+    PaStreamParameters *outputParams, double latency)
 {
   PaHostApiIndex hostAPIIndex;
   if (!findHostAPIInfo(hostAPI, &hostAPIIndex)) {
@@ -245,37 +257,21 @@ static bool setupParameters(const char *hostAPI, const char *inputDevice,
   inputParams->channelCount = 1;
   outputParams->channelCount = 1;
 
-  inputParams->suggestedLatency = inputDeviceInfo->defaultLowInputLatency;
-  outputParams->suggestedLatency = outputDeviceInfo->defaultLowOutputLatency;
+  inputParams->suggestedLatency = latency;
+  outputParams->suggestedLatency = latency;
 
   inputParams->hostApiSpecificStreamInfo = NULL;
   outputParams->hostApiSpecificStreamInfo = NULL;
-
-  PaError error;
-  double sampleRates[] = {
-    qMax(inputDeviceInfo->defaultSampleRate,
-         outputDeviceInfo->defaultSampleRate),
-    qMin(inputDeviceInfo->defaultSampleRate,
-         outputDeviceInfo->defaultSampleRate),
-  };
-  for (size_t i = 0; i < sizeof(sampleRates) / sizeof(sampleRates[0]); i++) {
-    error = Pa_IsFormatSupported(inputParams, outputParams, sampleRates[i]);
-    if (error == paFormatIsSupported) {
-      *sampleRate = sampleRates[i];
-      return true;
-    }
-  }
-  return false;
+  return true;
 }
 
 audioStreamer *create_audioStreamer_PortAudio(const char *hostAPI,
-    const char *inputDevice, const char *outputDevice, SPLPROC proc)
+    const char *inputDevice, const char *outputDevice,
+    double sampleRate, double latency, SPLPROC proc)
 {
   PaStreamParameters inputParams, outputParams;
-  double sampleRate;
   if (!setupParameters(hostAPI, inputDevice, outputDevice,
-                       &inputParams, &outputParams,
-                       &sampleRate)) {
+                       &inputParams, &outputParams, latency)) {
     return NULL;
   }
 
