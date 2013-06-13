@@ -38,6 +38,11 @@ Page instfiles
 UninstPage uninstConfirm
 UninstPage instfiles
 
+Function .onInit
+  ; Try to get focus in case we've been hidden behind another window
+  BringToFront
+FunctionEnd
+
 Section Install
   SetOutPath $INSTDIR
   File license.txt
