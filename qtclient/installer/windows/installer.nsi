@@ -69,6 +69,8 @@ Section Uninstall
   Delete license.txt
   Delete ${PROGRAM_NAME}.exe
   Delete uninstall.exe
+  Delete "${PROGRAM_NAME}\log.txt"
+  RMDir "${PROGRAM_NAME}"
   SetOutPath $TEMP
   RMDir $INSTDIR
 SectionEnd
