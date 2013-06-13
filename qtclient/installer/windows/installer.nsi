@@ -33,6 +33,7 @@ SetCompressor /SOLID lzma
 LicenseData license.txt
 
 Page license
+Page components
 Page directory
 Page instfiles
 UninstPage uninstConfirm
@@ -43,7 +44,7 @@ Function .onInit
   BringToFront
 FunctionEnd
 
-Section Install
+Section "-Install"
   SetOutPath $INSTDIR
   File license.txt
   File "${EXECUTABLE}"
@@ -61,7 +62,17 @@ Section Install
   WriteRegDWORD HKCU "${REG_UNINSTALL}" "NoRepair" 1
 SectionEnd
 
+Section "Desktop Shortcut"
+  CreateShortCut "$DESKTOP\${PROGRAM_NAME}.lnk" "$INSTDIR\${PROGRAM_NAME}.exe"
+SectionEnd
+
+Section "Launch ${PROGRAM_NAME} on completion"
+  Exec '"$INSTDIR\${PROGRAM_NAME}.exe"'
+SectionEnd
+
 Section Uninstall
+  Delete "$DESKTOP\${PROGRAM_NAME}.lnk"
+
   DeleteRegKey HKCU "${REG_UNINSTALL}"
   DeleteRegKey HKCU "Software\${PROGRAM_NAME}\${PROGRAM_NAME}"
   DeleteRegKey /ifempty HKCU "Software\${PROGRAM_NAME}"
