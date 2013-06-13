@@ -23,12 +23,12 @@
 
 !define REG_UNINSTALL "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PROGRAM_NAME}"
 
-; Install system-wide by default
-RequestExecutionLevel admin
+; Install for current user without User Account Control elevation
+RequestExecutionLevel user
 
 OutFile ${PROGRAM_NAME}-installer.exe
 Name ${PROGRAM_NAME}
-InstallDir $PROGRAMFILES\${PROGRAM_NAME}
+InstallDir "$LOCALAPPDATA\${PROGRAM_NAME}"
 SetCompressor /SOLID lzma
 LicenseData license.txt
 
@@ -53,16 +53,16 @@ Section Install
   CreateShortCut "$SMPROGRAMS\${PROGRAM_NAME}.lnk" "$INSTDIR\${PROGRAM_NAME}.exe"
 
   ; Add/Remove Programs
-  WriteRegStr HKLM "${REG_UNINSTALL}" "DisplayName" "${PROGRAM_NAME}"
-  WriteRegStr HKLM "${REG_UNINSTALL}" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
-  WriteRegStr HKLM "${REG_UNINSTALL}" "QuietUninstallString" "$\"$INSTDIR\uninstall.exe$\" /S"
-  WriteRegStr HKLM "${REG_UNINSTALL}" "InstallLocation" "$\"$INSTDIR$\""
-  WriteRegDWORD HKLM "${REG_UNINSTALL}" "NoModify" 1
-  WriteRegDWORD HKLM "${REG_UNINSTALL}" "NoRepair" 1
+  WriteRegStr HKCU "${REG_UNINSTALL}" "DisplayName" "${PROGRAM_NAME}"
+  WriteRegStr HKCU "${REG_UNINSTALL}" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
+  WriteRegStr HKCU "${REG_UNINSTALL}" "QuietUninstallString" "$\"$INSTDIR\uninstall.exe$\" /S"
+  WriteRegStr HKCU "${REG_UNINSTALL}" "InstallLocation" "$\"$INSTDIR$\""
+  WriteRegDWORD HKCU "${REG_UNINSTALL}" "NoModify" 1
+  WriteRegDWORD HKCU "${REG_UNINSTALL}" "NoRepair" 1
 SectionEnd
 
 Section Uninstall
-  DeleteRegKey HKLM "${REG_UNINSTALL}"
+  DeleteRegKey HKCU "${REG_UNINSTALL}"
   Delete "$SMPROGRAMS\${PROGRAM_NAME}.lnk"
 
   SetOutPath $INSTDIR
