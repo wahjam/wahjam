@@ -63,6 +63,8 @@ SectionEnd
 
 Section Uninstall
   DeleteRegKey HKCU "${REG_UNINSTALL}"
+  DeleteRegKey HKCU "Software\${PROGRAM_NAME}\${PROGRAM_NAME}"
+  DeleteRegKey /ifempty HKCU "Software\${PROGRAM_NAME}"
   Delete "$SMPROGRAMS\${PROGRAM_NAME}.lnk"
 
   SetOutPath $INSTDIR
