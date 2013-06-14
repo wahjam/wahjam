@@ -23,6 +23,7 @@
 
 #include "logging.h"
 #include "common/audiostream.h"
+#include "PortMidiStreamer.h"
 #include "MainWindow.h"
 
 QSettings *settings;
@@ -62,6 +63,8 @@ int main(int argc, char *argv[])
                                       "please report this bug."));
     return 1;
   }
+
+  portMidiInit(); /* ignore errors since this is not critical */
 
   MainWindow mainWindow;
   mainWindow.show();

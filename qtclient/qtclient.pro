@@ -53,6 +53,7 @@ include(../common/libcommon.pri)
 QMAKE_CXXFLAGS += -Wno-write-strings
 CONFIG += link_pkgconfig
 PKGCONFIG += vorbis vorbisenc portaudio-2.0
+LIBS += -lportmidi # does not use pkg-config
 
 # Code in common/ does not use wide characters
 win32:DEFINES -= UNICODE
@@ -80,6 +81,7 @@ HEADERS += NINJAMServerBrowser.h
 HEADERS += logging.h
 HEADERS += VSTPlugin.h
 HEADERS += VSTProcessor.h
+HEADERS += PortMidiStreamer.h
 
 SOURCES += qtclient.cpp
 SOURCES += MainWindow.cpp
@@ -101,3 +103,4 @@ SOURCES += NINJAMServerBrowser.cpp
 SOURCES += logging.cpp
 SOURCES += VSTPlugin.cpp
 SOURCES += VSTProcessor.cpp
+SOURCES += PortMidiStreamer.cpp
