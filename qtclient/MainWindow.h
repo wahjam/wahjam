@@ -35,6 +35,7 @@
 #include "ChannelTreeWidget.h"
 #include "MetronomeBar.h"
 #include "ChatOutput.h"
+#include "SettingsDialog.h"
 #include "VSTConfigDialog.h"
 #include "common/njclient.h"
 #include "common/audiostream.h"
@@ -94,6 +95,7 @@ private:
   QString jammrAuthToken;
   audioStreamer *audio;
   VSTProcessor *vstProcessor;
+  SettingsDialog *settingsDialog;
   VSTConfigDialog *vstConfigDialog;
   QNetworkAccessManager *netManager;
   ChatOutput *chatOutput;

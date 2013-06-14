@@ -95,15 +95,19 @@ MainWindow::MainWindow(QWidget *parent)
     updateChecker->start();
   }
 
+  settingsDialog = new SettingsDialog(this);
+
   QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
   connectAction = fileMenu->addAction(tr("&Connect..."));
   disconnectAction = fileMenu->addAction(tr("&Disconnect"));
+  QAction *settingsAction = fileMenu->addAction(tr("&Settings"));
   audioConfigAction = fileMenu->addAction(tr("Configure &audio..."));
   QAction *vstConfigAction = fileMenu->addAction(tr("Configure &VST..."));
   QAction *exitAction = fileMenu->addAction(tr("E&xit"));
   exitAction->setShortcuts(QKeySequence::Quit);
   connect(connectAction, SIGNAL(triggered()), this, SLOT(ShowConnectDialog()));
   connect(disconnectAction, SIGNAL(triggered()), this, SLOT(Disconnect()));
+  connect(settingsAction, SIGNAL(triggered()), settingsDialog, SLOT(show()));
   connect(audioConfigAction, SIGNAL(triggered()), this, SLOT(ShowAudioConfigDialog()));
   connect(vstConfigAction, SIGNAL(triggered()), this, SLOT(ShowVSTConfigDialog()));
   connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
