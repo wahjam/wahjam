@@ -39,7 +39,7 @@
 #include "PortAudioConfigDialog.h"
 #include "VSTPlugin.h"
 #include "VSTProcessor.h"
-#include "VSTConfigDialog.h"
+#include "VSTSettingsPage.h"
 #include "common/njmisc.h"
 #include "common/UserPrivs.h"
 
@@ -102,14 +102,12 @@ MainWindow::MainWindow(QWidget *parent)
   disconnectAction = fileMenu->addAction(tr("&Disconnect"));
   QAction *settingsAction = fileMenu->addAction(tr("&Settings"));
   audioConfigAction = fileMenu->addAction(tr("Configure &audio..."));
-  QAction *vstConfigAction = fileMenu->addAction(tr("Configure &VST..."));
   QAction *exitAction = fileMenu->addAction(tr("E&xit"));
   exitAction->setShortcuts(QKeySequence::Quit);
   connect(connectAction, SIGNAL(triggered()), this, SLOT(ShowConnectDialog()));
   connect(disconnectAction, SIGNAL(triggered()), this, SLOT(Disconnect()));
   connect(settingsAction, SIGNAL(triggered()), settingsDialog, SLOT(show()));
   connect(audioConfigAction, SIGNAL(triggered()), this, SLOT(ShowAudioConfigDialog()));
-  connect(vstConfigAction, SIGNAL(triggered()), this, SLOT(ShowVSTConfigDialog()));
   connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
 
   voteMenu = menuBar()->addMenu(tr("&Vote"));
@@ -234,7 +232,8 @@ MainWindow::MainWindow(QWidget *parent)
           metronomeBar, SLOT(setCurrentBeat(int)));
 
   vstProcessor = new VSTProcessor(this);
-  vstConfigDialog = new VSTConfigDialog(vstProcessor, this);
+  settingsDialog->addPage(tr("VST plugins"),
+                          new VSTSettingsPage(vstProcessor));
 
   QTimer::singleShot(0, this, SLOT(Startup()));
 }
@@ -548,11 +547,6 @@ void MainWindow::ShowAudioConfigDialog()
     settings->setValue("audio/sampleRate", audioDialog.sampleRate());
     settings->setValue("audio/latency", audioDialog.latency());
   }
-}
-
-void MainWindow::ShowVSTConfigDialog()
-{
-  vstConfigDialog->show();
 }
 
 void MainWindow::ShowAboutDialog()

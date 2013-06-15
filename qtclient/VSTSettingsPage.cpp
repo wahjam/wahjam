@@ -20,10 +20,10 @@
 #include <QHBoxLayout>
 #include <QDialogButtonBox>
 #include "qtclient.h"
-#include "VSTConfigDialog.h"
+#include "VSTSettingsPage.h"
 
-VSTConfigDialog::VSTConfigDialog(VSTProcessor *processor_, QWidget *parent)
-  : QDialog(parent), processor(processor_), addPluginDialog(this)
+VSTSettingsPage::VSTSettingsPage(VSTProcessor *processor_, QWidget *parent)
+  : QWidget(parent), processor(processor_), addPluginDialog(this)
 {
   int i;
 
@@ -65,17 +65,11 @@ VSTConfigDialog::VSTConfigDialog(VSTProcessor *processor_, QWidget *parent)
 
   vBoxLayout->addLayout(hBoxLayout);
 
-  QDialogButtonBox *dialogButtonBox = new QDialogButtonBox(QDialogButtonBox::Close);
-  connect(dialogButtonBox->button(QDialogButtonBox::Close), SIGNAL(clicked()),
-          this, SLOT(accept()));
-  vBoxLayout->addWidget(dialogButtonBox);
-
   setLayout(vBoxLayout);
-  setWindowTitle(tr("Configure VST plugins..."));
   itemSelectionChanged();
 }
 
-void VSTConfigDialog::itemSelectionChanged()
+void VSTSettingsPage::itemSelectionChanged()
 {
   bool selected = pluginList->currentItem();
 
@@ -85,7 +79,7 @@ void VSTConfigDialog::itemSelectionChanged()
   editButton->setEnabled(selected);
 }
 
-void VSTConfigDialog::addPlugin()
+void VSTSettingsPage::addPlugin()
 {
   if (!addPluginDialog.exec()) {
     return;
@@ -112,7 +106,7 @@ void VSTConfigDialog::addPlugin()
   pluginList->setCurrentRow(0);
 }
 
-void VSTConfigDialog::removePlugin()
+void VSTSettingsPage::removePlugin()
 {
   int index = pluginList->currentRow();
   QListWidgetItem *item = pluginList->takeItem(index);
@@ -122,7 +116,7 @@ void VSTConfigDialog::removePlugin()
   delete item;
 }
 
-void VSTConfigDialog::movePluginUp()
+void VSTSettingsPage::movePluginUp()
 {
   int index = pluginList->currentRow();
   if (index == 0) {
@@ -136,7 +130,7 @@ void VSTConfigDialog::movePluginUp()
   processor->moveUp(index);
 }
 
-void VSTConfigDialog::movePluginDown()
+void VSTSettingsPage::movePluginDown()
 {
   int index = pluginList->currentRow();
   if (index + 1 == pluginList->count()) {
@@ -150,7 +144,7 @@ void VSTConfigDialog::movePluginDown()
   processor->moveDown(index);
 }
 
-void VSTConfigDialog::openEditor()
+void VSTSettingsPage::openEditor()
 {
   int index = pluginList->currentRow();
   VSTPlugin *vst = processor->getPlugin(index);

@@ -36,7 +36,6 @@
 #include "MetronomeBar.h"
 #include "ChatOutput.h"
 #include "SettingsDialog.h"
-#include "VSTConfigDialog.h"
 #include "common/njclient.h"
 #include "common/audiostream.h"
 #include "VSTProcessor.h"
@@ -60,7 +59,6 @@ signals:
 
 public slots:
   void ShowAudioConfigDialog();
-  void ShowVSTConfigDialog();
   void ShowConnectDialog();
   void Disconnect();
   void SendChatMessage(const QString &line);
@@ -96,7 +94,6 @@ private:
   audioStreamer *audio;
   VSTProcessor *vstProcessor;
   SettingsDialog *settingsDialog;
-  VSTConfigDialog *vstConfigDialog;
   QNetworkAccessManager *netManager;
   ChatOutput *chatOutput;
   QLineEdit *chatInput;

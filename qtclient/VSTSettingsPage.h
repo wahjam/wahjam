@@ -16,21 +16,21 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _VSTCONFIGDIALOG_H_
-#define _VSTCONFIGDIALOG_H_
+#ifndef _VSTSETTINGSPAGE_H_
+#define _VSTSETTINGSPAGE_H_
 
-#include <QDialog>
+#include <QWidget>
 #include <QListWidget>
 #include <QPushButton>
 #include "VSTProcessor.h"
 #include "AddVSTPluginDialog.h"
 
-class VSTConfigDialog : public QDialog
+class VSTSettingsPage : public QWidget
 {
   Q_OBJECT
 
 public:
-  VSTConfigDialog(VSTProcessor *processor, QWidget *parent = NULL);
+  VSTSettingsPage(VSTProcessor *processor, QWidget *parent = NULL);
 
 private slots:
   void itemSelectionChanged();
@@ -50,4 +50,4 @@ private:
   QPushButton *editButton;
 };
 
-#endif /* _VSTCONFIGDIALOG_H_ */
+#endif /* _VSTSETTINGSPAGE_H_ */
