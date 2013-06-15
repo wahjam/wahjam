@@ -226,14 +226,14 @@ void PortAudioSettingsPage::setupLatencyList()
   }
 }
 
-void PortAudioSettingsPage::deviceIndexChanged(int index)
+void PortAudioSettingsPage::deviceIndexChanged(int)
 {
   willValidateSettings();
   autoselectSampleRate();
   validateSettings();
 }
 
-void PortAudioSettingsPage::sampleRateIndexChanged(int index)
+void PortAudioSettingsPage::sampleRateIndexChanged(int)
 {
   willValidateSettings();
   setupLatencyList();
@@ -241,7 +241,7 @@ void PortAudioSettingsPage::sampleRateIndexChanged(int index)
   validateSettings();
 }
 
-void PortAudioSettingsPage::latencyIndexChanged(int index)
+void PortAudioSettingsPage::latencyIndexChanged(int)
 {
   willValidateSettings();
   validateSettings();
