@@ -99,6 +99,7 @@ MainWindow::MainWindow(QWidget *parent)
   connect(settingsDialog, SIGNAL(rejected()),
           this, SLOT(SettingsDialogClosed()));
   setupPortAudioSettingsPage();
+  setupPortMidiSettingsPage();
 
   QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
   connectAction = fileMenu->addAction(tr("&Connect..."));
@@ -292,6 +293,16 @@ void MainWindow::setupPortAudioSettingsPage()
   portAudioSettingsPage->setLatency(settings->value("audio/latency").toDouble());
 
   settingsDialog->addPage(tr("Audio"), portAudioSettingsPage);
+}
+
+void MainWindow::setupPortMidiSettingsPage()
+{
+  portMidiSettingsPage = new PortMidiSettingsPage;
+  portMidiSettingsPage->setInputDevice(settings->value("midi/inputDevice").toString());
+  portMidiSettingsPage->setOutputDevice(settings->value("midi/outputDevice").toString());
+  portMidiSettingsPage->setSendMidiBeatClock(settings->value("midi/sendMidiBeatClock", false).toBool());
+
+  settingsDialog->addPage(tr("MIDI"), portMidiSettingsPage);
 }
 
 /* Idle processing once event loop has started */
@@ -902,4 +913,9 @@ void MainWindow::SettingsDialogClosed()
   settings->setValue("audio/outputDevice", portAudioSettingsPage->outputDevice());
   settings->setValue("audio/sampleRate", portAudioSettingsPage->sampleRate());
   settings->setValue("audio/latency", portAudioSettingsPage->latency());
+
+  /* Save MIDI settings */
+  settings->setValue("midi/inputDevice", portMidiSettingsPage->inputDevice());
+  settings->setValue("midi/outputDevice", portMidiSettingsPage->outputDevice());
+  settings->setValue("midi/sendMidiBeatClock", portMidiSettingsPage->sendMidiBeatClock());
 }

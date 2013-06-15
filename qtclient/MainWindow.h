@@ -40,6 +40,7 @@
 #include "common/audiostream.h"
 #include "VSTProcessor.h"
 #include "PortAudioSettingsPage.h"
+#include "PortMidiSettingsPage.h"
 
 class MainWindow : public QMainWindow
 {
@@ -96,6 +97,7 @@ private:
   VSTProcessor *vstProcessor;
   SettingsDialog *settingsDialog;
   PortAudioSettingsPage *portAudioSettingsPage;
+  PortMidiSettingsPage *portMidiSettingsPage;
   QNetworkAccessManager *netManager;
   ChatOutput *chatOutput;
   QLineEdit *chatInput;
@@ -125,6 +127,7 @@ private:
   void setupChannelTree();
   void setupStatusBar();
   void setupPortAudioSettingsPage();
+  void setupPortMidiSettingsPage();
   bool setupWorkDir();
   void cleanupWorkDir(const QString &path);
   bool tryReconnect();
