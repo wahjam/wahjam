@@ -103,7 +103,7 @@ MainWindow::MainWindow(QWidget *parent)
   QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
   connectAction = fileMenu->addAction(tr("&Connect..."));
   disconnectAction = fileMenu->addAction(tr("&Disconnect"));
-  QAction *settingsAction = fileMenu->addAction(tr("&Settings"));
+  QAction *settingsAction = fileMenu->addAction(tr("&Settings..."));
   QAction *exitAction = fileMenu->addAction(tr("E&xit"));
   exitAction->setShortcuts(QKeySequence::Quit);
   connect(connectAction, SIGNAL(triggered()), this, SLOT(ShowConnectDialog()));
