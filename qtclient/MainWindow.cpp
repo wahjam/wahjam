@@ -36,7 +36,7 @@
 #include "JammrLoginDialog.h"
 #include "JammrAccessControlDialog.h"
 #include "JammrUpdateChecker.h"
-#include "PortAudioConfigDialog.h"
+#include "PortAudioSettingsPage.h"
 #include "VSTPlugin.h"
 #include "VSTProcessor.h"
 #include "VSTSettingsPage.h"
@@ -96,18 +96,19 @@ MainWindow::MainWindow(QWidget *parent)
   }
 
   settingsDialog = new SettingsDialog(this);
+  connect(settingsDialog, SIGNAL(rejected()),
+          this, SLOT(SettingsDialogClosed()));
+  setupPortAudioSettingsPage();
 
   QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
   connectAction = fileMenu->addAction(tr("&Connect..."));
   disconnectAction = fileMenu->addAction(tr("&Disconnect"));
   QAction *settingsAction = fileMenu->addAction(tr("&Settings"));
-  audioConfigAction = fileMenu->addAction(tr("Configure &audio..."));
   QAction *exitAction = fileMenu->addAction(tr("E&xit"));
   exitAction->setShortcuts(QKeySequence::Quit);
   connect(connectAction, SIGNAL(triggered()), this, SLOT(ShowConnectDialog()));
   connect(disconnectAction, SIGNAL(triggered()), this, SLOT(Disconnect()));
   connect(settingsAction, SIGNAL(triggered()), settingsDialog, SLOT(show()));
-  connect(audioConfigAction, SIGNAL(triggered()), this, SLOT(ShowAudioConfigDialog()));
   connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
 
   voteMenu = menuBar()->addMenu(tr("&Vote"));
@@ -191,11 +192,11 @@ MainWindow::MainWindow(QWidget *parent)
   }
   connectingState->assignProperty(connectAction, "enabled", false);
   connectingState->assignProperty(disconnectAction, "enabled", true);
-  connectingState->assignProperty(audioConfigAction, "enabled", false);
+  connectingState->assignProperty(portAudioSettingsPage, "enabled", false);
   disconnectedState->assignProperty(voteMenu, "enabled", false);
   disconnectedState->assignProperty(connectAction, "enabled", true);
   disconnectedState->assignProperty(disconnectAction, "enabled", false);
-  disconnectedState->assignProperty(audioConfigAction, "enabled", true);
+  disconnectedState->assignProperty(portAudioSettingsPage, "enabled", true);
   disconnectedState->assignProperty(adminMenu, "enabled", false);
   disconnectedState->assignProperty(adminTopicAction, "enabled", false);
   disconnectedState->assignProperty(adminBPMAction, "enabled", false);
@@ -280,6 +281,19 @@ void MainWindow::setupStatusBar()
   statusBar()->addPermanentWidget(bpiLabel);
 }
 
+void MainWindow::setupPortAudioSettingsPage()
+{
+  portAudioSettingsPage = new PortAudioSettingsPage;
+  portAudioSettingsPage->setHostAPI(settings->value("audio/hostAPI").toString());
+  portAudioSettingsPage->setInputDevice(settings->value("audio/inputDevice").toString());
+  portAudioSettingsPage->setUnmuteLocalChannels(settings->value("audio/unmuteLocalChannels", true).toBool());
+  portAudioSettingsPage->setOutputDevice(settings->value("audio/outputDevice").toString());
+  portAudioSettingsPage->setSampleRate(settings->value("audio/sampleRate").toDouble());
+  portAudioSettingsPage->setLatency(settings->value("audio/latency").toDouble());
+
+  settingsDialog->addPage(tr("Audio"), portAudioSettingsPage);
+}
+
 /* Idle processing once event loop has started */
 void MainWindow::Startup()
 {
@@ -292,7 +306,7 @@ void MainWindow::Startup()
       !settings->contains("audio/outputDevice") ||
       !settings->contains("audio/sampleRate") ||
       !settings->contains("audio/latency")) {
-    ShowAudioConfigDialog();
+    settingsDialog->exec();
   }
 
   ShowConnectDialog();
@@ -335,7 +349,8 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
            "contents of the log file at "
            "<a href=\"%1\">%2</a>.</p>").arg(url.toString(), filename));
 
-    ShowAudioConfigDialog();
+    settingsDialog->setPage(0);
+    settingsDialog->exec();
     return;
   }
 
@@ -525,27 +540,6 @@ void MainWindow::ShowConnectDialog()
     ShowNINJAMConnectDialog();
   } else {
     ShowJammrConnectDialog();
-  }
-}
-
-void MainWindow::ShowAudioConfigDialog()
-{
-  PortAudioConfigDialog audioDialog;
-
-  audioDialog.setHostAPI(settings->value("audio/hostAPI").toString());
-  audioDialog.setInputDevice(settings->value("audio/inputDevice").toString());
-  audioDialog.setUnmuteLocalChannels(settings->value("audio/unmuteLocalChannels", true).toBool());
-  audioDialog.setOutputDevice(settings->value("audio/outputDevice").toString());
-  audioDialog.setSampleRate(settings->value("audio/sampleRate").toDouble());
-  audioDialog.setLatency(settings->value("audio/latency").toDouble());
-
-  if (audioDialog.exec() == QDialog::Accepted) {
-    settings->setValue("audio/hostAPI", audioDialog.hostAPI());
-    settings->setValue("audio/inputDevice", audioDialog.inputDevice());
-    settings->setValue("audio/unmuteLocalChannels", audioDialog.unmuteLocalChannels());
-    settings->setValue("audio/outputDevice", audioDialog.outputDevice());
-    settings->setValue("audio/sampleRate", audioDialog.sampleRate());
-    settings->setValue("audio/latency", audioDialog.latency());
   }
 }
 
@@ -897,4 +891,15 @@ void MainWindow::KickMenuAboutToShow()
 void MainWindow::KickMenuTriggered(QAction *action)
 {
   SendChatMessage(QString("/kick %1").arg(action->text()));
+}
+
+void MainWindow::SettingsDialogClosed()
+{
+  /* Save audio settings */
+  settings->setValue("audio/hostAPI", portAudioSettingsPage->hostAPI());
+  settings->setValue("audio/inputDevice", portAudioSettingsPage->inputDevice());
+  settings->setValue("audio/unmuteLocalChannels", portAudioSettingsPage->unmuteLocalChannels());
+  settings->setValue("audio/outputDevice", portAudioSettingsPage->outputDevice());
+  settings->setValue("audio/sampleRate", portAudioSettingsPage->sampleRate());
+  settings->setValue("audio/latency", portAudioSettingsPage->latency());
 }

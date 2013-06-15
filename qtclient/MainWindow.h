@@ -39,6 +39,7 @@
 #include "common/njclient.h"
 #include "common/audiostream.h"
 #include "VSTProcessor.h"
+#include "PortAudioSettingsPage.h"
 
 class MainWindow : public QMainWindow
 {
@@ -58,7 +59,6 @@ signals:
   void Disconnected();
 
 public slots:
-  void ShowAudioConfigDialog();
   void ShowConnectDialog();
   void Disconnect();
   void SendChatMessage(const QString &line);
@@ -84,6 +84,7 @@ private slots:
   void KickMenuAboutToShow();
   void KickMenuTriggered(QAction *action);
   void Startup();
+  void SettingsDialogClosed();
 
 private:
   static MainWindow *instance;
@@ -94,13 +95,13 @@ private:
   audioStreamer *audio;
   VSTProcessor *vstProcessor;
   SettingsDialog *settingsDialog;
+  PortAudioSettingsPage *portAudioSettingsPage;
   QNetworkAccessManager *netManager;
   ChatOutput *chatOutput;
   QLineEdit *chatInput;
   ChannelTreeWidget *channelTree;
   QAction *connectAction;
   QAction *disconnectAction;
-  QAction *audioConfigAction;
   QMenu *voteMenu;
   QMenu *adminMenu;
   QAction *adminTopicAction;
@@ -123,6 +124,7 @@ private:
 
   void setupChannelTree();
   void setupStatusBar();
+  void setupPortAudioSettingsPage();
   bool setupWorkDir();
   void cleanupWorkDir(const QString &path);
   bool tryReconnect();

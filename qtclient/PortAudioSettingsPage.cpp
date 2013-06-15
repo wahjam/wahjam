@@ -18,14 +18,15 @@
 
 #include <math.h>
 #include <portaudio.h>
+#include <QIcon>
 #include <QFormLayout>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
-#include "PortAudioConfigDialog.h"
+#include "PortAudioSettingsPage.h"
 
-PortAudioConfigDialog::PortAudioConfigDialog(QWidget *parent)
-  : QDialog(parent), validateSettingsEntryCount(0)
+PortAudioSettingsPage::PortAudioSettingsPage(QWidget *parent)
+  : QWidget(parent), validateSettingsEntryCount(0)
 {
   inputDeviceList = new QComboBox;
   inputDeviceList->setEditable(false);
@@ -39,6 +40,26 @@ PortAudioConfigDialog::PortAudioConfigDialog(QWidget *parent)
   outputDeviceList->setEditable(false);
   connect(outputDeviceList, SIGNAL(currentIndexChanged(int)),
           this, SLOT(deviceIndexChanged(int)));
+
+  QLabel *sadLabel = new QLabel;
+  sadLabel->setPixmap(QIcon::fromTheme("face-sad").pixmap(16));
+  QLabel *invalidSettingsLabel = new QLabel(tr("<b><font color=\"red\">Sound devices do not support these settings</font></b>"));
+  QHBoxLayout *invalidSettingsLayout = new QHBoxLayout;
+  invalidSettingsLayout->addStretch(1);
+  invalidSettingsLayout->addWidget(sadLabel);
+  invalidSettingsLayout->addWidget(invalidSettingsLabel);
+  invalidSettingsWidget = new QWidget;
+  invalidSettingsWidget->setLayout(invalidSettingsLayout);
+
+  QLabel *smileyLabel = new QLabel;
+  smileyLabel->setPixmap(QIcon::fromTheme("face-smile").pixmap(16));
+  QLabel *validSettingsLabel = new QLabel(tr("<b><font color=\"green\">Sound devices support these settings</font></b>"));
+  QHBoxLayout *validSettingsLayout = new QHBoxLayout;
+  validSettingsLayout->addStretch(1);
+  validSettingsLayout->addWidget(smileyLabel);
+  validSettingsLayout->addWidget(validSettingsLabel);
+  validSettingsWidget = new QWidget;
+  validSettingsWidget->setLayout(validSettingsLayout);
 
   sampleRateList = new QComboBox;
   sampleRateList->setEditable(false);
@@ -55,12 +76,6 @@ PortAudioConfigDialog::PortAudioConfigDialog(QWidget *parent)
   connect(hostAPIList, SIGNAL(currentIndexChanged(int)),
           this, SLOT(hostAPIIndexChanged(int)));
 
-  applyButton = new QPushButton(tr("&Apply"));
-  connect(applyButton, SIGNAL(clicked()), this, SLOT(accept()));
-
-  QPushButton *cancelButton = new QPushButton(tr("&Cancel"));
-  connect(cancelButton, SIGNAL(clicked()), this, SLOT(reject()));
-
   QVBoxLayout *vlayout = new QVBoxLayout;
   QFormLayout *formLayout = new QFormLayout;
   formLayout->setSpacing(5);
@@ -71,25 +86,18 @@ PortAudioConfigDialog::PortAudioConfigDialog(QWidget *parent)
   formLayout->addRow(new QLabel); /* just a spacer */
   formLayout->addRow(tr("Sample &rate (Hz):"), sampleRateList);
   formLayout->addRow(tr("&Latency (ms):"), latencyList);
+  formLayout->addRow(invalidSettingsWidget);
+  formLayout->addRow(validSettingsWidget);
   formLayout->addRow(new QLabel); /* just a spacer */
   formLayout->addRow(new QLabel(tr("<b>Troubleshooting:</b> If you experience audio problems, try selecting another audio system.")));
   formLayout->addRow(tr("Audio &system:"), hostAPIList);
   vlayout->addLayout(formLayout);
-  QHBoxLayout *hlayout = new QHBoxLayout;
-  hlayout->setSpacing(0);
-  hlayout->setContentsMargins(0, 0, 0, 0);
-  hlayout->addWidget(applyButton);
-  hlayout->addWidget(cancelButton);
-  vlayout->setSpacing(2);
-  vlayout->setContentsMargins(5, 5, 5, 5);
-  vlayout->addLayout(hlayout);
   setLayout(vlayout);
-  setWindowTitle(tr("Configure audio devices..."));
 
   populateHostAPIList();
 }
 
-void PortAudioConfigDialog::populateHostAPIList()
+void PortAudioSettingsPage::populateHostAPIList()
 {
   PaHostApiIndex i;
   for (i = 0; i < Pa_GetHostApiCount(); i++) {
@@ -101,12 +109,12 @@ void PortAudioConfigDialog::populateHostAPIList()
   }
 }
 
-void PortAudioConfigDialog::willValidateSettings()
+void PortAudioSettingsPage::willValidateSettings()
 {
   validateSettingsEntryCount++;
 }
 
-void PortAudioConfigDialog::validateSettings()
+void PortAudioSettingsPage::validateSettings()
 {
   /* Avoid repeating validation because Pa_IsFormatSupported() can be
    * slow and we should not block the GUI thread for too long.
@@ -122,7 +130,8 @@ void PortAudioConfigDialog::validateSettings()
       latency == 0 ||
       inputDeviceList->currentIndex() < 0 ||
       outputDeviceList->currentIndex() < 0) {
-    applyButton->setEnabled(false);
+    invalidSettingsWidget->setVisible(true);
+    validSettingsWidget->setVisible(false);
     return;
   }
 
@@ -138,7 +147,8 @@ void PortAudioConfigDialog::validateSettings()
   outputParams.channelCount = 1 /* TODO mono */;
 
   PaError error = Pa_IsFormatSupported(&inputParams, &outputParams, sampleRate);
-  applyButton->setEnabled(error == paFormatIsSupported);
+  invalidSettingsWidget->setVisible(error != paFormatIsSupported);
+  validSettingsWidget->setVisible(error == paFormatIsSupported);
 }
 
 /* Return PaDeviceInfo* or NULL if not found */
@@ -152,7 +162,7 @@ static const PaDeviceInfo *lookupDeviceInfo(QComboBox *deviceList)
   return Pa_GetDeviceInfo(deviceIndex);
 }
 
-void PortAudioConfigDialog::autoselectSampleRate()
+void PortAudioSettingsPage::autoselectSampleRate()
 {
   const PaDeviceInfo *inputDeviceInfo = lookupDeviceInfo(inputDeviceList);
   if (!inputDeviceInfo) {
@@ -172,7 +182,7 @@ void PortAudioConfigDialog::autoselectSampleRate()
   }
 }
 
-void PortAudioConfigDialog::autoselectLatency()
+void PortAudioSettingsPage::autoselectLatency()
 {
   const PaDeviceInfo *inputDeviceInfo = lookupDeviceInfo(inputDeviceList);
   if (!inputDeviceInfo) {
@@ -198,7 +208,7 @@ void PortAudioConfigDialog::autoselectLatency()
   }
 }
 
-void PortAudioConfigDialog::setupLatencyList()
+void PortAudioSettingsPage::setupLatencyList()
 {
   latencyList->clear();
 
@@ -216,14 +226,14 @@ void PortAudioConfigDialog::setupLatencyList()
   }
 }
 
-void PortAudioConfigDialog::deviceIndexChanged(int index)
+void PortAudioSettingsPage::deviceIndexChanged(int index)
 {
   willValidateSettings();
   autoselectSampleRate();
   validateSettings();
 }
 
-void PortAudioConfigDialog::sampleRateIndexChanged(int index)
+void PortAudioSettingsPage::sampleRateIndexChanged(int index)
 {
   willValidateSettings();
   setupLatencyList();
@@ -231,13 +241,13 @@ void PortAudioConfigDialog::sampleRateIndexChanged(int index)
   validateSettings();
 }
 
-void PortAudioConfigDialog::latencyIndexChanged(int index)
+void PortAudioSettingsPage::latencyIndexChanged(int index)
 {
   willValidateSettings();
   validateSettings();
 }
 
-void PortAudioConfigDialog::hostAPIIndexChanged(int index)
+void PortAudioSettingsPage::hostAPIIndexChanged(int index)
 {
   inputDeviceList->clear();
   outputDeviceList->clear();
@@ -267,12 +277,12 @@ void PortAudioConfigDialog::hostAPIIndexChanged(int index)
   }
 }
 
-QString PortAudioConfigDialog::hostAPI() const
+QString PortAudioSettingsPage::hostAPI() const
 {
   return hostAPIList->currentText();
 }
 
-void PortAudioConfigDialog::setHostAPI(const QString &name)
+void PortAudioSettingsPage::setHostAPI(const QString &name)
 {
   int i = hostAPIList->findText(name);
   if (i != -1) {
@@ -318,12 +328,12 @@ void PortAudioConfigDialog::setHostAPI(const QString &name)
   }
 }
 
-QString PortAudioConfigDialog::inputDevice() const
+QString PortAudioSettingsPage::inputDevice() const
 {
   return inputDeviceList->currentText();
 }
 
-void PortAudioConfigDialog::setInputDevice(const QString &name)
+void PortAudioSettingsPage::setInputDevice(const QString &name)
 {
   int i = inputDeviceList->findText(name);
   if (i >= 0) {
@@ -331,22 +341,22 @@ void PortAudioConfigDialog::setInputDevice(const QString &name)
   }
 }
 
-bool PortAudioConfigDialog::unmuteLocalChannels() const
+bool PortAudioSettingsPage::unmuteLocalChannels() const
 {
   return unmuteLocalChannelsBox->isChecked();
 }
 
-void PortAudioConfigDialog::setUnmuteLocalChannels(bool unmute)
+void PortAudioSettingsPage::setUnmuteLocalChannels(bool unmute)
 {
   unmuteLocalChannelsBox->setChecked(unmute);
 }
 
-QString PortAudioConfigDialog::outputDevice() const
+QString PortAudioSettingsPage::outputDevice() const
 {
   return outputDeviceList->currentText();
 }
 
-void PortAudioConfigDialog::setOutputDevice(const QString &name)
+void PortAudioSettingsPage::setOutputDevice(const QString &name)
 {
   int i = outputDeviceList->findText(name);
   if (i >= 0) {
@@ -354,12 +364,12 @@ void PortAudioConfigDialog::setOutputDevice(const QString &name)
   }
 }
 
-double PortAudioConfigDialog::sampleRate() const
+double PortAudioSettingsPage::sampleRate() const
 {
   return sampleRateList->currentText().toDouble();
 }
 
-void PortAudioConfigDialog::setSampleRate(double sampleRate)
+void PortAudioSettingsPage::setSampleRate(double sampleRate)
 {
   int i = sampleRateList->findText(QString::number(sampleRate));
   if (i >= 0) {
@@ -367,12 +377,12 @@ void PortAudioConfigDialog::setSampleRate(double sampleRate)
   }
 }
 
-double PortAudioConfigDialog::latency() const
+double PortAudioSettingsPage::latency() const
 {
   return latencyList->currentText().toDouble() / 1000;
 }
 
-void PortAudioConfigDialog::setLatency(double latency)
+void PortAudioSettingsPage::setLatency(double latency)
 {
   int i = latencyList->findText(QString::number(latency * 1000, 'g', 3));
   if (i >= 0) {
