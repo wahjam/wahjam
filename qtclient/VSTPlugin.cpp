@@ -23,7 +23,8 @@
 #include "VSTPlugin.h"
 
 VSTPlugin::VSTPlugin(const QString &filename)
-  : library(filename), plugin(NULL), editorDialog(NULL), inProcess(false)
+  : library(filename), plugin(NULL), editorDialog(NULL), inProcess(false),
+    receiveVstMidiEvents(false), midiOutput(NULL)
 {
   /* audioMasterCallback may be invoked from any thread.  Use signal/slot to
    * dispatch in the GUI thread.
@@ -66,6 +67,9 @@ intptr_t VSTPlugin::vstAudioMasterCallback(AEffect *plugin, int32_t op,
     return 0;
 
   case audioMasterWantMidi:
+    if (vst) {
+      vst->receiveVstMidiEvents = true;
+    }
     return 1; /* success */
 
   case audioMasterGetTime:
@@ -73,6 +77,13 @@ intptr_t VSTPlugin::vstAudioMasterCallback(AEffect *plugin, int32_t op,
       return (intptr_t)&vst->timeInfo;
     }
     return 0;
+
+  case audioMasterProcessEvents:
+    if (!vst) {
+      return 0;
+    }
+    vst->outputEvents((VstEvents*)ptrarg);
+    return 1;
 
   case audioMasterSizeWindow:
     if (!vst) {
@@ -99,7 +110,11 @@ intptr_t VSTPlugin::vstAudioMasterCallback(AEffect *plugin, int32_t op,
     return 1;
 
   case audioMasterCanDo:
-    if (strcmp((const char*)ptrarg, "sizeWindow") == 0) {
+    if (strcmp((const char*)ptrarg, "sizeWindow") == 0 ||
+        strcmp((const char*)ptrarg, "sendVstEvents") == 0 ||
+        strcmp((const char*)ptrarg, "sendVstMidiEvents") == 0 ||
+        strcmp((const char*)ptrarg, "receiveVstEvents") == 0 ||
+        strcmp((const char*)ptrarg, "receiveVstMidiEvents") == 0) {
       return 1;
     }
     return 0;
@@ -176,6 +191,10 @@ bool VSTPlugin::load()
   char product[65] = {};
   dispatchUnlocked(effGetProductString, 0, 0, (void*)product);
   qDebug("VST product string: %s", product);
+
+  receiveVstMidiEvents = dispatchUnlocked(effCanDo, 0, 0,
+                                          (void*)"receiveVstMidiEvents");
+  qDebug("VST can receive MIDI events");
 
   lock.unlock();
 
@@ -326,6 +345,19 @@ void VSTPlugin::changeMains(bool enable)
   }
 }
 
+void VSTPlugin::processEvents(VstEvents *vstEvents)
+{
+  if (!receiveVstMidiEvents) {
+    return;
+  }
+
+  if (!lock.tryLock()) {
+    return; /* TODO okay to drop MIDI events? */
+  }
+  dispatchUnlocked(effProcessEvents, 0, 0, vstEvents, 0);
+  lock.unlock();
+}
+
 void VSTPlugin::process(float **inbuf, float **outbuf, int ns)
 {
   int i;
@@ -387,4 +419,32 @@ void VSTPlugin::editorDialogResize(int width, int height)
 void VSTPlugin::queueIdle()
 {
   emit onIdle();
+}
+
+void VSTPlugin::setMidiOutput(ConcurrentQueue<PmEvent> *midiOutput_)
+{
+  midiOutput = midiOutput_;
+}
+
+/* May be invoked from non-GUI thread */
+void VSTPlugin::outputEvents(VstEvents *vstEvents)
+{
+  if (!midiOutput) {
+    return;
+  }
+
+  for (int i = 0; i < vstEvents->numEvents; i++) {
+    VstMidiEvent *vstEvent = (VstMidiEvent*)vstEvents->events[i];
+    if (vstEvent->type != kVstMidiType) {
+      continue;
+    }
+
+    PmEvent event = {0};
+    event.message = Pm_Message(vstEvent->midiData[0],
+                               vstEvent->midiData[1],
+                               vstEvent->midiData[2]);
+    event.timestamp = 0; /* we ignore output latency */
+
+    midiOutput->write(&event, 1);
+  }
 }
