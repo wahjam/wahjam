@@ -41,6 +41,7 @@
 #include "VSTProcessor.h"
 #include "PortAudioSettingsPage.h"
 #include "PortMidiSettingsPage.h"
+#include "PortMidiStreamer.h"
 
 class MainWindow : public QMainWindow
 {
@@ -94,6 +95,8 @@ private:
   QUrl jammrApiUrl;
   QString jammrAuthToken;
   audioStreamer *audio;
+  PortMidiStreamer portMidiStreamer;
+  ConcurrentQueue<PmEvent> vstMidiInputQueue;
   VSTProcessor *vstProcessor;
   SettingsDialog *settingsDialog;
   PortAudioSettingsPage *portAudioSettingsPage;

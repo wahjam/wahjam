@@ -24,13 +24,20 @@ void vstProcessorCallback(float *buf, int ns, void *inst)
   this_->process(buf, ns);
 }
 
-VSTProcessor::VSTProcessor(QObject *parent)
+VSTProcessor::VSTProcessor(ConcurrentQueue<PmEvent> *midiInput_,
+                           ConcurrentQueue<PmEvent> *midiOutput_,
+                           QObject *parent)
   : QObject(parent), client(NULL), localChannel(-1), blockSize(512),
     scratchInputBufs(NULL), maxInputs(0),
-    scratchOutputBufs(NULL), maxOutputs(0)
+    scratchOutputBufs(NULL), maxOutputs(0),
+    midiInput(midiInput_),
+    midiOutput(midiOutput_)
 {
   connect(&idleTimer, SIGNAL(timeout()),
           this, SLOT(idleTimerTick()));
+
+  memset(vstEventBuffer, 0, sizeof vstEventBuffer);
+  allocVstEvents();
 }
 
 VSTProcessor::~VSTProcessor()
@@ -43,6 +50,7 @@ VSTProcessor::~VSTProcessor()
 
   deleteScratchBufs(scratchInputBufs, maxInputs);
   deleteScratchBufs(scratchOutputBufs, maxOutputs);
+  free(vstEvents);
 }
 
 float **VSTProcessor::newScratchBufs(int nbufs)
@@ -62,6 +70,22 @@ void VSTProcessor::deleteScratchBufs(float **bufs, int nbufs)
   delete [] bufs;
 }
 
+void VSTProcessor::allocVstEvents()
+{
+  size_t nelems = sizeof(vstEventBuffer) / sizeof(vstEventBuffer[0]);
+  vstEvents = (VstEvents*)malloc(sizeof(*vstEvents) +
+                                 nelems * sizeof(VstEvent));
+  if (!vstEvents) {
+    qCritical("Unable to allocate VSTEvents");
+    return;
+  }
+
+  memset(vstEvents, 0, sizeof(*vstEvents));
+  for (size_t i = 0; i < nelems; i++) {
+    vstEvents->events[i] = &vstEventBuffer[i];
+  }
+}
+
 bool VSTProcessor::insertPlugin(int idx, VSTPlugin *plugin)
 {
   QMutexLocker locker(&pluginsLock);
@@ -69,6 +93,7 @@ bool VSTProcessor::insertPlugin(int idx, VSTPlugin *plugin)
   // TODO check compatible with inputs/outputs of other plugins
 
   plugin->setParent(this);
+  plugin->setMidiOutput(midiOutput);
   plugins.insert(idx, plugin);
 
   /* We may need to grow scratch buffers */
@@ -189,9 +214,43 @@ bool VSTProcessor::attached()
   return localChannel != -1;
 }
 
+void VSTProcessor::fillVstEvents()
+{
+  QQueue<PmEvent> &queue = midiInput->getReadQueue();
+  int sampleRate = client->GetSampleRate();
+  PmTimestamp firstTimestamp;
+  bool firstEvent = true;
+  size_t i;
+
+  for (i = 0; !queue.isEmpty() &&
+       i < sizeof(vstEventBuffer) / sizeof(vstEventBuffer[0]);
+       i++) {
+    VstMidiEvent *vstEvent = (VstMidiEvent*)&vstEventBuffer[i];
+    PmEvent pmEvent = queue.dequeue();
+
+    vstEvent->type = kVstMidiType;
+    vstEvent->byteSize = sizeof(*vstEvent);
+    vstEvent->midiData[0] = Pm_MessageStatus(pmEvent.message);
+    vstEvent->midiData[1] = Pm_MessageData1(pmEvent.message);
+    vstEvent->midiData[2] = Pm_MessageData2(pmEvent.message);
+    /* TODO SysEx uses all 4 bytes? */
+
+    if (firstEvent) {
+      firstTimestamp = pmEvent.timestamp;
+      firstEvent = false;
+    }
+    vstEvent->deltaFrames = (pmEvent.timestamp - firstTimestamp) *
+                            sampleRate / 1000;
+  }
+
+  vstEvents->numEvents = i;
+}
+
 void VSTProcessor::process(float *buf, int ns)
 {
   QMutexLocker locker(&pluginsLock);
+
+  fillVstEvents();
 
   if ((size_t)ns > blockSize) {
     blockSize = ns;
@@ -215,6 +274,7 @@ void VSTProcessor::process(float *buf, int ns)
   }
 
   foreach (VSTPlugin *plugin, plugins) {
+    plugin->processEvents(vstEvents);
     plugin->process(a, b, ns);
 
     float **swap = a;

@@ -22,15 +22,19 @@
 #include <QList>
 #include <QTimer>
 #include <QMutex>
-#include "VSTPlugin.h"
+#include <portmidi.h>
+#include "common/ConcurrentQueue.h"
 #include "common/njclient.h"
+#include "VSTPlugin.h"
 
 class VSTProcessor : public QObject
 {
   Q_OBJECT
 
 public:
-  VSTProcessor(QObject *parent = NULL);
+  VSTProcessor(ConcurrentQueue<PmEvent> *midiInput,
+               ConcurrentQueue<PmEvent> *midiOutput,
+               QObject *parent = NULL);
   ~VSTProcessor();
 
   bool insertPlugin(int idx, VSTPlugin *plugin);
@@ -73,9 +77,16 @@ private:
   float **scratchOutputBufs;
   int maxOutputs;
 
+  ConcurrentQueue<PmEvent> *midiInput;
+  ConcurrentQueue<PmEvent> *midiOutput;
+  VstEvent vstEventBuffer[128];
+  VstEvents *vstEvents;
+
   bool attached();
   float **newScratchBufs(int nbufs);
   void deleteScratchBufs(float **bufs, int nbufs);
+  void allocVstEvents();
+  void fillVstEvents();
   void activatePlugin(VSTPlugin *plugin);
 };
 

@@ -66,7 +66,8 @@ MainWindow *MainWindow::GetInstance()
 }
 
 MainWindow::MainWindow(QWidget *parent)
-  : QMainWindow(parent), audio(NULL)
+  : QMainWindow(parent), audio(NULL),
+    vstMidiInputQueue(128)
 {
   /* Since the ninjam callbacks do not pass a void* opaque argument we rely on
    * a global variable.
@@ -233,7 +234,10 @@ MainWindow::MainWindow(QWidget *parent)
   connect(&client, SIGNAL(currentBeatChanged(int)),
           metronomeBar, SLOT(setCurrentBeat(int)));
 
-  vstProcessor = new VSTProcessor(this);
+  portMidiStreamer.addInputQueue(&vstMidiInputQueue);
+  vstProcessor = new VSTProcessor(&vstMidiInputQueue,
+                                  portMidiStreamer.getOutputQueue(),
+                                  this);
   settingsDialog->addPage(tr("VST plugins"),
                           new VSTSettingsPage(vstProcessor));
 
