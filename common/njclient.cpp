@@ -35,7 +35,11 @@
 #include "../WDL/pcmfmtcvt.h"
 #include "../WDL/wavwrite.h"
 
-
+enum {
+  MIDI_START = Pm_Message(0xfa, 0, 0),
+  MIDI_CLOCK = Pm_Message(0xf8, 0, 0),
+  MIDI_STOP = Pm_Message(0xfc, 0, 0),
+};
 
 // todo: make an interface base class for vorbis enc/dec
 #define VorbisEncoder I_NJEncoder 
@@ -349,6 +353,8 @@ NJClient::NJClient(QObject *parent)
   m_issoloactive=0;
   m_netcon=0;
 
+  midiOutput = NULL;
+
   _reinit();
 
   m_session_pos_ms=m_session_pos_samples=0;
@@ -389,6 +395,11 @@ void NJClient::_reinit()
   lastBeat = -1;
 
   m_issoloactive&=~1;
+
+  if (midiBeatClockStarted) {
+    sendMidiMessage(MIDI_STOP);
+    midiBeatClockStarted = false;
+  }
 
   int x;
   for (x = 0; x < m_locchannels.GetSize(); x ++)
@@ -516,6 +527,13 @@ void NJClient::updateInterval(int nsamples)
 
     m_beatinfo_updated=0;
     m_interval_length = (int)v;
+
+    /* Restart MIDI Beat Clock when tempo changes */
+    if (m_active_bpm != m_bpm && midiBeatClockStarted) {
+      sendMidiMessage(MIDI_STOP);
+      midiBeatClockStarted = false;
+    }
+
     //m_interval_length-=m_interval_length%1152;//hack
     m_active_bpm=m_bpm;
     m_active_bpi=m_bpi;
@@ -1553,6 +1571,25 @@ void NJClient::process_samples(float **inbuf, int innch, float **outbuf, int out
     }   
   }
 
+  /* MIDI Beat Clock */
+  if (!justmonitor) {
+    if (sendMidiBeatClock) {
+      if (!midiBeatClockStarted) {
+        sendMidiMessage(MIDI_START);
+        midiBeatClockStarted = true;
+      }
+
+      int midiBeatClockInterval = m_metronome_interval / 24;
+      for (int x = 0; x < len; x++) {
+        if (((m_interval_pos + x) % midiBeatClockInterval) == 0) {
+          sendMidiMessage(MIDI_CLOCK);
+        }
+      }
+    } else if (midiBeatClockStarted) {
+      sendMidiMessage(MIDI_STOP);
+      midiBeatClockStarted = false;
+    }
+  }
 }
 
 void NJClient::mixInChannel(bool muted, float vol, float pan, DecodeState *chan, float **outbuf, int len, int srate, int outnch, int offs, double vudecay)
@@ -2209,3 +2246,11 @@ void NJClient::SetOggOutFile(FILE *fp, int srate, int nch, int bitrate)
 #endif
 }
 
+void NJClient::sendMidiMessage(PmMessage msg)
+{
+  if (midiOutput) {
+    PmEvent pmEvent = {0};
+    pmEvent.message = msg;
+    midiOutput->write(&pmEvent, 1);
+  }
+}

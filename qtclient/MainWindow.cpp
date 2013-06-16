@@ -83,6 +83,7 @@ MainWindow::MainWindow(QWidget *parent)
   client.ChatMessage_Callback = ChatMessageCallbackTrampoline;
   client.SetLocalChannelInfo(0, "channel0", true, 0, false, 0, true, true);
   client.SetLocalChannelMonitoring(0, false, 0.0f, false, 0.0f, false, false, false, false);
+  client.SetMidiOutput(portMidiStreamer.getOutputQueue());
 
   netManager = new QNetworkAccessManager(this);
 
@@ -338,6 +339,7 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
 
   QString midiInputDevice = settings->value("midi/inputDevice").toString();
   QString midiOutputDevice = settings->value("midi/outputDevice").toString();
+  client.SetSendMidiBeatClock(settings->value("midi/sendMidiBeatClock").toBool());
   portMidiStreamer.start(midiInputDevice, midiOutputDevice);
 
   QString hostAPI = settings->value("audio/hostAPI").toString();
