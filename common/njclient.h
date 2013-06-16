@@ -52,6 +52,7 @@
 #endif
 #include <stdio.h>
 #include <time.h>
+#include <portmidi.h>
 #include <QObject>
 
 #include "../WDL/string.h"
@@ -60,6 +61,7 @@
 
 #include "../WDL/wavwrite.h"
 
+#include "ConcurrentQueue.h"
 #include "netmsg.h"
 #include "mpb.h"
 
@@ -92,7 +94,6 @@ public:
   int IsAudioRunning() { return m_audio_enable; }
   // call AudioProc, (and only AudioProc) from your audio thread
   void AudioProc(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate); // len is number of sample pairs or samples
-
 
   // basic configuration
   int   config_autosubscribe;
@@ -158,6 +159,15 @@ public:
   void NotifyServerOfChannelChange(); // call after any SetLocalChannel* that occur after initial connect
 
   int IsASoloActive() { return m_issoloactive; }
+
+  void SetMidiOutput(ConcurrentQueue<PmEvent> *midiOutput_)
+  {
+    midiOutput = midiOutput_;
+  }
+  void SetSendMidiBeatClock(bool enable)
+  {
+    sendMidiBeatClock = enable;
+  }
 
   void SetLogFile(char *name=NULL);
 
@@ -242,6 +252,10 @@ protected:
   int m_interval_pos, m_metronome_state, m_metronome_tmp,m_metronome_interval;
   double m_metronome_pos;
 
+  bool sendMidiBeatClock;
+  bool midiBeatClockStarted;
+  ConcurrentQueue<PmEvent> *midiOutput;
+
   // Values that we watch for changes
   int lastBpm;
   int lastBpi;
@@ -270,6 +284,7 @@ private slots:
 private:
   int Run();// returns nonzero if sleep is OK
   void processMessage(Net_Message *msg);
+  void sendMidiMessage(PmMessage msg);
 };
 
 
