@@ -133,7 +133,10 @@ bool VSTPlugin::load()
   qDebug("VST filename: %s", library.fileName().toLatin1().constData());
 
   typedef AEffect *(VSTMainFn)(audioMasterCallback);
-  VSTMainFn *mainfn = (VSTMainFn*)library.resolve("main");
+  VSTMainFn *mainfn = (VSTMainFn*)library.resolve("VSTPluginMain");
+  if (!mainfn) {
+    mainfn = (VSTMainFn*)library.resolve("main");
+  }
   if (!mainfn) {
     qDebug("failed to resolve VST plugin main symbol");
     library.unload();
