@@ -15,4 +15,5 @@ HEADERS = audiostream.h \
           netmsg.h \
           njclient.h \
           njmisc.h \
-          UserPrivs.h
+          UserPrivs.h \
+          ConcurrentQueue.h
