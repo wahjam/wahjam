@@ -195,10 +195,12 @@ MainWindow::MainWindow(QWidget *parent)
   connectingState->assignProperty(connectAction, "enabled", false);
   connectingState->assignProperty(disconnectAction, "enabled", true);
   connectingState->assignProperty(portAudioSettingsPage, "enabled", false);
+  connectingState->assignProperty(portMidiSettingsPage, "enabled", false);
   disconnectedState->assignProperty(voteMenu, "enabled", false);
   disconnectedState->assignProperty(connectAction, "enabled", true);
   disconnectedState->assignProperty(disconnectAction, "enabled", false);
   disconnectedState->assignProperty(portAudioSettingsPage, "enabled", true);
+  disconnectedState->assignProperty(portMidiSettingsPage, "enabled", true);
   disconnectedState->assignProperty(adminMenu, "enabled", false);
   disconnectedState->assignProperty(adminTopicAction, "enabled", false);
   disconnectedState->assignProperty(adminBPMAction, "enabled", false);
@@ -334,6 +336,10 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
     return;
   }
 
+  QString midiInputDevice = settings->value("midi/inputDevice").toString();
+  QString midiOutputDevice = settings->value("midi/outputDevice").toString();
+  portMidiStreamer.start(midiInputDevice, midiOutputDevice);
+
   QString hostAPI = settings->value("audio/hostAPI").toString();
   QString inputDevice = settings->value("audio/inputDevice").toString();
   bool unmuteLocalChannels = settings->value("audio/unmuteLocalChannels", true).toBool();
@@ -348,6 +354,8 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
   if (!audio)
   {
     qCritical("create_audioStreamer_PortAudio() failed");
+
+    portMidiStreamer.stop();
 
     QDir basedir(QDesktopServices::storageLocation(QDesktopServices::DataLocation));
     QString filename = basedir.filePath("log.txt");
@@ -392,6 +400,7 @@ void MainWindow::Disconnect()
 
   client.Disconnect();
   vstProcessor->detach();
+  portMidiStreamer.stop();
 
   QString workDirPath = QString::fromUtf8(client.GetWorkDir());
   bool keepWorkDir = client.config_savelocalaudio != -1;
