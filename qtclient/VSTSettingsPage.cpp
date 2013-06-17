@@ -28,6 +28,7 @@ VSTSettingsPage::VSTSettingsPage(VSTProcessor *processor_, QWidget *parent)
   int i;
 
   addPluginDialog.setSearchPath(settings->value("vst/searchPath").toString());
+  addPluginDialog.setPlugins(settings->value("vst/plugins").toStringList());
 
   QVBoxLayout *vBoxLayout = new QVBoxLayout;
   QHBoxLayout *hBoxLayout = new QHBoxLayout;
@@ -85,6 +86,7 @@ void VSTSettingsPage::addPlugin()
     return;
   }
   settings->setValue("vst/searchPath", addPluginDialog.searchPath());
+  settings->setValue("vst/plugins", addPluginDialog.plugins());
 
   VSTPlugin *vst = new VSTPlugin(addPluginDialog.fileName());
   if (!vst->load()) {

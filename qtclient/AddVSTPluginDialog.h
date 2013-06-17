@@ -20,6 +20,7 @@
 #define _ADDVSTPLUGINDIALOG_H_
 
 #include <QDialog>
+#include <QStringList>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QPushButton>
@@ -28,6 +29,7 @@ class AddVSTPluginDialog : public QDialog
 {
   Q_OBJECT
   Q_PROPERTY(QString searchPath READ searchPath WRITE setSearchPath)
+  Q_PROPERTY(QStringList plugins READ plugins WRITE setPlugins)
   Q_PROPERTY(QString fileName READ fileName)
 
 public:
@@ -35,6 +37,8 @@ public:
 
   QString searchPath() const;
   void setSearchPath(const QString &path);
+  QStringList plugins() const;
+  void setPlugins(const QStringList &plugins);
   QString fileName() const;
 
 private slots:
@@ -46,6 +50,8 @@ private:
   QLineEdit *searchPathEdit;
   QListWidget *pluginsList;
   QPushButton *okButton;
+
+  void addPlugin(const QString &file);
 };
 
 #endif /* _ADDVSTPLUGINDIALOG_H_ */

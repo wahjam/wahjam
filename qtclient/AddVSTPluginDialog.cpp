@@ -81,6 +81,43 @@ void AddVSTPluginDialog::setSearchPath(const QString &path)
   searchPathEdit->setText(path);
 }
 
+QStringList AddVSTPluginDialog::plugins() const
+{
+  QStringList result;
+
+  for (int i = 0; i < pluginsList->count(); i++) {
+    QListWidgetItem *item = pluginsList->item(i);
+    if (item) {
+      result.append(item->data(Qt::ToolTipRole).toString());
+    }
+  }
+  return result;
+}
+
+void AddVSTPluginDialog::addPlugin(const QString &file)
+{
+  /* Use filename since loading VSTs to find their name can be slow */
+  QFileInfo fileInfo(file);
+  QString name = fileInfo.baseName().
+    remove(QRegExp("\\.so$")).
+    remove(QRegExp("\\.dll$", Qt::CaseInsensitive)).
+    remove(QRegExp("\\.dylib$", Qt::CaseInsensitive));
+
+  QListWidgetItem *item = new QListWidgetItem(name);
+  item->setData(Qt::ToolTipRole, file);
+  pluginsList->addItem(item);
+}
+
+void AddVSTPluginDialog::setPlugins(const QStringList &plugins_)
+{
+  QString file;
+
+  pluginsList->clear();
+  foreach (file, plugins_) {
+    addPlugin(file);
+  }
+}
+
 QString AddVSTPluginDialog::fileName() const
 {
   QListWidgetItem *item = pluginsList->currentItem();
@@ -136,9 +173,7 @@ void AddVSTPluginDialog::scan()
         continue;
       }
 
-      QListWidgetItem *item = new QListWidgetItem(vst.getName());
-      item->setData(Qt::ToolTipRole, file);
-      pluginsList->addItem(item);
+      addPlugin(file);
 
       /* Process UI thread events, scanning plugins might take a while */
       QCoreApplication::processEvents();
