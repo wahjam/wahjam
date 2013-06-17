@@ -26,8 +26,22 @@ VSTSettingsPage::VSTSettingsPage(VSTProcessor *processor_, QWidget *parent)
   : QWidget(parent), processor(processor_), addPluginDialog(this)
 {
   int i;
+  QString defaultSearchPath;
 
-  addPluginDialog.setSearchPath(settings->value("vst/searchPath").toString());
+#if defined(Q_WS_MAC)
+  defaultSearchPath = "~/Library/Audio/Plug-Ins/VST;/Library/Audio/Plug-Ins/VST";
+#elif defined(Q_WS_WIN)
+  if (sizeof(void*) == 4) {
+    defaultSearchPath = QSettings("HKEY_LOCAL_MACHINE\\Software\\Wow6432Node\\VST",
+                                  QSettings::NativeFormat).value("VSTPluginsPath").toString();
+  }
+  if (defaultSearchPath.isEmpty()) {
+    defaultSearchPath = QSettings("HKEY_LOCAL_MACHINE\\Software\\VST",
+                                  QSettings::NativeFormat).value("VSTPluginsPath").toString();
+  }
+#endif
+
+  addPluginDialog.setSearchPath(settings->value("vst/searchPath", defaultSearchPath).toString());
   addPluginDialog.setPlugins(settings->value("vst/plugins").toStringList());
 
   QVBoxLayout *vBoxLayout = new QVBoxLayout;
