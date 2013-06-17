@@ -16,42 +16,38 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _ADDVSTPLUGINDIALOG_H_
-#define _ADDVSTPLUGINDIALOG_H_
+#ifndef _VSTSETTINGSPAGE_H_
+#define _VSTSETTINGSPAGE_H_
 
-#include <QDialog>
-#include <QStringList>
-#include <QLineEdit>
+#include <QWidget>
 #include <QListWidget>
 #include <QPushButton>
+#include "VSTProcessor.h"
+#include "AddVSTPluginDialog.h"
 
-class AddVSTPluginDialog : public QDialog
+class VSTSettingsPage : public QWidget
 {
   Q_OBJECT
-  Q_PROPERTY(QString searchPath READ searchPath WRITE setSearchPath)
-  Q_PROPERTY(QStringList plugins READ plugins WRITE setPlugins)
-  Q_PROPERTY(QString fileName READ fileName)
 
 public:
-  AddVSTPluginDialog(QWidget *parent = 0);
-
-  QString searchPath() const;
-  void setSearchPath(const QString &path);
-  QStringList plugins() const;
-  void setPlugins(const QStringList &plugins);
-  QString fileName() const;
+  VSTSettingsPage(VSTProcessor *processor, QWidget *parent = NULL);
 
 private slots:
-  void addSearchPath();
-  void scan();
   void itemSelectionChanged();
+  void addPlugin();
+  void removePlugin();
+  void movePluginUp();
+  void movePluginDown();
+  void openEditor();
 
 private:
-  QLineEdit *searchPathEdit;
-  QListWidget *pluginsList;
-  QPushButton *okButton;
-
-  void addPlugin(const QString &file);
+  VSTProcessor *processor;
+  AddVSTPluginDialog addPluginDialog;
+  QListWidget *pluginList;
+  QPushButton *removeButton;
+  QPushButton *upButton;
+  QPushButton *downButton;
+  QPushButton *editButton;
 };
 
-#endif /* _ADDVSTPLUGINDIALOG_H_ */
+#endif /* _VSTSETTINGSPAGE_H_ */

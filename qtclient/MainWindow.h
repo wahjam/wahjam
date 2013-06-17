@@ -35,10 +35,11 @@
 #include "ChannelTreeWidget.h"
 #include "MetronomeBar.h"
 #include "ChatOutput.h"
-#include "VSTConfigDialog.h"
+#include "SettingsDialog.h"
 #include "common/njclient.h"
 #include "common/audiostream.h"
 #include "VSTProcessor.h"
+#include "PortAudioSettingsPage.h"
 
 class MainWindow : public QMainWindow
 {
@@ -58,8 +59,6 @@ signals:
   void Disconnected();
 
 public slots:
-  void ShowAudioConfigDialog();
-  void ShowVSTConfigDialog();
   void ShowConnectDialog();
   void Disconnect();
   void SendChatMessage(const QString &line);
@@ -85,6 +84,7 @@ private slots:
   void KickMenuAboutToShow();
   void KickMenuTriggered(QAction *action);
   void Startup();
+  void SettingsDialogClosed();
 
 private:
   static MainWindow *instance;
@@ -94,14 +94,14 @@ private:
   QString jammrAuthToken;
   audioStreamer *audio;
   VSTProcessor *vstProcessor;
-  VSTConfigDialog *vstConfigDialog;
+  SettingsDialog *settingsDialog;
+  PortAudioSettingsPage *portAudioSettingsPage;
   QNetworkAccessManager *netManager;
   ChatOutput *chatOutput;
   QLineEdit *chatInput;
   ChannelTreeWidget *channelTree;
   QAction *connectAction;
   QAction *disconnectAction;
-  QAction *audioConfigAction;
   QMenu *voteMenu;
   QMenu *adminMenu;
   QAction *adminTopicAction;
@@ -124,6 +124,7 @@ private:
 
   void setupChannelTree();
   void setupStatusBar();
+  void setupPortAudioSettingsPage();
   bool setupWorkDir();
   void cleanupWorkDir(const QString &path);
   bool tryReconnect();

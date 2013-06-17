@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2012 Stefan Hajnoczi <stefanha@gmail.com>
+    Copyright (C) 2013 Stefan Hajnoczi <stefanha@gmail.com>
 
     Wahjam is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,38 +16,29 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _VSTCONFIGDIALOG_H_
-#define _VSTCONFIGDIALOG_H_
+#ifndef _SETTINGSDIALOG_H_
+#define _SETTINGSDIALOG_H_
 
 #include <QDialog>
 #include <QListWidget>
-#include <QPushButton>
-#include "VSTProcessor.h"
-#include "AddVSTPluginDialog.h"
+#include <QStackedWidget>
 
-class VSTConfigDialog : public QDialog
+class SettingsDialog : public QDialog
 {
   Q_OBJECT
 
 public:
-  VSTConfigDialog(VSTProcessor *processor, QWidget *parent = NULL);
+  SettingsDialog(QWidget *parent = 0);
+
+  void addPage(const QString &label, QWidget *page);
+  void setPage(int index);
 
 private slots:
-  void itemSelectionChanged();
-  void addPlugin();
-  void removePlugin();
-  void movePluginUp();
-  void movePluginDown();
-  void openEditor();
+  void changePage(QListWidgetItem *current, QListWidgetItem *previous);
 
 private:
-  VSTProcessor *processor;
-  AddVSTPluginDialog addPluginDialog;
-  QListWidget *pluginList;
-  QPushButton *removeButton;
-  QPushButton *upButton;
-  QPushButton *downButton;
-  QPushButton *editButton;
+  QListWidget *pageList;
+  QStackedWidget *pageStack;
 };
 
-#endif /* _VSTCONFIGDIALOG_H_ */
+#endif /* _SETTINGSDIALOG_H_ */

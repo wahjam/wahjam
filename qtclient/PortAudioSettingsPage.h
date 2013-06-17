@@ -16,15 +16,14 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _PORTAUDIOCONFIGDIALOG_H_
-#define _PORTAUDIOCONFIGDIALOG_H_
+#ifndef _PORTAUDIOSETTINGSPAGE_H_
+#define _PORTAUDIOSETTINGSPAGE_H_
 
-#include <QDialog>
+#include <QWidget>
 #include <QComboBox>
 #include <QCheckBox>
-#include <QPushButton>
 
-class PortAudioConfigDialog : public QDialog
+class PortAudioSettingsPage : public QWidget
 {
   Q_OBJECT
   Q_PROPERTY(QString hostAPI READ hostAPI WRITE setHostAPI)
@@ -35,7 +34,7 @@ class PortAudioConfigDialog : public QDialog
   Q_PROPERTY(double latency READ latency WRITE setLatency)
 
 public:
-  PortAudioConfigDialog(QWidget *parent = 0);
+  PortAudioSettingsPage(QWidget *parent = 0);
   void populateHostAPIList();
   QString hostAPI() const;
   void setHostAPI(const QString &name);
@@ -63,7 +62,8 @@ private:
   QComboBox *outputDeviceList;
   QComboBox *sampleRateList;
   QComboBox *latencyList;
-  QPushButton *applyButton;
+  QWidget *invalidSettingsWidget;
+  QWidget *validSettingsWidget;
   int validateSettingsEntryCount;
 
   void willValidateSettings();
@@ -73,4 +73,4 @@ private:
   void setupLatencyList();
 };
 
-#endif /* _PORTAUDIOCONFIGDIALOG_H_ */
+#endif /* _PORTAUDIOSETTINGSPAGE_H_ */

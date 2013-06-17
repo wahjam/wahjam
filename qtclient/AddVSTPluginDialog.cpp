@@ -81,6 +81,47 @@ void AddVSTPluginDialog::setSearchPath(const QString &path)
   searchPathEdit->setText(path);
 }
 
+QStringList AddVSTPluginDialog::plugins() const
+{
+  QStringList result;
+
+  for (int i = 0; i < pluginsList->count(); i++) {
+    QListWidgetItem *item = pluginsList->item(i);
+    if (item) {
+      result.append(item->data(Qt::ToolTipRole).toString());
+    }
+  }
+  return result;
+}
+
+void AddVSTPluginDialog::addPlugin(const QString &file)
+{
+  QFileInfo fileInfo(file);
+  if (!fileInfo.exists()) {
+    return;
+  }
+
+  /* Use filename since loading VSTs to find their name can be slow */
+  QString name = fileInfo.baseName().
+    remove(QRegExp("\\.so$")).
+    remove(QRegExp("\\.dll$", Qt::CaseInsensitive)).
+    remove(QRegExp("\\.dylib$", Qt::CaseInsensitive));
+
+  QListWidgetItem *item = new QListWidgetItem(name);
+  item->setData(Qt::ToolTipRole, file);
+  pluginsList->addItem(item);
+}
+
+void AddVSTPluginDialog::setPlugins(const QStringList &plugins_)
+{
+  QString file;
+
+  pluginsList->clear();
+  foreach (file, plugins_) {
+    addPlugin(file);
+  }
+}
+
 QString AddVSTPluginDialog::fileName() const
 {
   QListWidgetItem *item = pluginsList->currentItem();
@@ -111,38 +152,54 @@ void AddVSTPluginDialog::scan()
 
   QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
+  /* VST plugin search involves recursively searching directories for libraries
+   * that are VST plugins.  On Mac it works a little differently: VSTs are
+   * packaged into .vst directories under Contents/MacOS/<vst-name>.
+   */
   pluginsList->clear();
   while (!searchPaths.isEmpty()) {
     QDir dir(searchPaths.takeFirst());
 
-    QStringList subdirs = dir.entryList(QDir::Dirs | QDir::Readable |
-                                        QDir::Executable |
-                                        QDir::NoDotAndDotDot);
-    QString subdir;
-    foreach (subdir, subdirs) {
-      searchPaths.append(dir.filePath(subdir));
-    }
-
-    QStringList files = dir.entryList(QDir::Files);
-    QString file;
-    foreach (file, files) {
-      if (!QLibrary::isLibrary(file)) {
+#ifdef Q_WS_MAC
+    if (!dir.dirName().endsWith(".vst", Qt::CaseInsensitive)) {
+#endif
+      QStringList subdirs = dir.entryList(QDir::Dirs | QDir::Readable |
+                                          QDir::Executable |
+                                          QDir::NoDotAndDotDot);
+      QString subdir;
+      foreach (subdir, subdirs) {
+        searchPaths.append(dir.filePath(subdir));
+      }
+#ifdef Q_WS_MAC
+    } else {
+      if (!dir.cd("Contents/MacOS")) {
         continue;
       }
+#endif
+      QStringList files = dir.entryList(QDir::Files);
+      QString file;
+      foreach (file, files) {
+#ifndef Q_WS_MAC
+        /* On Linux and Windows VST filenames include the library suffix */
+        if (!QLibrary::isLibrary(file)) {
+          continue;
+        }
+#endif /* Q_WS_MAC */
 
-      file = dir.filePath(file);
-      VSTPlugin vst(file);
-      if (!vst.load()) {
-        continue;
+        file = dir.filePath(file);
+        VSTPlugin vst(file);
+        if (!vst.load()) {
+          continue;
+        }
+
+        addPlugin(file);
+
+        /* Process UI thread events, scanning plugins might take a while */
+        QCoreApplication::processEvents();
       }
-
-      QListWidgetItem *item = new QListWidgetItem(vst.getName());
-      item->setData(Qt::ToolTipRole, file);
-      pluginsList->addItem(item);
-
-      /* Process UI thread events, scanning plugins might take a while */
-      QCoreApplication::processEvents();
+#ifdef Q_WS_MAC
     }
+#endif
   }
 
   QApplication::restoreOverrideCursor();

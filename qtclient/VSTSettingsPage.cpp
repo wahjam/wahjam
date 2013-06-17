@@ -20,14 +20,29 @@
 #include <QHBoxLayout>
 #include <QDialogButtonBox>
 #include "qtclient.h"
-#include "VSTConfigDialog.h"
+#include "VSTSettingsPage.h"
 
-VSTConfigDialog::VSTConfigDialog(VSTProcessor *processor_, QWidget *parent)
-  : QDialog(parent), processor(processor_), addPluginDialog(this)
+VSTSettingsPage::VSTSettingsPage(VSTProcessor *processor_, QWidget *parent)
+  : QWidget(parent), processor(processor_), addPluginDialog(this)
 {
   int i;
+  QString defaultSearchPath;
 
-  addPluginDialog.setSearchPath(settings->value("vst/searchPath").toString());
+#if defined(Q_WS_MAC)
+  defaultSearchPath = "~/Library/Audio/Plug-Ins/VST;/Library/Audio/Plug-Ins/VST";
+#elif defined(Q_WS_WIN)
+  if (sizeof(void*) == 4) {
+    defaultSearchPath = QSettings("HKEY_LOCAL_MACHINE\\Software\\Wow6432Node\\VST",
+                                  QSettings::NativeFormat).value("VSTPluginsPath").toString();
+  }
+  if (defaultSearchPath.isEmpty()) {
+    defaultSearchPath = QSettings("HKEY_LOCAL_MACHINE\\Software\\VST",
+                                  QSettings::NativeFormat).value("VSTPluginsPath").toString();
+  }
+#endif
+
+  addPluginDialog.setSearchPath(settings->value("vst/searchPath", defaultSearchPath).toString());
+  addPluginDialog.setPlugins(settings->value("vst/plugins").toStringList());
 
   QVBoxLayout *vBoxLayout = new QVBoxLayout;
   QHBoxLayout *hBoxLayout = new QHBoxLayout;
@@ -65,17 +80,11 @@ VSTConfigDialog::VSTConfigDialog(VSTProcessor *processor_, QWidget *parent)
 
   vBoxLayout->addLayout(hBoxLayout);
 
-  QDialogButtonBox *dialogButtonBox = new QDialogButtonBox(QDialogButtonBox::Close);
-  connect(dialogButtonBox->button(QDialogButtonBox::Close), SIGNAL(clicked()),
-          this, SLOT(accept()));
-  vBoxLayout->addWidget(dialogButtonBox);
-
   setLayout(vBoxLayout);
-  setWindowTitle(tr("Configure VST plugins..."));
   itemSelectionChanged();
 }
 
-void VSTConfigDialog::itemSelectionChanged()
+void VSTSettingsPage::itemSelectionChanged()
 {
   bool selected = pluginList->currentItem();
 
@@ -85,12 +94,13 @@ void VSTConfigDialog::itemSelectionChanged()
   editButton->setEnabled(selected);
 }
 
-void VSTConfigDialog::addPlugin()
+void VSTSettingsPage::addPlugin()
 {
   if (!addPluginDialog.exec()) {
     return;
   }
   settings->setValue("vst/searchPath", addPluginDialog.searchPath());
+  settings->setValue("vst/plugins", addPluginDialog.plugins());
 
   VSTPlugin *vst = new VSTPlugin(addPluginDialog.fileName());
   if (!vst->load()) {
@@ -112,7 +122,7 @@ void VSTConfigDialog::addPlugin()
   pluginList->setCurrentRow(0);
 }
 
-void VSTConfigDialog::removePlugin()
+void VSTSettingsPage::removePlugin()
 {
   int index = pluginList->currentRow();
   QListWidgetItem *item = pluginList->takeItem(index);
@@ -122,7 +132,7 @@ void VSTConfigDialog::removePlugin()
   delete item;
 }
 
-void VSTConfigDialog::movePluginUp()
+void VSTSettingsPage::movePluginUp()
 {
   int index = pluginList->currentRow();
   if (index == 0) {
@@ -136,7 +146,7 @@ void VSTConfigDialog::movePluginUp()
   processor->moveUp(index);
 }
 
-void VSTConfigDialog::movePluginDown()
+void VSTSettingsPage::movePluginDown()
 {
   int index = pluginList->currentRow();
   if (index + 1 == pluginList->count()) {
@@ -150,7 +160,7 @@ void VSTConfigDialog::movePluginDown()
   processor->moveDown(index);
 }
 
-void VSTConfigDialog::openEditor()
+void VSTSettingsPage::openEditor()
 {
   int index = pluginList->currentRow();
   VSTPlugin *vst = processor->getPlugin(index);
