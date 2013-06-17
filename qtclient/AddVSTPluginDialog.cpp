@@ -96,8 +96,12 @@ QStringList AddVSTPluginDialog::plugins() const
 
 void AddVSTPluginDialog::addPlugin(const QString &file)
 {
-  /* Use filename since loading VSTs to find their name can be slow */
   QFileInfo fileInfo(file);
+  if (!fileInfo.exists()) {
+    return;
+  }
+
+  /* Use filename since loading VSTs to find their name can be slow */
   QString name = fileInfo.baseName().
     remove(QRegExp("\\.so$")).
     remove(QRegExp("\\.dll$", Qt::CaseInsensitive)).
@@ -148,36 +152,54 @@ void AddVSTPluginDialog::scan()
 
   QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
+  /* VST plugin search involves recursively searching directories for libraries
+   * that are VST plugins.  On Mac it works a little differently: VSTs are
+   * packaged into .vst directories under Contents/MacOS/<vst-name>.
+   */
   pluginsList->clear();
   while (!searchPaths.isEmpty()) {
     QDir dir(searchPaths.takeFirst());
 
-    QStringList subdirs = dir.entryList(QDir::Dirs | QDir::Readable |
-                                        QDir::Executable |
-                                        QDir::NoDotAndDotDot);
-    QString subdir;
-    foreach (subdir, subdirs) {
-      searchPaths.append(dir.filePath(subdir));
-    }
-
-    QStringList files = dir.entryList(QDir::Files);
-    QString file;
-    foreach (file, files) {
-      if (!QLibrary::isLibrary(file)) {
+#ifdef Q_WS_MAC
+    if (!dir.dirName().endsWith(".vst", Qt::CaseInsensitive)) {
+#endif
+      QStringList subdirs = dir.entryList(QDir::Dirs | QDir::Readable |
+                                          QDir::Executable |
+                                          QDir::NoDotAndDotDot);
+      QString subdir;
+      foreach (subdir, subdirs) {
+        searchPaths.append(dir.filePath(subdir));
+      }
+#ifdef Q_WS_MAC
+    } else {
+      if (!dir.cd("Contents/MacOS")) {
         continue;
       }
+#endif
+      QStringList files = dir.entryList(QDir::Files);
+      QString file;
+      foreach (file, files) {
+#ifndef Q_WS_MAC
+        /* On Linux and Windows VST filenames include the library suffix */
+        if (!QLibrary::isLibrary(file)) {
+          continue;
+        }
+#endif /* Q_WS_MAC */
 
-      file = dir.filePath(file);
-      VSTPlugin vst(file);
-      if (!vst.load()) {
-        continue;
+        file = dir.filePath(file);
+        VSTPlugin vst(file);
+        if (!vst.load()) {
+          continue;
+        }
+
+        addPlugin(file);
+
+        /* Process UI thread events, scanning plugins might take a while */
+        QCoreApplication::processEvents();
       }
-
-      addPlugin(file);
-
-      /* Process UI thread events, scanning plugins might take a while */
-      QCoreApplication::processEvents();
+#ifdef Q_WS_MAC
     }
+#endif
   }
 
   QApplication::restoreOverrideCursor();
