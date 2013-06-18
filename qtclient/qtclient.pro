@@ -55,6 +55,11 @@ CONFIG += link_pkgconfig
 PKGCONFIG += vorbis vorbisenc portaudio-2.0
 LIBS += -lportmidi # does not use pkg-config
 
+# On Ubuntu PortTime is separate from PortMidi
+!isEmpty(USE_LIBPORTTIME) {
+	LIBS += -lporttime
+}
+
 # Code in common/ does not use wide characters
 win32:DEFINES -= UNICODE
 
