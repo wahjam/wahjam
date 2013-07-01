@@ -822,6 +822,7 @@ User_Group::~User_Group()
 void User_Group::SetLogDir(const char *path) // NULL to not log
 {
   if (m_logfp) {
+    fprintf(m_logfp, "end\n");
     fclose(m_logfp);
   }
   m_logfp = NULL;
