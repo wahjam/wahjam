@@ -129,10 +129,13 @@ class User_Group : public QObject
 
   private slots:
     void userDisconnected(QObject *userObj);
+    void intervalExpired();
 
   private:
     QSignalMapper signalMapper;
     JamProtocol protocol;
+    QTimer intervalTimer;
+    int m_loopcnt; /* interval number */
 };
 
 

@@ -801,10 +801,13 @@ User_Group::User_Group(CreateUserLookupFn *CreateUserLookup_, QObject *parent)
   : QObject(parent), CreateUserLookup(CreateUserLookup_), m_max_users(0),
     m_last_bpm(120), m_last_bpi(32), m_keepalive(0), m_voting_threshold(110),
     m_voting_timeout(120), m_allow_hidden_users(0), m_logfp(0),
-    protocol(JAM_PROTO_NINJAM)
+    protocol(JAM_PROTO_NINJAM), m_loopcnt(0)
 {
   connect(&signalMapper, SIGNAL(mapped(QObject*)),
           this, SLOT(userDisconnected(QObject*)));
+
+  connect(&intervalTimer, SIGNAL(timeout()),
+          this, SLOT(intervalExpired()));
 }
 
 User_Group::~User_Group()
@@ -821,6 +824,9 @@ User_Group::~User_Group()
 
 void User_Group::SetLogDir(const char *path) // NULL to not log
 {
+  m_loopcnt = 0;
+  intervalTimer.stop();
+
   if (m_logfp) {
     fprintf(m_logfp, "end\n");
     fclose(m_logfp);
@@ -864,7 +870,21 @@ void User_Group::SetLogDir(const char *path) // NULL to not log
 #endif
   }
 
+  intervalExpired();
+  intervalTimer.start();
+
   qDebug("Archiving session '%s'", path);
+}
+
+void User_Group::intervalExpired()
+{
+  m_loopcnt++;
+
+  if (m_logfp) {
+    fprintf(m_logfp, "interval %d %d %d\n", m_loopcnt, m_last_bpm, m_last_bpi);
+    fflush(m_logfp);
+  }
+  intervalTimer.setInterval(m_last_bpi * 1000 * 60 / m_last_bpm);
 }
 
 void User_Group::SetProtocol(JamProtocol proto)
