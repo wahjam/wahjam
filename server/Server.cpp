@@ -170,7 +170,7 @@ void Server::updateNextSession()
     return;
   }
 
-  if (!group->hasAuthenticatedUsers()) {
+  if (group->numAuthenticatedUsers() < 2) {
     setIdleSessionUpdateTimer();
     return;
   }

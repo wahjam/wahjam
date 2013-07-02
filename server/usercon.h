@@ -105,7 +105,7 @@ class User_Group : public QObject
 
     void onChatMessage(User_Connection *con, mpb_chat_message *msg);
 
-    bool hasAuthenticatedUsers();
+    int numAuthenticatedUsers();
 
     CreateUserLookupFn *CreateUserLookup;
 

@@ -1319,13 +1319,14 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
   }
 }
 
-bool User_Group::hasAuthenticatedUsers()
+int User_Group::numAuthenticatedUsers()
 {
+  int n = 0;
   int x;
   for (x = 0; x < m_users.GetSize(); x++) {
     if (m_users.Get(x)->m_auth_state >= 1) {
-      return true;
+      n++;
     }
   }
-  return false;
+  return n;
 }
