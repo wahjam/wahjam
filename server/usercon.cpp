@@ -370,6 +370,7 @@ int User_Connection::OnRunAuth()
     group->Broadcast(newmsg.build(),this);
   }
 
+  emit authenticated();
   return 1;
 }
 
@@ -804,7 +805,7 @@ User_Group::User_Group(CreateUserLookupFn *CreateUserLookup_, QObject *parent)
     protocol(JAM_PROTO_NINJAM), m_loopcnt(0)
 {
   connect(&signalMapper, SIGNAL(mapped(QObject*)),
-          this, SLOT(userDisconnected(QObject*)));
+          this, SLOT(userConDisconnected(QObject*)));
 
   connect(&intervalTimer, SIGNAL(timeout()),
           this, SLOT(intervalExpired()));
@@ -915,7 +916,7 @@ void User_Group::Broadcast(Net_Message *msg, User_Connection *nosend)
   }
 }
 
-void User_Group::userDisconnected(QObject *userObj)
+void User_Group::userConDisconnected(QObject *userObj)
 {
   User_Connection *p = (User_Connection*)userObj;
 
@@ -962,6 +963,7 @@ void User_Group::userDisconnected(QObject *userObj)
   m_users.Delete(idx);
 
   p->deleteLater();
+  emit userDisconnected();
 }
 
 void User_Group::SetConfig(int bpi, int bpm)
@@ -983,6 +985,7 @@ void User_Group::AddConnection(QTcpSocket *sock, int isres)
   m_users.Add(p);
   signalMapper.setMapping(p, p);
   connect(p, SIGNAL(disconnected()), &signalMapper, SLOT(map()));
+  connect(p, SIGNAL(authenticated()), this, SIGNAL(userAuthenticated()));
 }
 
 void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)

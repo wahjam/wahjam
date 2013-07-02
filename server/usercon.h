@@ -85,6 +85,10 @@ class User_Group : public QObject
 {
   Q_OBJECT
 
+  signals:
+    void userAuthenticated();
+    void userDisconnected();
+
   public:
     User_Group(CreateUserLookupFn *CreateUserLookup_, QObject *parent=0);
     ~User_Group();
@@ -128,7 +132,7 @@ class User_Group : public QObject
     FILE *m_logfp;
 
   private slots:
-    void userDisconnected(QObject *userObj);
+    void userConDisconnected(QObject *userObj);
     void intervalExpired();
 
   private:
@@ -238,6 +242,7 @@ class User_Connection : public QObject
 
   signals:
     void disconnected();
+    void authenticated();
 
   private slots:
     void netconMessagesReady();
