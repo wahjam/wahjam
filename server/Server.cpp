@@ -34,14 +34,17 @@ Server::Server(CreateUserLookupFn *createUserLookup, QObject *parent)
   : QObject(parent)
 {
   group = new User_Group(createUserLookup, this);
+  connect(group, SIGNAL(userAuthenticated()),
+          this, SLOT(userAuthenticated()));
+  connect(group, SIGNAL(userDisconnected()),
+          this, SLOT(userDisconnected()));
 
   connect(&listener, SIGNAL(newConnection()),
           this, SLOT(acceptNewConnection()));
 
+  sessionUpdateTimer.setSingleShot(true);
   connect(&sessionUpdateTimer, SIGNAL(timeout()),
           this, SLOT(updateNextSession()));
-  setIdleSessionUpdateTimer();
-  sessionUpdateTimer.start();
 }
 
 void AccessControlList::add(unsigned long addr, unsigned long mask, int flags)
@@ -146,9 +149,22 @@ void Server::acceptNewConnection()
   group->AddConnection(sock, flag == ACL_FLAG_RESERVE);
 }
 
-void Server::setIdleSessionUpdateTimer()
+void Server::userAuthenticated()
 {
-  sessionUpdateTimer.setInterval(30 * 1000 /* milliseconds */);
+  if (sessionUpdateTimer.isActive()) {
+    return; /* nothing to do */
+  }
+  updateNextSession();
+}
+
+void Server::userDisconnected()
+{
+  if (!sessionUpdateTimer.isActive()) {
+    return; /* nothing to do */
+  }
+  if (group->numAuthenticatedUsers() < 2) {
+    updateNextSession();
+  }
 }
 
 void Server::setActiveSessionUpdateTimer()
@@ -158,20 +174,19 @@ void Server::setActiveSessionUpdateTimer()
     sec = 30;
   }
 
-  sessionUpdateTimer.setInterval(sec * 1000 /* milliseconds */);
+  sessionUpdateTimer.start(sec * 1000 /* milliseconds */);
 }
 
 void Server::updateNextSession()
 {
+  sessionUpdateTimer.stop();
   group->SetLogDir(NULL);
 
   if (config->logPath.Get()[0] == '\0') {
-    setIdleSessionUpdateTimer();
     return;
   }
 
   if (group->numAuthenticatedUsers() < 2) {
-    setIdleSessionUpdateTimer();
     return;
   }
 
@@ -200,6 +215,5 @@ void Server::updateNextSession()
   {
     qWarning("Error creating a session archive directory! Gave up after '%s' failed!",
              sessionPath.toLatin1().constData());
-    setIdleSessionUpdateTimer();
   }
 }
