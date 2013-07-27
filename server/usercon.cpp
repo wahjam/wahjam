@@ -370,6 +370,7 @@ int User_Connection::OnRunAuth()
     group->Broadcast(newmsg.build(),this);
   }
 
+  emit authenticated();
   return 1;
 }
 
@@ -801,10 +802,13 @@ User_Group::User_Group(CreateUserLookupFn *CreateUserLookup_, QObject *parent)
   : QObject(parent), CreateUserLookup(CreateUserLookup_), m_max_users(0),
     m_last_bpm(120), m_last_bpi(32), m_keepalive(0), m_voting_threshold(110),
     m_voting_timeout(120), m_allow_hidden_users(0), m_logfp(0),
-    protocol(JAM_PROTO_NINJAM)
+    protocol(JAM_PROTO_NINJAM), m_loopcnt(0)
 {
   connect(&signalMapper, SIGNAL(mapped(QObject*)),
-          this, SLOT(userDisconnected(QObject*)));
+          this, SLOT(userConDisconnected(QObject*)));
+
+  connect(&intervalTimer, SIGNAL(timeout()),
+          this, SLOT(intervalExpired()));
 }
 
 User_Group::~User_Group()
@@ -821,7 +825,11 @@ User_Group::~User_Group()
 
 void User_Group::SetLogDir(const char *path) // NULL to not log
 {
+  m_loopcnt = 0;
+  intervalTimer.stop();
+
   if (m_logfp) {
+    fprintf(m_logfp, "end\n");
     fclose(m_logfp);
   }
   m_logfp = NULL;
@@ -863,7 +871,21 @@ void User_Group::SetLogDir(const char *path) // NULL to not log
 #endif
   }
 
+  intervalExpired();
+  intervalTimer.start();
+
   qDebug("Archiving session '%s'", path);
+}
+
+void User_Group::intervalExpired()
+{
+  m_loopcnt++;
+
+  if (m_logfp) {
+    fprintf(m_logfp, "interval %d %d %d\n", m_loopcnt, m_last_bpm, m_last_bpi);
+    fflush(m_logfp);
+  }
+  intervalTimer.setInterval(m_last_bpi * 1000 * 60 / m_last_bpm);
 }
 
 void User_Group::SetProtocol(JamProtocol proto)
@@ -894,7 +916,7 @@ void User_Group::Broadcast(Net_Message *msg, User_Connection *nosend)
   }
 }
 
-void User_Group::userDisconnected(QObject *userObj)
+void User_Group::userConDisconnected(QObject *userObj)
 {
   User_Connection *p = (User_Connection*)userObj;
 
@@ -941,6 +963,7 @@ void User_Group::userDisconnected(QObject *userObj)
   m_users.Delete(idx);
 
   p->deleteLater();
+  emit userDisconnected();
 }
 
 void User_Group::SetConfig(int bpi, int bpm)
@@ -962,6 +985,7 @@ void User_Group::AddConnection(QTcpSocket *sock, int isres)
   m_users.Add(p);
   signalMapper.setMapping(p, p);
   connect(p, SIGNAL(disconnected()), &signalMapper, SLOT(map()));
+  connect(p, SIGNAL(authenticated()), this, SIGNAL(userAuthenticated()));
 }
 
 void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
@@ -1298,13 +1322,14 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
   }
 }
 
-bool User_Group::hasAuthenticatedUsers()
+int User_Group::numAuthenticatedUsers()
 {
+  int n = 0;
   int x;
   for (x = 0; x < m_users.GetSize(); x++) {
     if (m_users.Get(x)->m_auth_state >= 1) {
-      return true;
+      n++;
     }
   }
-  return false;
+  return n;
 }

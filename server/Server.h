@@ -100,6 +100,8 @@ public:
 private slots:
   void acceptNewConnection();
   void updateNextSession();
+  void userAuthenticated();
+  void userDisconnected();
 
 private:
   ServerConfig *config;
@@ -108,7 +110,6 @@ private:
   QTimer sessionUpdateTimer;
 
   void enforceACL();
-  void setIdleSessionUpdateTimer();
   void setActiveSessionUpdateTimer();
 };
 
