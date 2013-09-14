@@ -29,6 +29,7 @@
 #include <QUrl>
 #include <QInputDialog>
 #include <QRegExp>
+#include <QSslConfiguration>
 
 #include "MainWindow.h"
 #include "ConnectDialog.h"
@@ -84,6 +85,13 @@ MainWindow::MainWindow(QWidget *parent)
   client.SetLocalChannelInfo(0, "channel0", true, 0, false, 0, true, true);
   client.SetLocalChannelMonitoring(0, false, 0.0f, false, 0.0f, false, false, false, false);
   client.SetMidiOutput(portMidiStreamer.getOutputQueue());
+
+  /* Certificate verification can be disabled for local testing */
+  if (!settings->value("ssl/verify", true).toBool()) {
+    QSslConfiguration sslConfig = QSslConfiguration::defaultConfiguration();
+    sslConfig.setPeerVerifyMode(QSslSocket::QueryPeer);
+    QSslConfiguration::setDefaultConfiguration(sslConfig);
+  }
 
   netManager = new QNetworkAccessManager(this);
 
