@@ -16,8 +16,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _VSTPROCESSOR_H_
-#define _VSTPROCESSOR_H_
+#ifndef _EFFECTPROCESSOR_H_
+#define _EFFECTPROCESSOR_H_
 
 #include <QList>
 #include <QTimer>
@@ -25,24 +25,24 @@
 #include <portmidi.h>
 #include "common/ConcurrentQueue.h"
 #include "common/njclient.h"
-#include "VSTPlugin.h"
+#include "EffectPlugin.h"
 
-class VSTProcessor : public QObject
+class EffectProcessor : public QObject
 {
   Q_OBJECT
 
 public:
-  VSTProcessor(ConcurrentQueue<PmEvent> *midiInput,
-               ConcurrentQueue<PmEvent> *midiOutput,
-               QObject *parent = NULL);
-  ~VSTProcessor();
+  EffectProcessor(ConcurrentQueue<PmEvent> *midiInput,
+                  ConcurrentQueue<PmEvent> *midiOutput,
+                  QObject *parent = NULL);
+  ~EffectProcessor();
 
-  bool insertPlugin(int idx, VSTPlugin *plugin);
+  bool insertPlugin(int idx, EffectPlugin *plugin);
   bool removePlugin(int idx);
   void moveUp(int idx);
   void moveDown(int idx);
   int numPlugins();
-  VSTPlugin *getPlugin(int idx);
+  EffectPlugin *getPlugin(int idx);
 
   void attach(NJClient *client, int ch);
   void detach();
@@ -62,7 +62,7 @@ private:
    * interfere with audio thread read accesses.
    */
   QMutex pluginsLock;
-  QList<VSTPlugin*> plugins;
+  QList<EffectPlugin*> plugins;
 
   QTimer idleTimer;
   int localChannel;
@@ -87,7 +87,7 @@ private:
   void deleteScratchBufs(float **bufs, int nbufs);
   void allocVstEvents();
   void fillVstEvents();
-  void activatePlugin(VSTPlugin *plugin);
+  void activatePlugin(EffectPlugin *plugin);
 };
 
-#endif /* _VSTPROCESSOR_H_ */
+#endif /* _EFFECTPROCESSOR_H_ */

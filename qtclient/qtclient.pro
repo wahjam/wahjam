@@ -95,8 +95,9 @@ HEADERS += JammrAccessControlDialog.h
 HEADERS += JammrUpdateChecker.h
 HEADERS += NINJAMServerBrowser.h
 HEADERS += logging.h
+HEADERS += EffectPlugin.h
 HEADERS += VSTPlugin.h
-HEADERS += VSTProcessor.h
+HEADERS += EffectProcessor.h
 HEADERS += PortMidiStreamer.h
 
 SOURCES += qtclient.cpp
@@ -119,5 +120,5 @@ SOURCES += JammrUpdateChecker.cpp
 SOURCES += NINJAMServerBrowser.cpp
 SOURCES += logging.cpp
 SOURCES += VSTPlugin.cpp
-SOURCES += VSTProcessor.cpp
+SOURCES += EffectProcessor.cpp
 SOURCES += PortMidiStreamer.cpp

@@ -22,7 +22,7 @@
 #include <QWidget>
 #include <QListWidget>
 #include <QPushButton>
-#include "VSTProcessor.h"
+#include "EffectProcessor.h"
 #include "AddVSTPluginDialog.h"
 
 class VSTSettingsPage : public QWidget
@@ -30,7 +30,7 @@ class VSTSettingsPage : public QWidget
   Q_OBJECT
 
 public:
-  VSTSettingsPage(VSTProcessor *processor, QWidget *parent = NULL);
+  VSTSettingsPage(EffectProcessor *processor, QWidget *parent = NULL);
 
 private slots:
   void itemSelectionChanged();
@@ -41,7 +41,7 @@ private slots:
   void openEditor();
 
 private:
-  VSTProcessor *processor;
+  EffectProcessor *processor;
   AddVSTPluginDialog addPluginDialog;
   QListWidget *pluginList;
   QPushButton *removeButton;

@@ -20,9 +20,10 @@
 #include <QHBoxLayout>
 #include <QDialogButtonBox>
 #include "qtclient.h"
+#include "VSTPlugin.h"
 #include "VSTSettingsPage.h"
 
-VSTSettingsPage::VSTSettingsPage(VSTProcessor *processor_, QWidget *parent)
+VSTSettingsPage::VSTSettingsPage(EffectProcessor *processor_, QWidget *parent)
   : QWidget(parent), processor(processor_), addPluginDialog(this)
 {
   int i;
@@ -163,7 +164,7 @@ void VSTSettingsPage::movePluginDown()
 void VSTSettingsPage::openEditor()
 {
   int index = pluginList->currentRow();
-  VSTPlugin *vst = processor->getPlugin(index);
+  EffectPlugin *plugin = processor->getPlugin(index);
 
-  vst->openEditor(parentWidget());
+  plugin->openEditor(parentWidget());
 }

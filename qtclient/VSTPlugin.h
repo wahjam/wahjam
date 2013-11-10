@@ -19,15 +19,12 @@
 #ifndef _VSTPLUGIN_H_
 #define _VSTPLUGIN_H_
 
-#include <portmidi.h>
 #include <QLibrary>
 #include <QDialog>
 #include <QMutex>
-#include <QWidget>
-#include "../vestige/aeffectx.h"
-#include "common/ConcurrentQueue.h"
+#include "EffectPlugin.h"
 
-class VSTPlugin : public QObject
+class VSTPlugin : public EffectPlugin
 {
   Q_OBJECT
 
@@ -55,16 +52,12 @@ public:
   void processEvents(VstEvents *vstEvents);
   void process(float **inbuf, float **outbuf, int ns);
 
-signals:
-  void onResizeEditor(int width, int height);
-  void onIdle();
-
-public slots:
-  void idle();
-
 private slots:
   void editorDialogFinished(int result);
   void editorDialogResize(int width, int height);
+
+public slots:
+  void idle();
 
 private:
   QLibrary library;
