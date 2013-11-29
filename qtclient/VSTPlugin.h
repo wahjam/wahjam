@@ -22,7 +22,16 @@
 #include <QLibrary>
 #include <QDialog>
 #include <QMutex>
+#include "PluginScanner.h"
 #include "EffectPlugin.h"
+
+class VSTScanner : public PluginScanner
+{
+public:
+  QStringList scan(const QStringList &searchPaths) const;
+  QString displayName(const QString &fullName) const;
+  QString tag() const;
+};
 
 class VSTPlugin : public EffectPlugin
 {

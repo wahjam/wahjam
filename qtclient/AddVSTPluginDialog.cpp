@@ -29,6 +29,8 @@
 AddVSTPluginDialog::AddVSTPluginDialog(QWidget *parent)
   : QDialog(parent)
 {
+  scanners.append(new VSTScanner);
+
   QVBoxLayout *vBoxLayout = new QVBoxLayout;
 
   QLabel *searchPathLabel = new QLabel(tr("Search path:"));
@@ -71,6 +73,15 @@ AddVSTPluginDialog::AddVSTPluginDialog(QWidget *parent)
   itemSelectionChanged();
 }
 
+AddVSTPluginDialog::~AddVSTPluginDialog()
+{
+  PluginScanner *scanner;
+  foreach (scanner, scanners) {
+    delete scanner;
+  }
+  scanners.clear();
+}
+
 QString AddVSTPluginDialog::searchPath() const
 {
   return searchPathEdit->text();
@@ -94,35 +105,49 @@ QStringList AddVSTPluginDialog::plugins() const
   return result;
 }
 
-void AddVSTPluginDialog::addPlugin(const QString &file)
+void AddVSTPluginDialog::addPlugin(PluginScanner *scanner,
+                                   const QString &fullName)
 {
-  QFileInfo fileInfo(file);
-  if (!fileInfo.exists()) {
-    return;
-  }
-
-  /* Use filename since loading VSTs to find their name can be slow */
-  QString name = fileInfo.baseName().
-    remove(QRegExp("\\.so$")).
-    remove(QRegExp("\\.dll$", Qt::CaseInsensitive)).
-    remove(QRegExp("\\.dylib$", Qt::CaseInsensitive));
-
-  QListWidgetItem *item = new QListWidgetItem(name);
-  item->setData(Qt::ToolTipRole, file);
+  QString tag = scanner->tag();
+  QString displayName = scanner->displayName(fullName);
+  QListWidgetItem *item = new QListWidgetItem(displayName + " [" + tag + "]");
+  item->setData(Qt::ToolTipRole, fullName + " [" + tag + "]");
   pluginsList->addItem(item);
+}
+
+PluginScanner *AddVSTPluginDialog::findPluginScanner(const QString &tag)
+{
+  PluginScanner *scanner;
+  foreach (scanner, scanners) {
+    if (scanner->tag() == tag) {
+      return scanner;
+    }
+  }
+  return NULL;
 }
 
 void AddVSTPluginDialog::setPlugins(const QStringList &plugins_)
 {
-  QString file;
+  QString plugin;
+  QRegExp re("^(.*) \\[([^\\]]+)\\]$");
 
   pluginsList->clear();
-  foreach (file, plugins_) {
-    addPlugin(file);
+  foreach (plugin, plugins_) {
+    if (re.indexIn(plugin) == -1) {
+      continue;
+    }
+
+    QString tag = re.cap(2);
+    PluginScanner *scanner = findPluginScanner(tag);
+    if (!scanner) {
+      continue;
+    }
+
+    addPlugin(scanner, re.cap(1));
   }
 }
 
-QString AddVSTPluginDialog::fileName() const
+QString AddVSTPluginDialog::selectedPlugin() const
 {
   QListWidgetItem *item = pluginsList->currentItem();
   if (!item) {
@@ -148,58 +173,17 @@ void AddVSTPluginDialog::addSearchPath()
 
 void AddVSTPluginDialog::scan()
 {
-  QStringList searchPaths = searchPathEdit->text().split(";");
-
+  pluginsList->clear();
   QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-  /* VST plugin search involves recursively searching directories for libraries
-   * that are VST plugins.  On Mac it works a little differently: VSTs are
-   * packaged into .vst directories under Contents/MacOS/<vst-name>.
-   */
-  pluginsList->clear();
-  while (!searchPaths.isEmpty()) {
-    QDir dir(searchPaths.takeFirst());
-
-#ifdef Q_OS_MAC
-    if (!dir.dirName().endsWith(".vst", Qt::CaseInsensitive)) {
-#endif
-      QStringList subdirs = dir.entryList(QDir::Dirs | QDir::Readable |
-                                          QDir::Executable |
-                                          QDir::NoDotAndDotDot);
-      QString subdir;
-      foreach (subdir, subdirs) {
-        searchPaths.append(dir.filePath(subdir));
-      }
-#ifdef Q_OS_MAC
-    } else {
-      if (!dir.cd("Contents/MacOS")) {
-        continue;
-      }
-#endif
-      QStringList files = dir.entryList(QDir::Files);
-      QString file;
-      foreach (file, files) {
-#ifndef Q_OS_MAC
-        /* On Linux and Windows VST filenames include the library suffix */
-        if (!QLibrary::isLibrary(file)) {
-          continue;
-        }
-#endif /* Q_OS_MAC */
-
-        file = dir.filePath(file);
-        VSTPlugin vst(file);
-        if (!vst.load()) {
-          continue;
-        }
-
-        addPlugin(file);
-
-        /* Process UI thread events, scanning plugins might take a while */
-        QCoreApplication::processEvents();
-      }
-#ifdef Q_OS_MAC
+  QStringList searchPaths = searchPathEdit->text().split(";");
+  PluginScanner *scanner;
+  foreach (scanner, scanners) {
+    QStringList plugins = scanner->scan(searchPaths);
+    QString fullName;
+    foreach (fullName, plugins) {
+      addPlugin(scanner, fullName);
     }
-#endif
   }
 
   QApplication::restoreOverrideCursor();

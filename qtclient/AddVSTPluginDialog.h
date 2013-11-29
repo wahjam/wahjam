@@ -24,22 +24,25 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QPushButton>
+#include <QVector>
+#include "PluginScanner.h"
 
 class AddVSTPluginDialog : public QDialog
 {
   Q_OBJECT
   Q_PROPERTY(QString searchPath READ searchPath WRITE setSearchPath)
   Q_PROPERTY(QStringList plugins READ plugins WRITE setPlugins)
-  Q_PROPERTY(QString fileName READ fileName)
+  Q_PROPERTY(QString selectedPlugin READ selectedPlugin)
 
 public:
   AddVSTPluginDialog(QWidget *parent = 0);
+  ~AddVSTPluginDialog();
 
   QString searchPath() const;
   void setSearchPath(const QString &path);
   QStringList plugins() const;
   void setPlugins(const QStringList &plugins);
-  QString fileName() const;
+  QString selectedPlugin() const;
 
 private slots:
   void addSearchPath();
@@ -50,8 +53,10 @@ private:
   QLineEdit *searchPathEdit;
   QListWidget *pluginsList;
   QPushButton *okButton;
+  QVector<PluginScanner*> scanners;
 
-  void addPlugin(const QString &file);
+  void addPlugin(PluginScanner *scanner, const QString &fullName);
+  PluginScanner *findPluginScanner(const QString &tag);
 };
 
 #endif /* _ADDVSTPLUGINDIALOG_H_ */

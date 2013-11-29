@@ -103,7 +103,14 @@ void VSTSettingsPage::addPlugin()
   settings->setValue("vst/searchPath", addPluginDialog.searchPath());
   settings->setValue("vst/plugins", addPluginDialog.plugins());
 
-  EffectPlugin *plugin = new VSTPlugin(addPluginDialog.fileName());
+  EffectPlugin *plugin = NULL;
+  QString name = addPluginDialog.selectedPlugin();
+  if (name.endsWith(" [VST]")) {
+    plugin = new VSTPlugin(name.left(name.size() - QString(" [VST]").size()));
+  }
+  if (!plugin) {
+    return;
+  }
   if (!plugin->load()) {
     delete plugin;
     return;
