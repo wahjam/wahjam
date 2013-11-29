@@ -24,9 +24,9 @@
 #include <QLibrary>
 #include <QApplication>
 #include "VSTPlugin.h"
-#include "AddVSTPluginDialog.h"
+#include "AddEffectPluginDialog.h"
 
-AddVSTPluginDialog::AddVSTPluginDialog(QWidget *parent)
+AddEffectPluginDialog::AddEffectPluginDialog(QWidget *parent)
   : QDialog(parent)
 {
   scanners.append(new VSTScanner);
@@ -69,11 +69,11 @@ AddVSTPluginDialog::AddVSTPluginDialog(QWidget *parent)
   vBoxLayout->addWidget(dialogButtonBox);
 
   setLayout(vBoxLayout);
-  setWindowTitle(tr("Add VST Plugin..."));
+  setWindowTitle(tr("Add Effect Plugin..."));
   itemSelectionChanged();
 }
 
-AddVSTPluginDialog::~AddVSTPluginDialog()
+AddEffectPluginDialog::~AddEffectPluginDialog()
 {
   PluginScanner *scanner;
   foreach (scanner, scanners) {
@@ -82,17 +82,17 @@ AddVSTPluginDialog::~AddVSTPluginDialog()
   scanners.clear();
 }
 
-QString AddVSTPluginDialog::searchPath() const
+QString AddEffectPluginDialog::searchPath() const
 {
   return searchPathEdit->text();
 }
 
-void AddVSTPluginDialog::setSearchPath(const QString &path)
+void AddEffectPluginDialog::setSearchPath(const QString &path)
 {
   searchPathEdit->setText(path);
 }
 
-QStringList AddVSTPluginDialog::plugins() const
+QStringList AddEffectPluginDialog::plugins() const
 {
   QStringList result;
 
@@ -105,7 +105,7 @@ QStringList AddVSTPluginDialog::plugins() const
   return result;
 }
 
-void AddVSTPluginDialog::addPlugin(PluginScanner *scanner,
+void AddEffectPluginDialog::addPlugin(PluginScanner *scanner,
                                    const QString &fullName)
 {
   QString tag = scanner->tag();
@@ -115,7 +115,7 @@ void AddVSTPluginDialog::addPlugin(PluginScanner *scanner,
   pluginsList->addItem(item);
 }
 
-PluginScanner *AddVSTPluginDialog::findPluginScanner(const QString &tag)
+PluginScanner *AddEffectPluginDialog::findPluginScanner(const QString &tag)
 {
   PluginScanner *scanner;
   foreach (scanner, scanners) {
@@ -126,7 +126,7 @@ PluginScanner *AddVSTPluginDialog::findPluginScanner(const QString &tag)
   return NULL;
 }
 
-void AddVSTPluginDialog::setPlugins(const QStringList &plugins_)
+void AddEffectPluginDialog::setPlugins(const QStringList &plugins_)
 {
   QString plugin;
   QRegExp re("^(.*) \\[([^\\]]+)\\]$");
@@ -147,7 +147,7 @@ void AddVSTPluginDialog::setPlugins(const QStringList &plugins_)
   }
 }
 
-QString AddVSTPluginDialog::selectedPlugin() const
+QString AddEffectPluginDialog::selectedPlugin() const
 {
   QListWidgetItem *item = pluginsList->currentItem();
   if (!item) {
@@ -156,7 +156,7 @@ QString AddVSTPluginDialog::selectedPlugin() const
   return item->data(Qt::ToolTipRole).toString();
 }
 
-void AddVSTPluginDialog::addSearchPath()
+void AddEffectPluginDialog::addSearchPath()
 {
   QFileDialog dialog(this, tr("Add to search path..."));
   dialog.setFileMode(QFileDialog::Directory);
@@ -171,7 +171,7 @@ void AddVSTPluginDialog::addSearchPath()
   }
 }
 
-void AddVSTPluginDialog::scan()
+void AddEffectPluginDialog::scan()
 {
   pluginsList->clear();
   QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
@@ -189,7 +189,7 @@ void AddVSTPluginDialog::scan()
   QApplication::restoreOverrideCursor();
 }
 
-void AddVSTPluginDialog::itemSelectionChanged()
+void AddEffectPluginDialog::itemSelectionChanged()
 {
   okButton->setEnabled(pluginsList->currentItem());
 }

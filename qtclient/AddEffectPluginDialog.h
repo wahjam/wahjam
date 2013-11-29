@@ -16,8 +16,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _ADDVSTPLUGINDIALOG_H_
-#define _ADDVSTPLUGINDIALOG_H_
+#ifndef _ADDEFFECTPLUGINDIALOG_H_
+#define _ADDEFFECTPLUGINDIALOG_H_
 
 #include <QDialog>
 #include <QStringList>
@@ -27,7 +27,7 @@
 #include <QVector>
 #include "PluginScanner.h"
 
-class AddVSTPluginDialog : public QDialog
+class AddEffectPluginDialog : public QDialog
 {
   Q_OBJECT
   Q_PROPERTY(QString searchPath READ searchPath WRITE setSearchPath)
@@ -35,8 +35,8 @@ class AddVSTPluginDialog : public QDialog
   Q_PROPERTY(QString selectedPlugin READ selectedPlugin)
 
 public:
-  AddVSTPluginDialog(QWidget *parent = 0);
-  ~AddVSTPluginDialog();
+  AddEffectPluginDialog(QWidget *parent = 0);
+  ~AddEffectPluginDialog();
 
   QString searchPath() const;
   void setSearchPath(const QString &path);
@@ -59,4 +59,4 @@ private:
   PluginScanner *findPluginScanner(const QString &tag);
 };
 
-#endif /* _ADDVSTPLUGINDIALOG_H_ */
+#endif /* _ADDEFFECTPLUGINDIALOG_H_ */

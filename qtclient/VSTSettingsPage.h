@@ -23,7 +23,7 @@
 #include <QListWidget>
 #include <QPushButton>
 #include "EffectProcessor.h"
-#include "AddVSTPluginDialog.h"
+#include "AddEffectPluginDialog.h"
 
 class VSTSettingsPage : public QWidget
 {
@@ -42,7 +42,7 @@ private slots:
 
 private:
   EffectProcessor *processor;
-  AddVSTPluginDialog addPluginDialog;
+  AddEffectPluginDialog addPluginDialog;
   QListWidget *pluginList;
   QPushButton *removeButton;
   QPushButton *upButton;
