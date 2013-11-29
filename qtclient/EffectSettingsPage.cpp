@@ -21,9 +21,9 @@
 #include <QDialogButtonBox>
 #include "qtclient.h"
 #include "VSTPlugin.h"
-#include "VSTSettingsPage.h"
+#include "EffectSettingsPage.h"
 
-VSTSettingsPage::VSTSettingsPage(EffectProcessor *processor_, QWidget *parent)
+EffectSettingsPage::EffectSettingsPage(EffectProcessor *processor_, QWidget *parent)
   : QWidget(parent), processor(processor_), addPluginDialog(this)
 {
   int i;
@@ -85,7 +85,7 @@ VSTSettingsPage::VSTSettingsPage(EffectProcessor *processor_, QWidget *parent)
   itemSelectionChanged();
 }
 
-void VSTSettingsPage::itemSelectionChanged()
+void EffectSettingsPage::itemSelectionChanged()
 {
   bool selected = pluginList->currentItem();
 
@@ -95,7 +95,7 @@ void VSTSettingsPage::itemSelectionChanged()
   editButton->setEnabled(selected);
 }
 
-void VSTSettingsPage::addPlugin()
+void EffectSettingsPage::addPlugin()
 {
   if (!addPluginDialog.exec()) {
     return;
@@ -130,7 +130,7 @@ void VSTSettingsPage::addPlugin()
   pluginList->setCurrentRow(0);
 }
 
-void VSTSettingsPage::removePlugin()
+void EffectSettingsPage::removePlugin()
 {
   int index = pluginList->currentRow();
   QListWidgetItem *item = pluginList->takeItem(index);
@@ -140,7 +140,7 @@ void VSTSettingsPage::removePlugin()
   delete item;
 }
 
-void VSTSettingsPage::movePluginUp()
+void EffectSettingsPage::movePluginUp()
 {
   int index = pluginList->currentRow();
   if (index == 0) {
@@ -154,7 +154,7 @@ void VSTSettingsPage::movePluginUp()
   processor->moveUp(index);
 }
 
-void VSTSettingsPage::movePluginDown()
+void EffectSettingsPage::movePluginDown()
 {
   int index = pluginList->currentRow();
   if (index + 1 == pluginList->count()) {
@@ -168,7 +168,7 @@ void VSTSettingsPage::movePluginDown()
   processor->moveDown(index);
 }
 
-void VSTSettingsPage::openEditor()
+void EffectSettingsPage::openEditor()
 {
   int index = pluginList->currentRow();
   EffectPlugin *plugin = processor->getPlugin(index);

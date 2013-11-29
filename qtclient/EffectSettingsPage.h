@@ -16,8 +16,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _VSTSETTINGSPAGE_H_
-#define _VSTSETTINGSPAGE_H_
+#ifndef _EFFECTSETTINGSPAGE_H_
+#define _EFFECTSETTINGSPAGE_H_
 
 #include <QWidget>
 #include <QListWidget>
@@ -25,12 +25,12 @@
 #include "EffectProcessor.h"
 #include "AddEffectPluginDialog.h"
 
-class VSTSettingsPage : public QWidget
+class EffectSettingsPage : public QWidget
 {
   Q_OBJECT
 
 public:
-  VSTSettingsPage(EffectProcessor *processor, QWidget *parent = NULL);
+  EffectSettingsPage(EffectProcessor *processor, QWidget *parent = NULL);
 
 private slots:
   void itemSelectionChanged();
@@ -50,4 +50,4 @@ private:
   QPushButton *editButton;
 };
 
-#endif /* _VSTSETTINGSPAGE_H_ */
+#endif /* _EFFECTSETTINGSPAGE_H_ */

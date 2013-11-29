@@ -40,7 +40,7 @@
 #include "JammrUpdateChecker.h"
 #include "PortAudioSettingsPage.h"
 #include "EffectProcessor.h"
-#include "VSTSettingsPage.h"
+#include "EffectSettingsPage.h"
 #include "common/njmisc.h"
 #include "common/UserPrivs.h"
 
@@ -255,8 +255,8 @@ MainWindow::MainWindow(QWidget *parent)
   effectProcessor = new EffectProcessor(&vstMidiInputQueue,
                                         portMidiStreamer.getOutputQueue(),
                                         this);
-  settingsDialog->addPage(tr("VST plugins"),
-                          new VSTSettingsPage(effectProcessor));
+  settingsDialog->addPage(tr("Effect plugins"),
+                          new EffectSettingsPage(effectProcessor));
 
   QTimer::singleShot(0, this, SLOT(Startup()));
 }
