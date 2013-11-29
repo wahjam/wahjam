@@ -22,8 +22,17 @@
 #include <QDialog>
 #include <AudioUnit/AudioUnit.h>
 
+#include "PluginScanner.h"
 #include "EffectPlugin.h"
 #include "PmEventParser.h"
+
+class AudioUnitScanner : public PluginScanner
+{
+public:
+  QStringList scan(const QStringList &searchPaths) const;
+  QString displayName(const QString &fullName) const;
+  QString tag() const;
+};
 
 class AudioUnitPlugin : public EffectPlugin
 {

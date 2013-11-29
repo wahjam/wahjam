@@ -64,9 +64,9 @@ static AudioComponent findAudioUnit(const QString &componentName)
   return NULL;
 }
 
-/*
-static void listAudioUnits(OSType componentType)
+static QStringList enumerateAudioUnits(OSType componentType)
 {
+  QStringList plugins;
   AudioComponent component = NULL;
   AudioComponentDescription description;
 
@@ -79,12 +79,30 @@ static void listAudioUnits(OSType componentType)
       continue;
     }
 
-    QString name(cfstringToQString(cfname));
-    qDebug("Component: %s", name.toLatin1().constData());
+    plugins.append(cfstringToQString(cfname));
     CFRelease(cfname);
   }
+  return plugins;
 }
-*/
+
+QStringList AudioUnitScanner::scan(const QStringList &searchPath) const
+{
+  Q_UNUSED(searchPath);
+  QStringList plugins = enumerateAudioUnits(kAudioUnitType_MusicDevice) +
+                        enumerateAudioUnits(kAudioUnitType_MusicEffect);
+  plugins.removeDuplicates();
+  return plugins;
+}
+
+QString AudioUnitScanner::displayName(const QString &fullName) const
+{
+  return fullName;
+}
+
+QString AudioUnitScanner::tag() const
+{
+  return "AudioUnit";
+}
 
 static OSStatus audioUnitGetBeatAndTempoCallbackTrampoline(
     void *inHostUserData,

@@ -20,6 +20,9 @@
 #include <QHBoxLayout>
 #include <QDialogButtonBox>
 #include "qtclient.h"
+#ifdef Q_OS_MAC
+#include "AudioUnitPlugin.h"
+#endif
 #include "VSTPlugin.h"
 #include "EffectPluginRoutingDialog.h"
 #include "EffectSettingsPage.h"
@@ -114,6 +117,11 @@ void EffectSettingsPage::addPlugin()
   if (name.endsWith(" [VST]")) {
     plugin = new VSTPlugin(name.left(name.size() - QString(" [VST]").size()));
   }
+#ifdef Q_OS_MAC
+  if (name.endsWith(" [AudioUnit]")) {
+    plugin = new AudioUnitPlugin(name.left(name.size() - QString(" [AudioUnit]").size()));
+  }
+#endif
   if (!plugin) {
     return;
   }
