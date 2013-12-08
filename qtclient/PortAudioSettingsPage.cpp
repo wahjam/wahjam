@@ -26,7 +26,7 @@
 #include "PortAudioSettingsPage.h"
 
 PortAudioSettingsPage::PortAudioSettingsPage(QWidget *parent)
-  : QWidget(parent), validateSettingsEntryCount(0)
+  : QWidget(parent)
 {
   inputDeviceList = new QComboBox;
   inputDeviceList->setEditable(false);
@@ -41,35 +41,12 @@ PortAudioSettingsPage::PortAudioSettingsPage(QWidget *parent)
   connect(outputDeviceList, SIGNAL(currentIndexChanged(int)),
           this, SLOT(deviceIndexChanged(int)));
 
-  QLabel *sadLabel = new QLabel;
-  sadLabel->setPixmap(QIcon::fromTheme("face-sad").pixmap(16));
-  QLabel *invalidSettingsLabel = new QLabel(tr("<b><font color=\"red\">Sound devices do not support these settings</font></b>"));
-  QHBoxLayout *invalidSettingsLayout = new QHBoxLayout;
-  invalidSettingsLayout->addStretch(1);
-  invalidSettingsLayout->addWidget(sadLabel);
-  invalidSettingsLayout->addWidget(invalidSettingsLabel);
-  invalidSettingsWidget = new QWidget;
-  invalidSettingsWidget->setLayout(invalidSettingsLayout);
-
-  QLabel *smileyLabel = new QLabel;
-  smileyLabel->setPixmap(QIcon::fromTheme("face-smile").pixmap(16));
-  QLabel *validSettingsLabel = new QLabel(tr("<b><font color=\"green\">Sound devices support these settings</font></b>"));
-  QHBoxLayout *validSettingsLayout = new QHBoxLayout;
-  validSettingsLayout->addStretch(1);
-  validSettingsLayout->addWidget(smileyLabel);
-  validSettingsLayout->addWidget(validSettingsLabel);
-  validSettingsWidget = new QWidget;
-  validSettingsWidget->setLayout(validSettingsLayout);
-
   sampleRateList = new QComboBox;
   sampleRateList->setEditable(false);
-  sampleRateList->addItems(QStringList() << "32000" << "44100" << "48000" << "88200" << "96000");
   connect(sampleRateList, SIGNAL(currentIndexChanged(int)),
           this, SLOT(sampleRateIndexChanged(int)));
 
   latencyList = new QComboBox();
-  connect(latencyList, SIGNAL(currentIndexChanged(int)),
-          this, SLOT(latencyIndexChanged(int)));
 
   hostAPIList = new QComboBox;
   hostAPIList->setEditable(false);
@@ -86,8 +63,6 @@ PortAudioSettingsPage::PortAudioSettingsPage(QWidget *parent)
   formLayout->addRow(new QLabel); /* just a spacer */
   formLayout->addRow(tr("Sample &rate (Hz):"), sampleRateList);
   formLayout->addRow(tr("&Latency (ms):"), latencyList);
-  formLayout->addRow(invalidSettingsWidget);
-  formLayout->addRow(validSettingsWidget);
   formLayout->addRow(new QLabel); /* just a spacer */
   formLayout->addRow(new QLabel(tr("<b>Troubleshooting:</b> If you experience audio problems, try selecting another audio system.")));
   formLayout->addRow(tr("Audio &system:"), hostAPIList);
@@ -95,160 +70,77 @@ PortAudioSettingsPage::PortAudioSettingsPage(QWidget *parent)
   setLayout(vlayout);
 
   populateHostAPIList();
+  autoselectHostAPI();
 }
 
 void PortAudioSettingsPage::populateHostAPIList()
 {
   PaHostApiIndex i;
+  hostAPIList->clear();
   for (i = 0; i < Pa_GetHostApiCount(); i++) {
     const PaHostApiInfo *hostAPIInfo = Pa_GetHostApiInfo(i);
-    if (hostAPIInfo) {
-      QString name = QString::fromLocal8Bit(hostAPIInfo->name);
-      hostAPIList->addItem(name, i);
+    if (!hostAPIInfo) {
+      continue;
+    }
+    if (hostAPIInfo->deviceCount <= 0) {
+      continue;
+    }
+    QString name = QString::fromLocal8Bit(hostAPIInfo->name);
+    hostAPIList->addItem(name, i);
+  }
+}
+
+void PortAudioSettingsPage::autoselectHostAPI()
+{
+  /* Pick default host API based on this list of priorities */
+  const int hostAPIPriority[] = {
+    0, /* paInDevelopment */
+    1, /* paDirectSound */
+    0, /* paMME */
+    4, /* paASIO */
+    0, /* paSoundManager */
+    1, /* paCoreAudio */
+    0, /* <empty> */
+    0, /* paOSS */
+    1, /* paALSA */
+    0, /* paAL */
+    0, /* paBeOS */
+    3, /* paWDMKS */
+    2, /* paJACK */
+    2, /* paWASAPI */
+    0, /* paAudioScienceHPI */
+  };
+  const PaHostApiTypeId numTypes =
+    (PaHostApiTypeId)(sizeof(hostAPIPriority) / sizeof(hostAPIPriority[0]));
+  int pri = -1;
+  int i = -1;
+
+  for (int j = 0; j < hostAPIList->count(); j++) {
+    PaHostApiIndex apiIndex = hostAPIList->itemData(j).toInt(NULL);
+    const PaHostApiInfo *hostAPIInfo = Pa_GetHostApiInfo(apiIndex);
+    if (!hostAPIInfo || hostAPIInfo->type >= numTypes) {
+      continue;
+    }
+    if (hostAPIPriority[hostAPIInfo->type] > pri) {
+      pri = hostAPIPriority[hostAPIInfo->type];
+      i = j;
     }
   }
-}
-
-void PortAudioSettingsPage::willValidateSettings()
-{
-  validateSettingsEntryCount++;
-}
-
-void PortAudioSettingsPage::validateSettings()
-{
-  /* Avoid repeating validation because Pa_IsFormatSupported() can be
-   * slow and we should not block the GUI thread for too long.
-   */
-  if (--validateSettingsEntryCount > 1) {
-    return;
-  }
-
-  double sampleRate = sampleRateList->currentText().toDouble();
-  double latency = latencyList->currentText().toDouble() / 1000;
-
-  if (sampleRate == 0 ||
-      latency == 0 ||
-      inputDeviceList->currentIndex() < 0 ||
-      outputDeviceList->currentIndex() < 0) {
-    invalidSettingsWidget->setVisible(true);
-    validSettingsWidget->setVisible(false);
-    return;
-  }
-
-  PaStreamParameters inputParams;
-  inputParams.device = inputDeviceList->itemData(inputDeviceList->currentIndex()).toInt(NULL);
-  inputParams.channelCount = 1 /* TODO mono */;
-  inputParams.sampleFormat = paFloat32 | paNonInterleaved;
-  inputParams.suggestedLatency = latency;
-  inputParams.hostApiSpecificStreamInfo = NULL;
-
-  PaStreamParameters outputParams = inputParams;
-  outputParams.device = outputDeviceList->itemData(outputDeviceList->currentIndex()).toInt(NULL);
-  outputParams.channelCount = 1 /* TODO mono */;
-
-  PaError error = Pa_IsFormatSupported(&inputParams, &outputParams, sampleRate);
-  invalidSettingsWidget->setVisible(error != paFormatIsSupported);
-  validSettingsWidget->setVisible(error == paFormatIsSupported);
-}
-
-/* Return PaDeviceInfo* or NULL if not found */
-static const PaDeviceInfo *lookupDeviceInfo(QComboBox *deviceList)
-{
-  int index = deviceList->currentIndex();
-  if (index < 0) {
-    return NULL;
-  }
-  PaDeviceIndex deviceIndex = deviceList->itemData(index).toInt(NULL);
-  return Pa_GetDeviceInfo(deviceIndex);
-}
-
-void PortAudioSettingsPage::autoselectSampleRate()
-{
-  const PaDeviceInfo *inputDeviceInfo = lookupDeviceInfo(inputDeviceList);
-  if (!inputDeviceInfo) {
-    return;
-  }
-
-  const PaDeviceInfo *outputDeviceInfo = lookupDeviceInfo(outputDeviceList);
-  if (!outputDeviceInfo) {
-    return;
-  }
-
-  double sampleRate = qMin(inputDeviceInfo->defaultSampleRate,
-                           outputDeviceInfo->defaultSampleRate);
-  int index = sampleRateList->findText(QString::number(sampleRate));
-  if (index != -1) {
-    sampleRateList->setCurrentIndex(index);
+  if (i != -1) {
+    hostAPIList->setCurrentIndex(i);
   }
 }
 
-void PortAudioSettingsPage::autoselectLatency()
+void PortAudioSettingsPage::hostAPIIndexChanged(int)
 {
-  const PaDeviceInfo *inputDeviceInfo = lookupDeviceInfo(inputDeviceList);
-  if (!inputDeviceInfo) {
-    return;
-  }
-
-  const PaDeviceInfo *outputDeviceInfo = lookupDeviceInfo(outputDeviceList);
-  if (!outputDeviceInfo) {
-    return;
-  }
-
-  double latency = qMax(inputDeviceInfo->defaultLowInputLatency,
-                        outputDeviceInfo->defaultLowOutputLatency) * 1000;
-  int i;
-  for (i = 0; i < latencyList->count(); i++) {
-    if (latency < latencyList->itemText(i).toDouble() - .01 /* epsilon */) {
-      if (i > 0) {
-        i--;
-      }
-      latencyList->setCurrentIndex(i);
-      return;
-    }
-  }
+  populateDeviceList();
+  autoselectDevice();
 }
 
-void PortAudioSettingsPage::setupLatencyList()
+void PortAudioSettingsPage::populateDeviceList()
 {
-  latencyList->clear();
+  int index = hostAPIList->currentIndex();
 
-  /* Enumerate latencies for power-of-2 buffers up to 4096 frames.  Start
-   * at 1 millisecond since lower latencies are unlikely to produce
-   * glitch-free audio.
-   */
-  double sampleRate = sampleRateList->currentText().toDouble();
-  if (sampleRate <= 0) {
-    return;
-  }
-  int framesPerMillisecond = 1 << (int)ceil(log2(sampleRate / 1000));
-  for (int i = framesPerMillisecond; i < 4096; i *= 2) {
-    latencyList->addItem(QString::number(i / sampleRate * 1000, 'g', 3));
-  }
-}
-
-void PortAudioSettingsPage::deviceIndexChanged(int)
-{
-  willValidateSettings();
-  autoselectSampleRate();
-  validateSettings();
-}
-
-void PortAudioSettingsPage::sampleRateIndexChanged(int)
-{
-  willValidateSettings();
-  setupLatencyList();
-  autoselectLatency();
-  validateSettings();
-}
-
-void PortAudioSettingsPage::latencyIndexChanged(int)
-{
-  willValidateSettings();
-  validateSettings();
-}
-
-void PortAudioSettingsPage::hostAPIIndexChanged(int index)
-{
   inputDeviceList->clear();
   outputDeviceList->clear();
 
@@ -277,6 +169,143 @@ void PortAudioSettingsPage::hostAPIIndexChanged(int index)
   }
 }
 
+void PortAudioSettingsPage::autoselectDevice()
+{
+  int index = hostAPIList->currentIndex();
+  if (index < 0) {
+    return;
+  }
+
+  PaHostApiIndex apiIndex = hostAPIList->itemData(index).toInt(NULL);
+  const PaHostApiInfo *hostAPIInfo = Pa_GetHostApiInfo(apiIndex);
+  if (!hostAPIInfo) {
+    return;
+  }
+
+  int i;
+  for (i = 0; i < inputDeviceList->count(); i++) {
+    if (hostAPIInfo->defaultInputDevice ==
+        inputDeviceList->itemData(i).toInt(NULL)) {
+      inputDeviceList->setCurrentIndex(i);
+      break;
+    }
+  }
+  for (i = 0; i < outputDeviceList->count(); i++) {
+    if (hostAPIInfo->defaultOutputDevice ==
+        outputDeviceList->itemData(i).toInt(NULL)) {
+      outputDeviceList->setCurrentIndex(i);
+      break;
+    }
+  }
+}
+
+void PortAudioSettingsPage::deviceIndexChanged(int)
+{
+  populateSampleRateList();
+  autoselectSampleRate();
+}
+
+void PortAudioSettingsPage::populateSampleRateList()
+{
+  const double rates[] = {32000, 44100, 48000, 88200, 96000};
+  size_t i;
+
+  PaStreamParameters inputParams;
+  inputParams.device = inputDeviceList->itemData(inputDeviceList->currentIndex()).toInt(NULL);
+  inputParams.channelCount = 1 /* TODO mono */;
+  inputParams.sampleFormat = paFloat32 | paNonInterleaved;
+  inputParams.suggestedLatency = 0;
+  inputParams.hostApiSpecificStreamInfo = NULL;
+
+  PaStreamParameters outputParams = inputParams;
+  outputParams.device = outputDeviceList->itemData(outputDeviceList->currentIndex()).toInt(NULL);
+
+  sampleRateList->clear();
+  for (i = 0; i < sizeof(rates) / sizeof(rates[0]); i++) {
+    if (Pa_IsFormatSupported(&inputParams,
+                             &outputParams,
+                             rates[i]) == paFormatIsSupported) {
+      sampleRateList->addItem(QString::number(rates[i]));
+    }
+  }
+}
+
+void PortAudioSettingsPage::autoselectSampleRate()
+{
+  const double preferredRates[] = {44100, 48000, 88200, 96000, 32000};
+  size_t i;
+  for (i = 0; i < sizeof(preferredRates) / sizeof(preferredRates[0]); i++) {
+    int index = sampleRateList->findText(QString::number(preferredRates[i]));
+    if (index != -1) {
+      sampleRateList->setCurrentIndex(index);
+      return;
+    }
+  }
+}
+
+void PortAudioSettingsPage::sampleRateIndexChanged(int)
+{
+  populateLatencyList();
+  autoselectLatency();
+}
+
+void PortAudioSettingsPage::populateLatencyList()
+{
+  latencyList->clear();
+
+  /* Enumerate latencies for power-of-2 buffers up to 4096 frames.  Start
+   * at 1 millisecond since lower latencies are unlikely to produce
+   * glitch-free audio.
+   */
+  double sampleRate = sampleRateList->currentText().toDouble();
+  if (sampleRate <= 0) {
+    return;
+  }
+  int framesPerMillisecond = 1 << (int)ceil(log2(sampleRate / 1000));
+  for (int i = framesPerMillisecond; i < 4096; i *= 2) {
+    latencyList->addItem(QString::number(i / sampleRate * 1000, 'g', 3));
+  }
+}
+
+/* Return PaDeviceInfo* or NULL if not found */
+static const PaDeviceInfo *lookupDeviceInfo(QComboBox *deviceList)
+{
+  int index = deviceList->currentIndex();
+  if (index < 0) {
+    return NULL;
+  }
+  PaDeviceIndex deviceIndex = deviceList->itemData(index).toInt(NULL);
+  return Pa_GetDeviceInfo(deviceIndex);
+}
+
+void PortAudioSettingsPage::autoselectLatency()
+{
+  const PaDeviceInfo *inputDeviceInfo = lookupDeviceInfo(inputDeviceList);
+  if (!inputDeviceInfo) {
+    return;
+  }
+
+  const PaDeviceInfo *outputDeviceInfo = lookupDeviceInfo(outputDeviceList);
+  if (!outputDeviceInfo) {
+    return;
+  }
+
+  /* Default to 10 milliseconds or higher to prevent drop-outs */
+  double latency = qMax(qMax(inputDeviceInfo->defaultLowInputLatency,
+                             outputDeviceInfo->defaultLowOutputLatency),
+                        0.01) * 1000;
+  int i;
+  for (i = 0; i < latencyList->count(); i++) {
+    if (latency < latencyList->itemText(i).toDouble() - .01 /* epsilon */) {
+      if (i > 0) {
+        i--;
+      }
+      latencyList->setCurrentIndex(i);
+      return;
+    }
+  }
+}
+
 QString PortAudioSettingsPage::hostAPI() const
 {
   return hostAPIList->currentText();
@@ -290,42 +319,7 @@ void PortAudioSettingsPage::setHostAPI(const QString &name)
     return;
   }
 
-  /* Pick default host API based on this list of priorities */
-  const int hostAPIPriority[] = {
-    0, /* paInDevelopment */
-    1, /* paDirectSound */
-    0, /* paMME */
-    4, /* paASIO */
-    0, /* paSoundManager */
-    1, /* paCoreAudio */
-    0, /* <empty> */
-    0, /* paOSS */
-    1, /* paALSA */
-    0, /* paAL */
-    0, /* paBeOS */
-    3, /* paWDMKS */
-    2, /* paJACK */
-    2, /* paWASAPI */
-    0, /* paAudioScienceHPI */
-  };
-  const PaHostApiTypeId numTypes =
-    (PaHostApiTypeId)(sizeof(hostAPIPriority) / sizeof(hostAPIPriority[0]));
-  int pri = -1;
-
-  for (int j = 0; j < hostAPIList->count(); j++) {
-    PaHostApiIndex apiIndex = hostAPIList->itemData(j).toInt(NULL);
-    const PaHostApiInfo *hostAPIInfo = Pa_GetHostApiInfo(apiIndex);
-    if (!hostAPIInfo || hostAPIInfo->type >= numTypes) {
-      continue;
-    }
-    if (hostAPIPriority[hostAPIInfo->type] > pri) {
-      pri = hostAPIPriority[hostAPIInfo->type];
-      i = j;
-    }
-  }
-  if (i != -1) {
-    hostAPIList->setCurrentIndex(i);
-  }
+  autoselectHostAPI();
 }
 
 QString PortAudioSettingsPage::inputDevice() const

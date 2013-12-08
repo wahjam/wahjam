@@ -35,7 +35,6 @@ class PortAudioSettingsPage : public QWidget
 
 public:
   PortAudioSettingsPage(QWidget *parent = 0);
-  void populateHostAPIList();
   QString hostAPI() const;
   void setHostAPI(const QString &name);
   QString inputDevice() const;
@@ -52,7 +51,6 @@ public:
 private slots:
   void deviceIndexChanged(int index);
   void sampleRateIndexChanged(int index);
-  void latencyIndexChanged(int index);
   void hostAPIIndexChanged(int index);
 
 private:
@@ -62,15 +60,15 @@ private:
   QComboBox *outputDeviceList;
   QComboBox *sampleRateList;
   QComboBox *latencyList;
-  QWidget *invalidSettingsWidget;
-  QWidget *validSettingsWidget;
-  int validateSettingsEntryCount;
 
-  void willValidateSettings();
-  void validateSettings();
+  void populateHostAPIList();
+  void populateDeviceList();
+  void populateSampleRateList();
+  void populateLatencyList();
+  void autoselectHostAPI();
+  void autoselectDevice();
   void autoselectSampleRate();
   void autoselectLatency();
-  void setupLatencyList();
 };
 
 #endif /* _PORTAUDIOSETTINGSPAGE_H_ */
