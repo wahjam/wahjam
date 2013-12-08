@@ -27,6 +27,7 @@
 #include "MainWindow.h"
 
 QSettings *settings;
+QString logFilePath;
 
 int main(int argc, char *argv[])
 {
@@ -41,9 +42,8 @@ int main(int argc, char *argv[])
   settings = new QSettings(&app);
 
   /* Set up log file */
-  QString logFile;
   if (settings->contains("app/logFile")) {
-    logFile = settings->value("app/logFile").toString();
+    logFilePath = settings->value("app/logFile").toString();
   } else {
     QDir basedir(QDesktopServices::storageLocation(QDesktopServices::DataLocation));
 
@@ -52,9 +52,9 @@ int main(int argc, char *argv[])
       return false;
     }
 
-    logFile = basedir.filePath("log.txt");
+    logFilePath = basedir.filePath("log.txt");
   }
-  logInit(logFile);
+  logInit(logFilePath);
 
   /* Initialize PortAudio once for the whole application */
   if (!portAudioInit()) {
