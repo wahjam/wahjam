@@ -63,8 +63,12 @@ LIBS += -lportmidi # does not use pkg-config
 # Code in common/ does not use wide characters
 win32:DEFINES -= UNICODE
 
-mac:QMAKE_INFO_PLIST = Info.plist-$${TARGET}
-mac:ICON = $${TARGET}.icns
+mac {
+	QMAKE_INFO_PLIST = Info.plist-$${TARGET}
+	exists($${TARGET}.icns) {
+		ICON = $${TARGET}.icns
+	}
+}
 
 # Input
 HEADERS += MainWindow.h
