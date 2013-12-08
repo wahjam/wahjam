@@ -367,10 +367,6 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
 
     portMidiStreamer.stop();
 
-    QDir basedir(QDesktopServices::storageLocation(QDesktopServices::DataLocation));
-    QString filename = basedir.filePath("log.txt");
-    QUrl url = QUrl::fromLocalFile(filename);
-
     QMessageBox::critical(this, tr("Failed to start audio"),
         tr("<p>There was a problem starting audio.  Try the following "
            "steps:</p><ul><li>Check that the audio device is connected.</li>"
@@ -380,7 +376,9 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
            "Configuration dialog.</li></ul>"
            "<p>If this problem continues please report a bug and include "
            "contents of the log file at "
-           "<a href=\"%1\">%2</a>.</p>").arg(url.toString(), filename));
+           "<a href=\"%1\">%2</a>.</p>").arg(
+             QUrl::fromLocalFile(logFilePath).toString(),
+             logFilePath));
 
     settingsDialog->setPage(0);
     settingsDialog->exec();

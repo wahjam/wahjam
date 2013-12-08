@@ -24,4 +24,7 @@
 /* Global settings instance */
 extern QSettings *settings;
 
+/* Log file path */
+extern QString logFilePath;
+
 #endif /* _QTCLIENT_H_ */
