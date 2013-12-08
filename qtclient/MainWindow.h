@@ -73,6 +73,7 @@ private slots:
   void BeatsPerIntervalChanged(int bpm);
   void BeatsPerMinuteChanged(int bpi);
   void RemoteChannelMuteChanged(int useridx, int channelidx, bool mute);
+  void ShowLog();
   void ShowAboutDialog();
   void VoteBPMDialog();
   void VoteBPIDialog();

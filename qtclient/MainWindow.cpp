@@ -145,6 +145,9 @@ MainWindow::MainWindow(QWidget *parent)
           SLOT(KickMenuTriggered(QAction *)));
 
   QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
+  QAction *logAction = helpMenu->addAction(tr("Show &log"));
+  connect(logAction, SIGNAL(triggered()), this, SLOT(ShowLog()));
+  helpMenu->addSeparator();
   QAction *aboutAction = helpMenu->addAction(tr("&About..."));
   connect(aboutAction, SIGNAL(triggered()), this, SLOT(ShowAboutDialog()));
 
@@ -573,6 +576,11 @@ void MainWindow::ShowConnectDialog()
   } else {
     ShowJammrConnectDialog();
   }
+}
+
+void MainWindow::ShowLog()
+{
+  QDesktopServices::openUrl(QUrl::fromLocalFile(logFilePath));
 }
 
 void MainWindow::ShowAboutDialog()
