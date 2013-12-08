@@ -60,8 +60,14 @@ LIBS += -lportmidi # does not use pkg-config
 	LIBS += -lporttime
 }
 
-# Code in common/ does not use wide characters
-win32:DEFINES -= UNICODE
+win32 {
+	# Code in common/ does not use wide characters
+	DEFINES -= UNICODE
+
+	exists($${TARGET}.rc) {
+		RC_FILE = $${TARGET}.rc
+	}
+}
 
 mac:QMAKE_INFO_PLIST = Info.plist-$${TARGET}
 mac:ICON = $${TARGET}.icns
