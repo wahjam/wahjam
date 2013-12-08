@@ -69,8 +69,12 @@ win32 {
 	}
 }
 
-mac:QMAKE_INFO_PLIST = Info.plist-$${TARGET}
-mac:ICON = $${TARGET}.icns
+mac {
+	QMAKE_INFO_PLIST = Info.plist-$${TARGET}
+	exists($${TARGET}.icns) {
+		ICON = $${TARGET}.icns
+	}
+}
 
 # Input
 HEADERS += MainWindow.h
