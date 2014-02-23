@@ -21,8 +21,9 @@
 #include <QGridLayout>
 #include <QLabel>
 #include <QMessageBox>
-#include <QDomDocument>
-#include <QDomNode>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 
 #include "JammrAccessControlDialog.h"
 
@@ -80,7 +81,6 @@ void JammrAccessControlDialog::refresh()
 {
   QUrl aclUrl(apiUrl);
   aclUrl.setPath(apiUrl.path() + QString("acls/%2/").arg(server));
-  aclUrl.setQuery("format=xml");
 
   QNetworkRequest request(aclUrl);
   request.setRawHeader("Referer", aclUrl.toString(QUrl::RemoveUserInfo).toLatin1().data());
@@ -101,52 +101,51 @@ void JammrAccessControlDialog::completeFetchAcl()
 
   QApplication::restoreOverrideCursor();
 
-  QNetworkReply::NetworkError err = reply->error();
-  if (err != QNetworkReply::NoError) {
-    qCritical("Fetching access control list network reply failed (error=%d)", err);
+  QNetworkReply::NetworkError netErr = reply->error();
+  if (netErr != QNetworkReply::NoError) {
+    qCritical("Fetching access control list network reply failed (error=%d)", netErr);
     QMessageBox::critical(this, tr("Failed to fetch access control list"),
         tr("Unable to fetch access control list due to network failure "
            "(error=%1).  Please ensure you are connected to the internet "
-           "and try again.").arg(err));
+           "and try again.").arg(netErr));
     reject();
     return;
   }
 
   qDebug("Finished fetching access control list");
 
-  QDomDocument doc;
-  if (!doc.setContent(reply)) {
-    qCritical("Access control list XML parse error");
+  QJsonParseError jsonErr;
+  QJsonDocument doc(QJsonDocument::fromJson(reply->readAll(), &jsonErr));
+  if (doc.isNull()) {
+    qCritical("Access control list JSON parse error: %s",
+              jsonErr.errorString().toLatin1().constData());
     QMessageBox::critical(this, tr("Failed to fetch access control list"),
-        tr("Unable to fetch access control list due to an XML parsing error.  "
-           "Please try again later and report this bug if it continues to "
-           "happen."));
+        tr("Unable to fetch access control list due to a JSON parse "
+           "error (%1).  Please try again later and report this bug if it "
+           "continues to happen.").arg(jsonErr.errorString()));
     reject();
     return;
   }
 
-  QDomNode node(doc.elementsByTagName("mode").item(0));
-  QString mode = node.firstChild().nodeValue();
+  QJsonObject obj(doc.object());
+  QString mode = obj.value("mode").toString();
   if (mode == "allow") {
     allowRadio->setChecked(true);
   } else if (mode == "block") {
     blockRadio->setChecked(true);
   } else {
-    qCritical("Access control list <mode> XML parsing failed");
+    qCritical("Access control list \"mode\" JSON parsing failed");
     QMessageBox::critical(this, tr("Failed to fetch access control list"),
-        tr("Unable to fetch access control list due to missing <mode> XML.  "
-           "Please try again later and report this bug if it continues to "
-           "happen."));
+        tr("Unable to fetch access control list due to missing \"mode\" "
+           "JSON.  Please try again later and report this bug if it continues "
+           "to happen."));
     reject();
     return;
   }
 
   usernamesList->clear();
-  node = doc.elementsByTagName("usernames").item(0);
-  for (QDomNode usernameNode = node.firstChild();
-       !usernameNode.isNull();
-       usernameNode = usernameNode.nextSibling()) {
-    QString username = usernameNode.firstChild().nodeValue();
+  foreach (QJsonValue elem, obj.value("usernames").toArray()) {
+    QString username = elem.toString();
     if (!username.isEmpty()) {
       usernamesList->addItem(username);
     }

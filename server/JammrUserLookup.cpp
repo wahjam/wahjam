@@ -18,8 +18,9 @@
 
 #include <QNetworkRequest>
 #include <QCryptographicHash>
-#include <QDomDocument>
 #include <QUrlQuery>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 #include "common/UserPrivs.h"
 
@@ -57,41 +58,42 @@ void JammrUserLookup::requestFinished()
 {
   reply->deleteLater();
 
-  QNetworkReply::NetworkError err = reply->error();
-  if (err != QNetworkReply::NoError) {
-    qCritical("User info lookup network reply failed (error=%d)", err);
+  QNetworkReply::NetworkError netErr = reply->error();
+  if (netErr != QNetworkReply::NoError) {
+    qCritical("User info lookup network reply failed (error=%d)", netErr);
     emit completed();
     return;
   }
 
   qDebug("Finished looking up user info");
 
-  QDomDocument doc;
-  if (!doc.setContent(reply)) {
-    qCritical("User info lookup XML parse error");
+  QJsonParseError jsonErr;
+  QJsonDocument doc(QJsonDocument::fromJson(reply->readAll(), &jsonErr));
+  if (doc.isNull()) {
+    qCritical("User info lookup JSON parse error: %s",
+              jsonErr.errorString().toLatin1().constData());
     emit completed();
     return;
   }
 
-  QDomNode node(doc.elementsByTagName("token").item(0));
-  if (node.isNull()) {
-    qCritical("User info lookup <token> XML parsing failed");
+  QString token = doc.object().value("token").toString();
+  if (token.isEmpty()) {
+    qCritical("User info lookup \"token\" JSON parsing failed");
     emit completed();
     return;
   }
 
-  QString token = node.firstChild().nodeValue();
   QByteArray hash = QCryptographicHash::hash((QString(username.Get()) + ":" + token).toUtf8(),
                                              QCryptographicHash::Sha1);
   memcpy(sha1buf_user, hash.data(), sizeof(sha1buf_user));
 
-  node = doc.elementsByTagName("privs").item(0);
-  if (node.isNull()) {
-    qCritical("User info lookup <privs> XML parsing failed");
+  QString privsString = doc.object().value("privs").toString();
+  if (privsString.isNull()) {
+    qCritical("User info lookup \"privs\" JSON parsing failed");
     emit completed();
     return;
   }
-  privs = privsFromString(node.firstChild().nodeValue());
+  privs = privsFromString(privsString);
 
   user_valid = 1;
   emit completed();

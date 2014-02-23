@@ -12,7 +12,7 @@ TARGET = wahjamsrv
 DEPENDPATH += ..
 INCLUDEPATH += ..
 QT -= gui
-QT += network xml
+QT += network
 
 include(../common/libcommon.pri)
 

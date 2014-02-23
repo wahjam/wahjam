@@ -46,7 +46,7 @@ INSTALLS += target
 TEMPLATE = app
 DEPENDPATH += ..
 INCLUDEPATH += ..
-QT += network xml widgets
+QT += network widgets
 
 include(../common/libcommon.pri)
 
