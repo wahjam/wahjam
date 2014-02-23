@@ -24,8 +24,10 @@
 static FILE *logfp;
 
 /* Called by Qt's qDebug(), qWarning(), qCritical(), and qFatal() */
-static void logMsgHandler(QtMsgType type, const char *msg)
+static void logMsgHandler(QtMsgType type, const QMessageLogContext &context,
+                          const QString &msg)
 {
+  Q_UNUSED(context);
   Q_ASSERT(logfp != NULL);
 
   const char *typestr;
@@ -50,10 +52,10 @@ static void logMsgHandler(QtMsgType type, const char *msg)
   if (logfp == stdout) {
     /* Standard output may be used with process monitoring daemons that add
      * their own timestamps, so just print the type and message. */
-    fprintf(logfp, "%s: %s\n", typestr, msg);
+    fprintf(logfp, "%s: %s\n", typestr, msg.toUtf8().data());
   } else {
     QString timestamp(QDateTime::currentDateTime().toUTC().toString("MMM dd yyyy hh:mm:ss"));
-    fprintf(logfp, "%s %s: %s\n", timestamp.toUtf8().data(), typestr, msg);
+    fprintf(logfp, "%s %s: %s\n", timestamp.toUtf8().data(), typestr, msg.toUtf8().data());
   }
 }
 
@@ -80,5 +82,5 @@ void logInit(const QString &filename)
   setvbuf(logfp, NULL, _IOLBF, 0); /* use line buffering */
 #endif
 
-  qInstallMsgHandler(logMsgHandler);
+  qInstallMessageHandler(logMsgHandler);
 }
