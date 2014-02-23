@@ -51,7 +51,7 @@ Wahjam's dependencies on ogg, vorbis, the Qt framework, and PortAudio.
 1. Build the cross-compiler and dependencies:
 
   cd mxe
-  make gcc ogg vorbis qt5 portaudio
+  make gcc ogg vorbis qt5 portaudio portmidi
 
 1. If you encounter any build errors try reducing optional dependencies.
 
