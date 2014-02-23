@@ -21,8 +21,8 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QMessageBox>
-#include <QDomDocument>
-#include <QDomNode>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 #include "JammrConnectDialog.h"
 
@@ -86,7 +86,6 @@ void JammrConnectDialog::createJam()
 {
   QUrl livejamsUrl(apiUrl);
   livejamsUrl.setPath(apiUrl.path() + "livejams/");
-  livejamsUrl.setQuery("format=xml");
 
   QNetworkRequest request(livejamsUrl);
   request.setRawHeader("Referer", livejamsUrl.toString(QUrl::RemoveUserInfo).toLatin1().constData());
@@ -110,10 +109,10 @@ void JammrConnectDialog::createJamFinished()
   connectButton->setEnabled(true);
   newJamButton->setEnabled(true);
 
-  QNetworkReply::NetworkError err = reply->error();
-  if (err != QNetworkReply::NoError) {
-    qCritical("Create jam network reply failed (error=%d)", err);
-    if (err == QNetworkReply::AuthenticationRequiredError) {
+  QNetworkReply::NetworkError netErr = reply->error();
+  if (netErr != QNetworkReply::NoError) {
+    qCritical("Create jam network reply failed (error=%d)", netErr);
+    if (netErr == QNetworkReply::AuthenticationRequiredError) {
       QMessageBox::critical(this, tr("Failed to create jam"),
           tr("Upgrade to full member <a href=\"%1\">here</a> to "
              "create private jams.").arg(upgradeUrl.toString()));
@@ -121,32 +120,33 @@ void JammrConnectDialog::createJamFinished()
       QMessageBox::critical(this, tr("Failed to create jam"),
           tr("Unable to create jam due to network failure (error=%1).  "
              "Please ensure you are connected to the internet and "
-             "try again.").arg(err));
+             "try again.").arg(netErr));
     }
     return;
   }
 
-  QDomDocument doc;
-  if (!doc.setContent(reply)) {
-    qCritical("Create jam XML parse error");
+  QJsonParseError jsonErr;
+  QJsonDocument doc(QJsonDocument::fromJson(reply->readAll(), &jsonErr));
+  if (doc.isNull()) {
+    qCritical("Create jam JSON parse error: %s",
+              jsonErr.errorString().toLatin1().constData());
     QMessageBox::critical(this, tr("Failed to create jam"),
-        tr("Unable to create jam due to an XML parsing error.  "
+        tr("Unable to create jam due to an JSON parse error (%1). "
+           "Please try again later and report this bug if it "
+           "continues to happen.").arg(jsonErr.errorString()));
+    return;
+  }
+
+  QString server = doc.object().value("server").toString();
+  if (server.isNull()) {
+    qCritical("Create jam \"server\" JSON parsing failed");
+    QMessageBox::critical(this, tr("Failed to create jam"),
+        tr("Unable to create jam due to missing \"server\" JSON.  "
            "Please try again later and report this bug if it "
            "continues to happen."));
     return;
   }
 
-  QDomNode node(doc.elementsByTagName("server").item(0));
-  if (node.isNull()) {
-    qCritical("Create jam <server> XML parsing failed");
-    QMessageBox::critical(this, tr("Failed to create jam"),
-        tr("Unable to create jam due to missing <server> XML.  "
-           "Please try again later and report this bug if it "
-           "continues to happen."));
-    return;
-  }
-
-  QString server = node.firstChild().nodeValue();
   qDebug("Finished creating jam at %s", server.toLatin1().constData());
   setHost(server);
   accept();
