@@ -16,7 +16,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include <QDesktopServices>
+#include <QStandardPaths>
 #include <QDir>
 #include <QApplication>
 #include <QMessageBox>
@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
   if (settings->contains("app/logFile")) {
     logFilePath = settings->value("app/logFile").toString();
   } else {
-    QDir basedir(QDesktopServices::storageLocation(QDesktopServices::DataLocation));
+    QDir basedir(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
 
     /* The app data directory might not exist, so create it */
     if (!basedir.mkpath(basedir.absolutePath())) {

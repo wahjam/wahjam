@@ -18,7 +18,9 @@
 
 #include <QNetworkRequest>
 #include <QCryptographicHash>
-#include <QDomDocument>
+#include <QUrlQuery>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 #include "common/UserPrivs.h"
 
@@ -29,10 +31,13 @@ JammrUserLookup::JammrUserLookup(const QUrl &apiUrl,
                                  const QString &apiServerName,
                                  int max_channels_, const QString &username_)
 {
+  QUrlQuery query;
+  query.addQueryItem("server", apiServerName);
+  query.addQueryItem("format", "xml");
+
   tokenUrl = apiUrl;
   tokenUrl.setPath(apiUrl.path() + "tokens/" + username_ + "/");
-  tokenUrl.addQueryItem("server", apiServerName);
-  tokenUrl.addQueryItem("format", "xml");
+  tokenUrl.setQuery(query);
 
   max_channels = max_channels_;
   username.Set(username_.toUtf8().data());
@@ -41,7 +46,7 @@ JammrUserLookup::JammrUserLookup(const QUrl &apiUrl,
 void JammrUserLookup::start()
 {
   QNetworkRequest request(tokenUrl);
-  request.setRawHeader("Referer", tokenUrl.toString(QUrl::RemoveUserInfo).toAscii().data());
+  request.setRawHeader("Referer", tokenUrl.toString(QUrl::RemoveUserInfo).toLatin1().data());
 
   reply = netmanager->get(request);
   connect(reply, SIGNAL(finished()), this, SLOT(requestFinished()));
@@ -53,41 +58,42 @@ void JammrUserLookup::requestFinished()
 {
   reply->deleteLater();
 
-  QNetworkReply::NetworkError err = reply->error();
-  if (err != QNetworkReply::NoError) {
-    qCritical("User info lookup network reply failed (error=%d)", err);
+  QNetworkReply::NetworkError netErr = reply->error();
+  if (netErr != QNetworkReply::NoError) {
+    qCritical("User info lookup network reply failed (error=%d)", netErr);
     emit completed();
     return;
   }
 
   qDebug("Finished looking up user info");
 
-  QDomDocument doc;
-  if (!doc.setContent(reply)) {
-    qCritical("User info lookup XML parse error");
+  QJsonParseError jsonErr;
+  QJsonDocument doc(QJsonDocument::fromJson(reply->readAll(), &jsonErr));
+  if (doc.isNull()) {
+    qCritical("User info lookup JSON parse error: %s",
+              jsonErr.errorString().toLatin1().constData());
     emit completed();
     return;
   }
 
-  QDomNode node(doc.elementsByTagName("token").item(0));
-  if (node.isNull()) {
-    qCritical("User info lookup <token> XML parsing failed");
+  QString token = doc.object().value("token").toString();
+  if (token.isEmpty()) {
+    qCritical("User info lookup \"token\" JSON parsing failed");
     emit completed();
     return;
   }
 
-  QString token = node.firstChild().nodeValue();
   QByteArray hash = QCryptographicHash::hash((QString(username.Get()) + ":" + token).toUtf8(),
                                              QCryptographicHash::Sha1);
   memcpy(sha1buf_user, hash.data(), sizeof(sha1buf_user));
 
-  node = doc.elementsByTagName("privs").item(0);
-  if (node.isNull()) {
-    qCritical("User info lookup <privs> XML parsing failed");
+  QString privsString = doc.object().value("privs").toString();
+  if (privsString.isNull()) {
+    qCritical("User info lookup \"privs\" JSON parsing failed");
     emit completed();
     return;
   }
-  privs = privsFromString(node.firstChild().nodeValue());
+  privs = privsFromString(privsString);
 
   user_valid = 1;
   emit completed();

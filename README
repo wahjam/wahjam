@@ -19,7 +19,7 @@ Source tree layout
 How to build the Qt client
 --------------------------
 
-Install the Qt cross-platform application and UI toolkit from http://qt.nokia.com/.
+Install the Qt5 cross-platform application and UI toolkit from http://qt.nokia.com/.
 
 Install Ogg and Vorbis audio codec libraries from http://xiph.org/.
 
@@ -51,7 +51,7 @@ Wahjam's dependencies on ogg, vorbis, the Qt framework, and PortAudio.
 1. Build the cross-compiler and dependencies:
 
   cd mxe
-  make gcc ogg vorbis qt portaudio
+  make gcc ogg vorbis qt5 portaudio portmidi
 
 1. If you encounter any build errors try reducing optional dependencies.
 

@@ -76,6 +76,9 @@ int PortAudioStreamer::streamCallback(const void *input, void *output,
     unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo,
     PaStreamCallbackFlags statusFlags)
 {
+  Q_UNUSED(timeInfo);
+  Q_UNUSED(statusFlags);
+
   float **inbuf = (float**)input; // const-cast due to SPLPROC prototype
   float **outbuf = static_cast<float**>(output);
   const PaStreamInfo *info = Pa_GetStreamInfo(stream);
