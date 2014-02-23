@@ -41,7 +41,7 @@ JammrUserLookup::JammrUserLookup(const QUrl &apiUrl,
 void JammrUserLookup::start()
 {
   QNetworkRequest request(tokenUrl);
-  request.setRawHeader("Referer", tokenUrl.toString(QUrl::RemoveUserInfo).toAscii().data());
+  request.setRawHeader("Referer", tokenUrl.toString(QUrl::RemoveUserInfo).toLatin1().data());
 
   reply = netmanager->get(request);
   connect(reply, SIGNAL(finished()), this, SLOT(requestFinished()));

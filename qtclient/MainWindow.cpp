@@ -397,7 +397,7 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
 
   setWindowTitle(tr(APPNAME " - %1").arg(host));
 
-  client.Connect(host.toAscii().data(),
+  client.Connect(host.toLatin1().data(),
                  user.toUtf8().data(),
                  pass.toUtf8().data());
 }

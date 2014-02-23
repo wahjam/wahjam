@@ -33,7 +33,7 @@ QNetworkReply *JammrServerBrowser::sendNetworkRequest(const QUrl &apiUrl)
   livejamsUrl.addQueryItem("format", "xml");
 
   QNetworkRequest request(livejamsUrl);
-  request.setRawHeader("Referer", livejamsUrl.toString(QUrl::RemoveUserInfo).toAscii().data());
+  request.setRawHeader("Referer", livejamsUrl.toString(QUrl::RemoveUserInfo).toLatin1().data());
 
   return netManager->get(request);
 }

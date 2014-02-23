@@ -89,7 +89,7 @@ void JammrConnectDialog::createJam()
   livejamsUrl.addQueryItem("format", "xml");
 
   QNetworkRequest request(livejamsUrl);
-  request.setRawHeader("Referer", livejamsUrl.toString(QUrl::RemoveUserInfo).toAscii().constData());
+  request.setRawHeader("Referer", livejamsUrl.toString(QUrl::RemoveUserInfo).toLatin1().constData());
 
   /* Cannot use NetworkAccessManager::post() without data to submit */
   reply = netManager->sendCustomRequest(request, "POST");
