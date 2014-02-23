@@ -46,13 +46,13 @@ INSTALLS += target
 TEMPLATE = app
 DEPENDPATH += ..
 INCLUDEPATH += ..
-QT += network xml
+QT += network xml widgets
 
 include(../common/libcommon.pri)
 
 QMAKE_CXXFLAGS += -Wno-write-strings
 CONFIG += link_pkgconfig
-PKGCONFIG += vorbis vorbisenc portaudio-2.0
+PKGCONFIG += ogg vorbis vorbisenc portaudio-2.0
 LIBS += -lportmidi # does not use pkg-config
 
 # On Ubuntu PortTime is separate from PortMidi

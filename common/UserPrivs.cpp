@@ -24,7 +24,7 @@ unsigned int privsFromString(const QString &s)
   QString lower = s.toLower();
 
   for (int i = 0; i < lower.size(); i++) {
-    char ch = lower.at(i).toAscii();
+    QChar ch = lower.at(i);
     if (ch == '*') privs |= ~PRIV_HIDDEN; // everything but hidden if * used
     else if (ch == 't') privs |= PRIV_TOPIC;
     else if (ch == 'b') privs |= PRIV_BPM;

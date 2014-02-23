@@ -30,10 +30,10 @@ QNetworkReply *JammrServerBrowser::sendNetworkRequest(const QUrl &apiUrl)
 {
   QUrl livejamsUrl(apiUrl);
   livejamsUrl.setPath(apiUrl.path() + "livejams/");
-  livejamsUrl.addQueryItem("format", "xml");
+  livejamsUrl.setQuery("format=xml");
 
   QNetworkRequest request(livejamsUrl);
-  request.setRawHeader("Referer", livejamsUrl.toString(QUrl::RemoveUserInfo).toAscii().data());
+  request.setRawHeader("Referer", livejamsUrl.toString(QUrl::RemoveUserInfo).toLatin1().data());
 
   return netManager->get(request);
 }
