@@ -1278,6 +1278,8 @@ void NJClient::tick()
 
 DecodeState *NJClient::start_decode(unsigned char *guid, unsigned int fourcc)
 {
+  Q_UNUSED(fourcc);
+
   DecodeState *newstate=new DecodeState;
   memcpy(newstate->guid,guid,sizeof(newstate->guid));
 

@@ -54,11 +54,14 @@ void MainWindow::OnSamplesTrampoline(float **inbuf, int innch, float **outbuf, i
 
 int MainWindow::LicenseCallbackTrampoline(int user32, char *licensetext)
 {
+  Q_UNUSED(user32);
   return MainWindow::GetInstance()->LicenseCallback(licensetext);
 }
 
 void MainWindow::ChatMessageCallbackTrampoline(int user32, NJClient *inst, char **parms, int nparms)
 {
+  Q_UNUSED(user32);
+  Q_UNUSED(inst);
   MainWindow::GetInstance()->ChatMessageCallback(parms, nparms);
 }
 

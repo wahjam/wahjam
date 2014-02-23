@@ -48,11 +48,13 @@ void ServerBrowser::loadServerList(const QUrl &url)
 
 void ServerBrowser::onItemClicked(QTreeWidgetItem *item, int column)
 {
+  Q_UNUSED(column);
   emit serverItemClicked(item->data(0, Qt::UserRole).toString());
 }
 
 void ServerBrowser::onItemActivated(QTreeWidgetItem *item, int column)
 {
+  Q_UNUSED(column);
   emit serverItemActivated(item->data(0, Qt::UserRole).toString());
 }
 
