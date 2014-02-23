@@ -86,7 +86,7 @@ void JammrConnectDialog::createJam()
 {
   QUrl livejamsUrl(apiUrl);
   livejamsUrl.setPath(apiUrl.path() + "livejams/");
-  livejamsUrl.addQueryItem("format", "xml");
+  livejamsUrl.setQuery("format=xml");
 
   QNetworkRequest request(livejamsUrl);
   request.setRawHeader("Referer", livejamsUrl.toString(QUrl::RemoveUserInfo).toLatin1().constData());
