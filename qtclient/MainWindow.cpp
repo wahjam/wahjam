@@ -26,6 +26,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QDesktopServices>
+#include <QStandardPaths>
 #include <QUrl>
 #include <QInputDialog>
 #include <QRegExp>
@@ -457,7 +458,7 @@ void MainWindow::resetReconnect()
 
 bool MainWindow::setupWorkDir()
 {
-  QDir basedir(QDesktopServices::storageLocation(QDesktopServices::DataLocation));
+  QDir basedir(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
 
   /* The app data directory might not exist, so create it */
   if (!basedir.mkpath(basedir.absolutePath())) {
