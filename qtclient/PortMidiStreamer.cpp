@@ -191,6 +191,7 @@ void PortMidiStreamer::processOutput()
 
 void PortMidiStreamer::process(PtTimestamp timestamp)
 {
+  Q_UNUSED(timestamp);
   processInput();
   processOutput();
 }

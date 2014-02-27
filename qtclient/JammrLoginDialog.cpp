@@ -91,10 +91,10 @@ void JammrLoginDialog::login()
 
   QNetworkRequest request(tokenUrl);
   request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
-  request.setRawHeader("Referer", tokenUrl.toString().toAscii().data());
-  request.setRawHeader("Authorization", "basic " +
+  request.setRawHeader("Referer", tokenUrl.toString().toLatin1().data());
+  request.setRawHeader("Authorization", "Basic " +
       (username() + ":" + passEdit->text()).toUtf8().toBase64());
-  reply = netmanager->post(request, QString("token=%1").arg(hexToken).toAscii());
+  reply = netmanager->post(request, QString("token=%1").arg(hexToken).toLatin1());
   connect(reply, SIGNAL(finished()), this, SLOT(requestFinished()));
 
   qDebug("Logging in as \"%s\" at %s", username().toLatin1().data(),

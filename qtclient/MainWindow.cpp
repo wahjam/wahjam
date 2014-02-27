@@ -26,6 +26,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QDesktopServices>
+#include <QStandardPaths>
 #include <QUrl>
 #include <QInputDialog>
 #include <QRegExp>
@@ -53,11 +54,14 @@ void MainWindow::OnSamplesTrampoline(float **inbuf, int innch, float **outbuf, i
 
 int MainWindow::LicenseCallbackTrampoline(int user32, char *licensetext)
 {
+  Q_UNUSED(user32);
   return MainWindow::GetInstance()->LicenseCallback(licensetext);
 }
 
 void MainWindow::ChatMessageCallbackTrampoline(int user32, NJClient *inst, char **parms, int nparms)
 {
+  Q_UNUSED(user32);
+  Q_UNUSED(inst);
   MainWindow::GetInstance()->ChatMessageCallback(parms, nparms);
 }
 
@@ -397,7 +401,7 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
 
   setWindowTitle(tr(APPNAME " - %1").arg(host));
 
-  client.Connect(host.toAscii().data(),
+  client.Connect(host.toLatin1().data(),
                  user.toUtf8().data(),
                  pass.toUtf8().data());
 }
@@ -457,7 +461,7 @@ void MainWindow::resetReconnect()
 
 bool MainWindow::setupWorkDir()
 {
-  QDir basedir(QDesktopServices::storageLocation(QDesktopServices::DataLocation));
+  QDir basedir(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
 
   /* The app data directory might not exist, so create it */
   if (!basedir.mkpath(basedir.absolutePath())) {

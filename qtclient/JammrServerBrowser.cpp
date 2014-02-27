@@ -16,8 +16,9 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include <QDomDocument>
-
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
 #include "JammrServerBrowser.h"
 
 JammrServerBrowser::JammrServerBrowser(QNetworkAccessManager *manager, QWidget *parent)
@@ -30,66 +31,64 @@ QNetworkReply *JammrServerBrowser::sendNetworkRequest(const QUrl &apiUrl)
 {
   QUrl livejamsUrl(apiUrl);
   livejamsUrl.setPath(apiUrl.path() + "livejams/");
-  livejamsUrl.addQueryItem("format", "xml");
 
   QNetworkRequest request(livejamsUrl);
-  request.setRawHeader("Referer", livejamsUrl.toString(QUrl::RemoveUserInfo).toAscii().data());
+  request.setRawHeader("Referer", livejamsUrl.toString(QUrl::RemoveUserInfo).toLatin1().data());
 
   return netManager->get(request);
 }
 
 void JammrServerBrowser::parseServerList(QTextStream *stream)
 {
-  QDomDocument doc;
+  QJsonParseError err;
+  QJsonDocument doc(QJsonDocument::fromJson(stream->device()->readAll(), &err));
 
-
-  if (!doc.setContent(stream->device())) {
-    qCritical("Server list XML parse error");
+  if (doc.isNull()) {
+    qCritical("Server list JSON parse error: %s",
+              err.errorString().toLatin1().constData());
     return;
   }
 
-  /* The XML looks like this:
+  /* The JSON looks like this:
    *
-   * <response>
-   *     <resource>
-   *         <users></users>
-   *         <bpi>8</bpi>
-   *         <bpm>120</bpm>
-   *         <server>jam1.jammr.net:10100</server>
-   *         <topic>Public jam - Play nicely</topic>
-   *         <numusers>0</numusers>
-   *         <is_public>True</is_public>
-   *         <maxusers>0</maxusers>
-   *     </resource>
-   * </response>
+   * [
+   *   {
+   *     'server': 'host:port',
+   *     'users': ['bob', 'joe'],
+   *     'topic': 'Hello world!',
+   *     'bpm': 120,
+   *     'bpi': 16,
+   *     'is_public': true,
+   *     'numusers': 2,
+   *     'maxusers': 6
+   *   },
+   *   ...
+   * ]
    */
 
-  for (QDomNode resource = doc.elementsByTagName("response").at(0).firstChild();
-       !resource.isNull();
-       resource = resource.nextSibling()) {
-    QString server = resource.firstChildElement("server").firstChild().nodeValue();
+  foreach (QJsonValue jam, doc.array()) {
+    QJsonObject obj(jam.toObject());
+    QString server = obj.value("server").toString();
     if (server.isEmpty()) {
       continue; // skip invalid element
     }
 
-    QString topic = resource.firstChildElement("topic").firstChild().nodeValue();
-    QString bpm = resource.firstChildElement("bpm").firstChild().nodeValue();
-    QString bpi = resource.firstChildElement("bpi").firstChild().nodeValue();
-    QString numUsers = resource.firstChildElement("numusers").firstChild().nodeValue();
-    QString maxUsers = resource.firstChildElement("maxusers").firstChild().nodeValue();
+    QString topic = obj.value("topic").toString();
+    double bpm = obj.value("bpm").toDouble();
+    double bpi = obj.value("bpi").toDouble();
+    double numUsers = obj.value("numusers").toDouble();
+    double maxUsers = obj.value("maxusers").toDouble();
 
     QStringList users;
-    for (QDomNode user = resource.firstChildElement("users").firstChild();
-         !user.isNull();
-         user = user.nextSibling()) {
-      users << user.firstChild().nodeValue();
+    foreach (QJsonValue user, obj.value("users").toArray()) {
+      users << user.toString();
     }
 
     QTreeWidgetItem *item = new QTreeWidgetItem(this);
     item->setData(0, Qt::UserRole, server);
     item->setText(0, topic);
-    item->setText(1, QString("%1 BPM/%2").arg(bpm, bpi));
-    item->setText(2, QString("%1/%2").arg(numUsers, maxUsers));
+    item->setText(1, QString("%1 BPM/%2").arg(bpm).arg(bpi));
+    item->setText(2, QString("%1/%2").arg(numUsers).arg(maxUsers));
     item->setText(3, users.join(", "));
   }
 }
