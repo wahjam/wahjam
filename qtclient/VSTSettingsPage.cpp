@@ -28,9 +28,9 @@ VSTSettingsPage::VSTSettingsPage(VSTProcessor *processor_, QWidget *parent)
   int i;
   QString defaultSearchPath;
 
-#if defined(Q_WS_MAC)
+#if defined(Q_OS_MAC)
   defaultSearchPath = "~/Library/Audio/Plug-Ins/VST;/Library/Audio/Plug-Ins/VST";
-#elif defined(Q_WS_WIN)
+#elif defined(Q_OS_WIN)
   if (sizeof(void*) == 4) {
     defaultSearchPath = QSettings("HKEY_LOCAL_MACHINE\\Software\\Wow6432Node\\VST",
                                   QSettings::NativeFormat).value("VSTPluginsPath").toString();

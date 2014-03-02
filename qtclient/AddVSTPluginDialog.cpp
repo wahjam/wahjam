@@ -160,7 +160,7 @@ void AddVSTPluginDialog::scan()
   while (!searchPaths.isEmpty()) {
     QDir dir(searchPaths.takeFirst());
 
-#ifdef Q_WS_MAC
+#ifdef Q_OS_MAC
     if (!dir.dirName().endsWith(".vst", Qt::CaseInsensitive)) {
 #endif
       QStringList subdirs = dir.entryList(QDir::Dirs | QDir::Readable |
@@ -170,7 +170,7 @@ void AddVSTPluginDialog::scan()
       foreach (subdir, subdirs) {
         searchPaths.append(dir.filePath(subdir));
       }
-#ifdef Q_WS_MAC
+#ifdef Q_OS_MAC
     } else {
       if (!dir.cd("Contents/MacOS")) {
         continue;
@@ -179,12 +179,12 @@ void AddVSTPluginDialog::scan()
       QStringList files = dir.entryList(QDir::Files);
       QString file;
       foreach (file, files) {
-#ifndef Q_WS_MAC
+#ifndef Q_OS_MAC
         /* On Linux and Windows VST filenames include the library suffix */
         if (!QLibrary::isLibrary(file)) {
           continue;
         }
-#endif /* Q_WS_MAC */
+#endif /* Q_OS_MAC */
 
         file = dir.filePath(file);
         VSTPlugin vst(file);
@@ -197,7 +197,7 @@ void AddVSTPluginDialog::scan()
         /* Process UI thread events, scanning plugins might take a while */
         QCoreApplication::processEvents();
       }
-#ifdef Q_WS_MAC
+#ifdef Q_OS_MAC
     }
 #endif
   }

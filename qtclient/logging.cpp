@@ -58,7 +58,7 @@ static void logSystemInformation()
          QSysInfo::ByteOrder == QSysInfo::LittleEndian ?
          "little-endian" : "big-endian");
 
-#if defined(Q_WS_WIN)
+#if defined(Q_OS_WIN)
   switch (QSysInfo::windowsVersion()) {
   case QSysInfo::WV_2000:
     qDebug("Windows 2000");
@@ -79,7 +79,7 @@ static void logSystemInformation()
     qDebug("Unsupported or unrecognized Windows version");
     break;
   }
-#elif defined(Q_WS_MAC)
+#elif defined(Q_OS_MAC)
   switch (QSysInfo::MacintoshVersion) {
   case QSysInfo::MV_10_3:
     qDebug("Mac OS X 10.3");
@@ -130,7 +130,7 @@ void logInit(const QString &filename)
   if (!logfp) {
     logfp = stderr;
   }
-#ifdef Q_WS_WIN
+#ifdef Q_OS_WIN
   /* Windows does not support line-buffering, so use no buffering */
   setvbuf(logfp, NULL, _IONBF, 0);
 
