@@ -75,7 +75,7 @@ void logInit(const QString &filename)
   if (!logfp) {
     logfp = stdout;
   }
-#ifdef Q_WS_WIN
+#ifdef Q_OS_WIN
   /* Windows does not support line-buffering, so use no buffering */
   setvbuf(logfp, NULL, _IONBF, 0);
 #else
