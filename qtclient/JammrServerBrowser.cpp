@@ -68,7 +68,6 @@ void JammrServerBrowser::parseServerList(QTextStream *stream)
 
   foreach (QJsonValue jam, doc.array()) {
     QJsonObject obj(jam.toObject());
-    qDebug("%s", QJsonDocument(obj).toJson().constData());
     QString server = obj.value("server").toString();
     if (server.isEmpty()) {
       continue; // skip invalid element
