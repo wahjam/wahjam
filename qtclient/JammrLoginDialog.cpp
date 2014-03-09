@@ -72,7 +72,9 @@ void JammrLoginDialog::setUsername(const QString &username)
   /* Since the username has been filled in the user probably needs to enter
    * their password next.
    */
-  passEdit->setFocus();
+  if (!username.isEmpty()) {
+    passEdit->setFocus();
+  }
 }
 
 void JammrLoginDialog::setPassword(const QString &password)
