@@ -103,23 +103,23 @@ void VSTSettingsPage::addPlugin()
   settings->setValue("vst/searchPath", addPluginDialog.searchPath());
   settings->setValue("vst/plugins", addPluginDialog.plugins());
 
-  VSTPlugin *vst = new VSTPlugin(addPluginDialog.fileName());
-  if (!vst->load()) {
-    delete vst;
+  EffectPlugin *plugin = new VSTPlugin(addPluginDialog.fileName());
+  if (!plugin->load()) {
+    delete plugin;
     return;
   }
 
   /* Opening the editor window frequently blocks for a short amount of time.
    * Do it before inserting the plugin so audio processing is unaffected.
    */
-  vst->openEditor(parentWidget());
+  plugin->openEditor(parentWidget());
 
-  if (!processor->insertPlugin(0, vst)) {
-    delete vst;
+  if (!processor->insertPlugin(0, plugin)) {
+    delete plugin;
     return;
   }
 
-  pluginList->insertItem(0, vst->getName());
+  pluginList->insertItem(0, plugin->getName());
   pluginList->setCurrentRow(0);
 }
 
