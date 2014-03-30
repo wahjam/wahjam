@@ -73,7 +73,9 @@ win32 {
 }
 
 mac {
+	LIBS += -framework Foundation -framework AudioUnit -framework AppKit
 	QMAKE_INFO_PLIST = Info.plist-$${TARGET}
+
 	exists($${TARGET}.icns) {
 		ICON = $${TARGET}.icns
 	}
@@ -102,6 +104,8 @@ HEADERS += logging.h
 HEADERS += EffectPlugin.h
 HEADERS += VSTPlugin.h
 mac:HEADERS += PmEventParser.h
+mac:HEADERS += AudioUnitPlugin.h
+mac:HEADERS += createuiwidget.h
 HEADERS += EffectProcessor.h
 HEADERS += PortMidiStreamer.h
 HEADERS += screensleep.h
@@ -130,6 +134,8 @@ SOURCES += logging.cpp
 SOURCES += EffectPlugin.cpp
 SOURCES += VSTPlugin.cpp
 mac:SOURCES += PmEventParser.cpp
+mac:SOURCES += AudioUnitPlugin.cpp
+mac:OBJECTIVE_SOURCES += createuiwidget.mm
 SOURCES += EffectProcessor.cpp
 SOURCES += PortMidiStreamer.cpp
 win32 {
