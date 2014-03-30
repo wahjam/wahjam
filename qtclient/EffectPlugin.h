@@ -30,6 +30,7 @@
 class EffectPlugin : public QObject
 {
   Q_OBJECT
+  Q_PROPERTY(QString name READ getName)
 
 public:
   virtual ~EffectPlugin() {}
