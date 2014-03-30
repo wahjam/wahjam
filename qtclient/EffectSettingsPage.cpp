@@ -77,6 +77,13 @@ EffectSettingsPage::EffectSettingsPage(EffectProcessor *processor_, QWidget *par
   connect(editButton, SIGNAL(clicked()),
           this, SLOT(openEditor()));
   buttonLayout->addWidget(editButton);
+  wetDryMixList = new QComboBox();
+  wetDryMixList->addItem("On", 1.0f);
+  wetDryMixList->addItem("Mix", 0.5f);
+  wetDryMixList->addItem("Bypass", 0.0f);
+  connect(wetDryMixList, SIGNAL(currentIndexChanged(int)),
+          this, SLOT(wetDryMixChanged(int)));
+  buttonLayout->addWidget(wetDryMixList);
   hBoxLayout->addLayout(buttonLayout);
 
   vBoxLayout->addLayout(hBoxLayout);
@@ -93,6 +100,19 @@ void EffectSettingsPage::itemSelectionChanged()
   upButton->setEnabled(selected);
   downButton->setEnabled(selected);
   editButton->setEnabled(selected);
+  wetDryMixList->setEnabled(selected);
+
+  if (selected) {
+    int index = pluginList->currentRow();
+    EffectPlugin *plugin = processor->getPlugin(index);
+    if (plugin->getWetDryMix() < 0.49) {
+      wetDryMixList->setCurrentIndex(2);
+    } else if (plugin->getWetDryMix() > 0.51) {
+      wetDryMixList->setCurrentIndex(0);
+    } else {
+      wetDryMixList->setCurrentIndex(1);
+    }
+  }
 }
 
 void EffectSettingsPage::addPlugin()
@@ -174,4 +194,15 @@ void EffectSettingsPage::openEditor()
   EffectPlugin *plugin = processor->getPlugin(index);
 
   plugin->openEditor(parentWidget());
+}
+
+void EffectSettingsPage::wetDryMixChanged(int currentIndex)
+{
+  EffectPlugin *plugin = processor->getPlugin(pluginList->currentRow());
+  if (!plugin) {
+    return;
+  }
+
+  float mix = wetDryMixList->itemData(currentIndex).toFloat();
+  plugin->setWetDryMix(mix);
 }
