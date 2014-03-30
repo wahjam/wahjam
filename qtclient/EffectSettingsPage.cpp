@@ -20,9 +20,10 @@
 #include <QHBoxLayout>
 #include <QDialogButtonBox>
 #include "qtclient.h"
-#include "VSTSettingsPage.h"
+#include "VSTPlugin.h"
+#include "EffectSettingsPage.h"
 
-VSTSettingsPage::VSTSettingsPage(VSTProcessor *processor_, QWidget *parent)
+EffectSettingsPage::EffectSettingsPage(EffectProcessor *processor_, QWidget *parent)
   : QWidget(parent), processor(processor_), addPluginDialog(this)
 {
   int i;
@@ -76,6 +77,13 @@ VSTSettingsPage::VSTSettingsPage(VSTProcessor *processor_, QWidget *parent)
   connect(editButton, SIGNAL(clicked()),
           this, SLOT(openEditor()));
   buttonLayout->addWidget(editButton);
+  wetDryMixList = new QComboBox();
+  wetDryMixList->addItem("On", 1.0f);
+  wetDryMixList->addItem("Mix", 0.5f);
+  wetDryMixList->addItem("Bypass", 0.0f);
+  connect(wetDryMixList, SIGNAL(currentIndexChanged(int)),
+          this, SLOT(wetDryMixChanged(int)));
+  buttonLayout->addWidget(wetDryMixList);
   hBoxLayout->addLayout(buttonLayout);
 
   vBoxLayout->addLayout(hBoxLayout);
@@ -84,7 +92,7 @@ VSTSettingsPage::VSTSettingsPage(VSTProcessor *processor_, QWidget *parent)
   itemSelectionChanged();
 }
 
-void VSTSettingsPage::itemSelectionChanged()
+void EffectSettingsPage::itemSelectionChanged()
 {
   bool selected = pluginList->currentItem();
 
@@ -92,9 +100,22 @@ void VSTSettingsPage::itemSelectionChanged()
   upButton->setEnabled(selected);
   downButton->setEnabled(selected);
   editButton->setEnabled(selected);
+  wetDryMixList->setEnabled(selected);
+
+  if (selected) {
+    int index = pluginList->currentRow();
+    EffectPlugin *plugin = processor->getPlugin(index);
+    if (plugin->getWetDryMix() < 0.49) {
+      wetDryMixList->setCurrentIndex(2);
+    } else if (plugin->getWetDryMix() > 0.51) {
+      wetDryMixList->setCurrentIndex(0);
+    } else {
+      wetDryMixList->setCurrentIndex(1);
+    }
+  }
 }
 
-void VSTSettingsPage::addPlugin()
+void EffectSettingsPage::addPlugin()
 {
   if (!addPluginDialog.exec()) {
     return;
@@ -102,27 +123,34 @@ void VSTSettingsPage::addPlugin()
   settings->setValue("vst/searchPath", addPluginDialog.searchPath());
   settings->setValue("vst/plugins", addPluginDialog.plugins());
 
-  VSTPlugin *vst = new VSTPlugin(addPluginDialog.fileName());
-  if (!vst->load()) {
-    delete vst;
+  EffectPlugin *plugin = NULL;
+  QString name = addPluginDialog.selectedPlugin();
+  if (name.endsWith(" [VST]")) {
+    plugin = new VSTPlugin(name.left(name.size() - QString(" [VST]").size()));
+  }
+  if (!plugin) {
+    return;
+  }
+  if (!plugin->load()) {
+    delete plugin;
     return;
   }
 
   /* Opening the editor window frequently blocks for a short amount of time.
    * Do it before inserting the plugin so audio processing is unaffected.
    */
-  vst->openEditor(parentWidget());
+  plugin->openEditor(parentWidget());
 
-  if (!processor->insertPlugin(0, vst)) {
-    delete vst;
+  if (!processor->insertPlugin(0, plugin)) {
+    delete plugin;
     return;
   }
 
-  pluginList->insertItem(0, vst->getName());
+  pluginList->insertItem(0, plugin->getName());
   pluginList->setCurrentRow(0);
 }
 
-void VSTSettingsPage::removePlugin()
+void EffectSettingsPage::removePlugin()
 {
   int index = pluginList->currentRow();
   QListWidgetItem *item = pluginList->takeItem(index);
@@ -132,7 +160,7 @@ void VSTSettingsPage::removePlugin()
   delete item;
 }
 
-void VSTSettingsPage::movePluginUp()
+void EffectSettingsPage::movePluginUp()
 {
   int index = pluginList->currentRow();
   if (index == 0) {
@@ -146,7 +174,7 @@ void VSTSettingsPage::movePluginUp()
   processor->moveUp(index);
 }
 
-void VSTSettingsPage::movePluginDown()
+void EffectSettingsPage::movePluginDown()
 {
   int index = pluginList->currentRow();
   if (index + 1 == pluginList->count()) {
@@ -160,10 +188,21 @@ void VSTSettingsPage::movePluginDown()
   processor->moveDown(index);
 }
 
-void VSTSettingsPage::openEditor()
+void EffectSettingsPage::openEditor()
 {
   int index = pluginList->currentRow();
-  VSTPlugin *vst = processor->getPlugin(index);
+  EffectPlugin *plugin = processor->getPlugin(index);
 
-  vst->openEditor(parentWidget());
+  plugin->openEditor(parentWidget());
+}
+
+void EffectSettingsPage::wetDryMixChanged(int currentIndex)
+{
+  EffectPlugin *plugin = processor->getPlugin(pluginList->currentRow());
+  if (!plugin) {
+    return;
+  }
+
+  float mix = wetDryMixList->itemData(currentIndex).toFloat();
+  plugin->setWetDryMix(mix);
 }

@@ -20,7 +20,79 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <QMutexLocker>
+#include <QDir>
+#include <QCoreApplication>
 #include "VSTPlugin.h"
+
+QStringList VSTScanner::scan(const QStringList &searchPaths_) const
+{
+  QStringList searchPaths(searchPaths_);
+  QStringList plugins;
+
+  /* VST plugin search involves recursively searching directories for libraries
+   * that are VST plugins.  On Mac it works a little differently: VSTs are
+   * packaged into .vst directories under Contents/MacOS/<vst-name>.
+   */
+  while (!searchPaths.isEmpty()) {
+    QDir dir(searchPaths.takeFirst());
+
+#ifdef Q_OS_MAC
+    if (!dir.dirName().endsWith(".vst", Qt::CaseInsensitive)) {
+#endif
+      QStringList subdirs = dir.entryList(QDir::Dirs | QDir::Readable |
+                                          QDir::Executable |
+                                          QDir::NoDotAndDotDot);
+      QString subdir;
+      foreach (subdir, subdirs) {
+        searchPaths.append(dir.filePath(subdir));
+      }
+#ifdef Q_OS_MAC
+    } else {
+      if (!dir.cd("Contents/MacOS")) {
+        continue;
+      }
+#endif
+      QStringList files = dir.entryList(QDir::Files);
+      QString file;
+      foreach (file, files) {
+#ifndef Q_OS_MAC
+        /* On Linux and Windows VST filenames include the library suffix */
+        if (!QLibrary::isLibrary(file)) {
+          continue;
+        }
+#endif /* Q_OS_MAC */
+
+        file = dir.filePath(file);
+        VSTPlugin vst(file);
+        if (!vst.load()) {
+          continue;
+        }
+
+        plugins.append(file);
+
+        /* Process UI thread events, scanning plugins might take a while */
+        QCoreApplication::processEvents();
+      }
+#ifdef Q_OS_MAC
+    }
+#endif
+  }
+  return plugins;
+}
+
+QString VSTScanner::displayName(const QString &fullName) const
+{
+  /* Use filename since loading VSTs to find their name can be slow */
+  return QFileInfo(fullName).baseName().
+    remove(QRegExp("\\.so$")).
+    remove(QRegExp("\\.dll$", Qt::CaseInsensitive)).
+    remove(QRegExp("\\.dylib$", Qt::CaseInsensitive));
+}
+
+QString VSTScanner::tag() const
+{
+  return "VST";
+}
 
 VSTPlugin::VSTPlugin(const QString &filename)
   : library(filename), plugin(NULL), editorDialog(NULL), inProcess(false),

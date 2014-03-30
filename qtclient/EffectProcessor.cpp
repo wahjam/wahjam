@@ -16,20 +16,19 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include "VSTProcessor.h"
+#include "EffectProcessor.h"
 
 void vstProcessorCallback(float *buf, int ns, void *inst)
 {
-  VSTProcessor *this_ = static_cast<VSTProcessor*>(inst);
+  EffectProcessor *this_ = static_cast<EffectProcessor*>(inst);
   this_->process(buf, ns);
 }
 
-VSTProcessor::VSTProcessor(ConcurrentQueue<PmEvent> *midiInput_,
-                           ConcurrentQueue<PmEvent> *midiOutput_,
-                           QObject *parent)
+EffectProcessor::EffectProcessor(ConcurrentQueue<PmEvent> *midiInput_,
+                                 ConcurrentQueue<PmEvent> *midiOutput_,
+                                 QObject *parent)
   : QObject(parent), client(NULL), localChannel(-1), blockSize(512),
-    scratchInputBufs(NULL), maxInputs(0),
-    scratchOutputBufs(NULL), maxOutputs(0),
+    scratchBufs(NULL), maxInputsOutputs(0),
     midiInput(midiInput_),
     midiOutput(midiOutput_)
 {
@@ -40,7 +39,7 @@ VSTProcessor::VSTProcessor(ConcurrentQueue<PmEvent> *midiInput_,
   allocVstEvents();
 }
 
-VSTProcessor::~VSTProcessor()
+EffectProcessor::~EffectProcessor()
 {
   detach();
 
@@ -48,12 +47,11 @@ VSTProcessor::~VSTProcessor()
     removePlugin(0);
   }
 
-  deleteScratchBufs(scratchInputBufs, maxInputs);
-  deleteScratchBufs(scratchOutputBufs, maxOutputs);
+  deleteScratchBufs(scratchBufs, 2 * maxInputsOutputs);
   free(vstEvents);
 }
 
-float **VSTProcessor::newScratchBufs(int nbufs)
+float **EffectProcessor::newScratchBufs(int nbufs)
 {
   float **bufs = new float*[nbufs];
   for (int i = 0; i < nbufs; i++) {
@@ -62,7 +60,7 @@ float **VSTProcessor::newScratchBufs(int nbufs)
   return bufs;
 }
 
-void VSTProcessor::deleteScratchBufs(float **bufs, int nbufs)
+void EffectProcessor::deleteScratchBufs(float **bufs, int nbufs)
 {
   for (int i = 0; i < nbufs; i++) {
     delete [] bufs[i];
@@ -70,7 +68,7 @@ void VSTProcessor::deleteScratchBufs(float **bufs, int nbufs)
   delete [] bufs;
 }
 
-void VSTProcessor::allocVstEvents()
+void EffectProcessor::allocVstEvents()
 {
   size_t nelems = sizeof(vstEventBuffer) / sizeof(vstEventBuffer[0]);
   vstEvents = (VstEvents*)malloc(sizeof(*vstEvents) +
@@ -86,7 +84,7 @@ void VSTProcessor::allocVstEvents()
   }
 }
 
-bool VSTProcessor::insertPlugin(int idx, VSTPlugin *plugin)
+bool EffectProcessor::insertPlugin(int idx, EffectPlugin *plugin)
 {
   QMutexLocker locker(&pluginsLock);
 
@@ -97,15 +95,12 @@ bool VSTProcessor::insertPlugin(int idx, VSTPlugin *plugin)
   plugins.insert(idx, plugin);
 
   /* We may need to grow scratch buffers */
-  if (plugin->numInputs() > maxInputs) {
-    deleteScratchBufs(scratchInputBufs, maxInputs);
-    maxInputs = plugin->numInputs();
-    scratchInputBufs = newScratchBufs(maxInputs);
-  }
-  if (plugin->numOutputs() > maxOutputs) {
-    deleteScratchBufs(scratchOutputBufs, maxOutputs);
-    maxOutputs = plugin->numOutputs();
-    scratchOutputBufs = newScratchBufs(maxOutputs);
+  if (plugin->numInputs() > maxInputsOutputs ||
+      plugin->numOutputs() > maxInputsOutputs) {
+    deleteScratchBufs(scratchBufs, 2 * maxInputsOutputs);
+    maxInputsOutputs = qMax(qMax(plugin->numInputs(), plugin->numOutputs()),
+                            maxInputsOutputs);
+    scratchBufs = newScratchBufs(2 * maxInputsOutputs);
   }
 
   if (numPlugins() == 1) {
@@ -119,10 +114,10 @@ bool VSTProcessor::insertPlugin(int idx, VSTPlugin *plugin)
   return true;
 }
 
-bool VSTProcessor::removePlugin(int idx)
+bool EffectProcessor::removePlugin(int idx)
 {
   QMutexLocker locker(&pluginsLock);
-  VSTPlugin *plugin = getPlugin(idx);
+  EffectPlugin *plugin = getPlugin(idx);
   if (!plugin) {
     return false;
   }
@@ -135,7 +130,7 @@ bool VSTProcessor::removePlugin(int idx)
   return true;
 }
 
-void VSTProcessor::moveUp(int idx)
+void EffectProcessor::moveUp(int idx)
 {
   QMutexLocker locker(&pluginsLock);
 
@@ -146,7 +141,7 @@ void VSTProcessor::moveUp(int idx)
   plugins.swap(idx, idx - 1);
 }
 
-void VSTProcessor::moveDown(int idx)
+void EffectProcessor::moveDown(int idx)
 {
   QMutexLocker locker(&pluginsLock);
 
@@ -157,17 +152,17 @@ void VSTProcessor::moveDown(int idx)
   plugins.swap(idx, idx + 1);
 }
 
-int VSTProcessor::numPlugins()
+int EffectProcessor::numPlugins()
 {
   return plugins.count();
 }
 
-VSTPlugin *VSTProcessor::getPlugin(int idx)
+EffectPlugin *EffectProcessor::getPlugin(int idx)
 {
   return plugins.value(idx);
 }
 
-void VSTProcessor::activatePlugin(VSTPlugin *plugin)
+void EffectProcessor::activatePlugin(EffectPlugin *plugin)
 {
   plugin->changeMains(false);
   plugin->setSampleRate(client->GetSampleRate());
@@ -175,7 +170,7 @@ void VSTProcessor::activatePlugin(VSTPlugin *plugin)
   plugin->changeMains(true);
 }
 
-void VSTProcessor::attach(NJClient *client_, int ch)
+void EffectProcessor::attach(NJClient *client_, int ch)
 {
   if (attached()) {
     return;
@@ -183,7 +178,7 @@ void VSTProcessor::attach(NJClient *client_, int ch)
 
   client = client_;
 
-  VSTPlugin *plugin;
+  EffectPlugin *plugin;
   foreach (plugin, plugins) {
     activatePlugin(plugin);
   }
@@ -192,7 +187,7 @@ void VSTProcessor::attach(NJClient *client_, int ch)
   client->SetLocalChannelProcessor(ch, vstProcessorCallback, this);
 }
 
-void VSTProcessor::detach()
+void EffectProcessor::detach()
 {
   if (!attached()) {
     return;
@@ -201,7 +196,7 @@ void VSTProcessor::detach()
   client->SetLocalChannelProcessor(localChannel, NULL, NULL);
   localChannel = -1;
 
-  VSTPlugin *plugin;
+  EffectPlugin *plugin;
   foreach (plugin, plugins) {
     plugin->changeMains(false);
   }
@@ -209,12 +204,12 @@ void VSTProcessor::detach()
   client = NULL;
 }
 
-bool VSTProcessor::attached()
+bool EffectProcessor::attached()
 {
   return localChannel != -1;
 }
 
-void VSTProcessor::fillVstEvents()
+void EffectProcessor::fillVstEvents()
 {
   QQueue<PmEvent> &queue = midiInput->getReadQueue();
   int sampleRate = client->GetSampleRate();
@@ -246,36 +241,42 @@ void VSTProcessor::fillVstEvents()
   vstEvents->numEvents = i;
 }
 
-void VSTProcessor::process(float *buf, int ns)
+void EffectProcessor::process(float *buf, int ns)
 {
   QMutexLocker locker(&pluginsLock);
 
   fillVstEvents();
 
   if ((size_t)ns > blockSize) {
+    deleteScratchBufs(scratchBufs, 2 * maxInputsOutputs);
     blockSize = ns;
-    deleteScratchBufs(scratchInputBufs, maxInputs);
-    deleteScratchBufs(scratchOutputBufs, maxOutputs);
-    scratchInputBufs = newScratchBufs(maxInputs);
-    scratchOutputBufs = newScratchBufs(maxOutputs);
+    scratchBufs = newScratchBufs(2 * maxInputsOutputs);
   }
 
-  float *inputs[maxInputs];
+  float *inputs[maxInputsOutputs];
   float **a = inputs;
-  float **b = scratchOutputBufs;
+  float **b = &scratchBufs[maxInputsOutputs];
 
-  memcpy(inputs, scratchInputBufs, sizeof(float*) * maxInputs);
-  inputs[0] = buf; // TODO real stereo
-  for (int i = 1; i < maxInputs; i++) {
-    memset(inputs[i], 0, sizeof(float) * ns);
+  memcpy(inputs, scratchBufs, sizeof(float*) * maxInputsOutputs);
+  a[0] = buf; // TODO real stereo
+  for (int i = 1; i < maxInputsOutputs; i++) {
+    memset(a[i], 0, sizeof(float) * ns);
   }
-  for (int i = 0; i < maxOutputs; i++) {
-    memset(scratchOutputBufs[i], 0, sizeof(float) * ns);
+  for (int i = 0; i < maxInputsOutputs; i++) {
+    memset(b[i], 0, sizeof(float) * ns);
   }
 
-  foreach (VSTPlugin *plugin, plugins) {
+  foreach (EffectPlugin *plugin, plugins) {
     plugin->processEvents(vstEvents);
     plugin->process(a, b, ns);
+
+    float dry = qMin(2 * (1.0f - plugin->getWetDryMix()), 1.0f);
+    float wet = qMin(2 * plugin->getWetDryMix(), 1.0f);
+    for (int i = 0; i < maxInputsOutputs; i++) {
+      for (int j = 0; j < ns; j++) {
+        b[i][j] = a[i][j] * dry + b[i][j] * wet;
+      }
+    }
 
     float **swap = a;
     a = b;
@@ -288,9 +289,9 @@ void VSTProcessor::process(float *buf, int ns)
   }
 }
 
-void VSTProcessor::idleTimerTick()
+void EffectProcessor::idleTimerTick()
 {
-  VSTPlugin *plugin;
+  EffectPlugin *plugin;
 
   foreach (plugin, plugins) {
     plugin->idle();

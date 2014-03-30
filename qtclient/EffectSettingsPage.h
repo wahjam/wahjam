@@ -16,42 +16,41 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _ADDVSTPLUGINDIALOG_H_
-#define _ADDVSTPLUGINDIALOG_H_
+#ifndef _EFFECTSETTINGSPAGE_H_
+#define _EFFECTSETTINGSPAGE_H_
 
-#include <QDialog>
-#include <QStringList>
-#include <QLineEdit>
+#include <QWidget>
 #include <QListWidget>
+#include <QComboBox>
 #include <QPushButton>
+#include "EffectProcessor.h"
+#include "AddEffectPluginDialog.h"
 
-class AddVSTPluginDialog : public QDialog
+class EffectSettingsPage : public QWidget
 {
   Q_OBJECT
-  Q_PROPERTY(QString searchPath READ searchPath WRITE setSearchPath)
-  Q_PROPERTY(QStringList plugins READ plugins WRITE setPlugins)
-  Q_PROPERTY(QString fileName READ fileName)
 
 public:
-  AddVSTPluginDialog(QWidget *parent = 0);
-
-  QString searchPath() const;
-  void setSearchPath(const QString &path);
-  QStringList plugins() const;
-  void setPlugins(const QStringList &plugins);
-  QString fileName() const;
+  EffectSettingsPage(EffectProcessor *processor, QWidget *parent = NULL);
 
 private slots:
-  void addSearchPath();
-  void scan();
   void itemSelectionChanged();
+  void addPlugin();
+  void removePlugin();
+  void movePluginUp();
+  void movePluginDown();
+  void openEditor();
+  void wetDryMixChanged(int currentIndex);
 
 private:
-  QLineEdit *searchPathEdit;
-  QListWidget *pluginsList;
-  QPushButton *okButton;
-
-  void addPlugin(const QString &file);
+  EffectProcessor *processor;
+  AddEffectPluginDialog addPluginDialog;
+  QListWidget *pluginList;
+  QPushButton *removeButton;
+  QPushButton *upButton;
+  QPushButton *downButton;
+  QPushButton *editButton;
+  QComboBox *wetDryMixList;
 };
 
-#endif /* _ADDVSTPLUGINDIALOG_H_ */
+#endif /* _EFFECTSETTINGSPAGE_H_ */
