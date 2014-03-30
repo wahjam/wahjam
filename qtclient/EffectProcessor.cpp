@@ -270,6 +270,14 @@ void EffectProcessor::process(float *buf, int ns)
     plugin->processEvents(vstEvents);
     plugin->process(a, b, ns);
 
+    float dry = qMin(2 * (1.0f - plugin->getWetDryMix()), 1.0f);
+    float wet = qMin(2 * plugin->getWetDryMix(), 1.0f);
+    for (int i = 0; i < maxInputsOutputs; i++) {
+      for (int j = 0; j < ns; j++) {
+        b[i][j] = a[i][j] * dry + b[i][j] * wet;
+      }
+    }
+
     float **swap = a;
     a = b;
     b = swap;
