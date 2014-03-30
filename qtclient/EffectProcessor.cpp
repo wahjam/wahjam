@@ -28,8 +28,7 @@ EffectProcessor::EffectProcessor(ConcurrentQueue<PmEvent> *midiInput_,
                                  ConcurrentQueue<PmEvent> *midiOutput_,
                                  QObject *parent)
   : QObject(parent), client(NULL), localChannel(-1), blockSize(512),
-    scratchInputBufs(NULL), maxInputs(0),
-    scratchOutputBufs(NULL), maxOutputs(0),
+    scratchBufs(NULL), maxInputsOutputs(0),
     midiInput(midiInput_),
     midiOutput(midiOutput_)
 {
@@ -48,8 +47,7 @@ EffectProcessor::~EffectProcessor()
     removePlugin(0);
   }
 
-  deleteScratchBufs(scratchInputBufs, maxInputs);
-  deleteScratchBufs(scratchOutputBufs, maxOutputs);
+  deleteScratchBufs(scratchBufs, 2 * maxInputsOutputs);
   free(vstEvents);
 }
 
@@ -97,15 +95,12 @@ bool EffectProcessor::insertPlugin(int idx, EffectPlugin *plugin)
   plugins.insert(idx, plugin);
 
   /* We may need to grow scratch buffers */
-  if (plugin->numInputs() > maxInputs) {
-    deleteScratchBufs(scratchInputBufs, maxInputs);
-    maxInputs = plugin->numInputs();
-    scratchInputBufs = newScratchBufs(maxInputs);
-  }
-  if (plugin->numOutputs() > maxOutputs) {
-    deleteScratchBufs(scratchOutputBufs, maxOutputs);
-    maxOutputs = plugin->numOutputs();
-    scratchOutputBufs = newScratchBufs(maxOutputs);
+  if (plugin->numInputs() > maxInputsOutputs ||
+      plugin->numOutputs() > maxInputsOutputs) {
+    deleteScratchBufs(scratchBufs, 2 * maxInputsOutputs);
+    maxInputsOutputs = qMax(qMax(plugin->numInputs(), plugin->numOutputs()),
+                            maxInputsOutputs);
+    scratchBufs = newScratchBufs(2 * maxInputsOutputs);
   }
 
   if (numPlugins() == 1) {
@@ -253,24 +248,22 @@ void EffectProcessor::process(float *buf, int ns)
   fillVstEvents();
 
   if ((size_t)ns > blockSize) {
+    deleteScratchBufs(scratchBufs, 2 * maxInputsOutputs);
     blockSize = ns;
-    deleteScratchBufs(scratchInputBufs, maxInputs);
-    deleteScratchBufs(scratchOutputBufs, maxOutputs);
-    scratchInputBufs = newScratchBufs(maxInputs);
-    scratchOutputBufs = newScratchBufs(maxOutputs);
+    scratchBufs = newScratchBufs(2 * maxInputsOutputs);
   }
 
-  float *inputs[maxInputs];
+  float *inputs[maxInputsOutputs];
   float **a = inputs;
-  float **b = scratchOutputBufs;
+  float **b = &scratchBufs[maxInputsOutputs];
 
-  memcpy(inputs, scratchInputBufs, sizeof(float*) * maxInputs);
-  inputs[0] = buf; // TODO real stereo
-  for (int i = 1; i < maxInputs; i++) {
-    memset(inputs[i], 0, sizeof(float) * ns);
+  memcpy(inputs, scratchBufs, sizeof(float*) * maxInputsOutputs);
+  a[0] = buf; // TODO real stereo
+  for (int i = 1; i < maxInputsOutputs; i++) {
+    memset(a[i], 0, sizeof(float) * ns);
   }
-  for (int i = 0; i < maxOutputs; i++) {
-    memset(scratchOutputBufs[i], 0, sizeof(float) * ns);
+  for (int i = 0; i < maxInputsOutputs; i++) {
+    memset(b[i], 0, sizeof(float) * ns);
   }
 
   foreach (EffectPlugin *plugin, plugins) {

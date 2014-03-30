@@ -72,10 +72,8 @@ private:
   /* Plugins may have differing numbers of inputs/outputs, we keep around
    * scratch buffers that we fill with silence.
    */
-  float **scratchInputBufs;
-  int maxInputs;
-  float **scratchOutputBufs;
-  int maxOutputs;
+  float **scratchBufs;
+  int maxInputsOutputs;
 
   ConcurrentQueue<PmEvent> *midiInput;
   ConcurrentQueue<PmEvent> *midiOutput;
