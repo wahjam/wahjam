@@ -38,7 +38,7 @@
 #include "SettingsDialog.h"
 #include "common/njclient.h"
 #include "common/audiostream.h"
-#include "VSTProcessor.h"
+#include "EffectProcessor.h"
 #include "PortAudioSettingsPage.h"
 #include "PortMidiSettingsPage.h"
 #include "PortMidiStreamer.h"
@@ -98,7 +98,7 @@ private:
   audioStreamer *audio;
   PortMidiStreamer portMidiStreamer;
   ConcurrentQueue<PmEvent> vstMidiInputQueue;
-  VSTProcessor *vstProcessor;
+  EffectProcessor *effectProcessor;
   SettingsDialog *settingsDialog;
   PortAudioSettingsPage *portAudioSettingsPage;
   PortMidiSettingsPage *portMidiSettingsPage;

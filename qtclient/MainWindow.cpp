@@ -39,9 +39,8 @@
 #include "JammrAccessControlDialog.h"
 #include "JammrUpdateChecker.h"
 #include "PortAudioSettingsPage.h"
-#include "VSTPlugin.h"
-#include "VSTProcessor.h"
-#include "VSTSettingsPage.h"
+#include "EffectProcessor.h"
+#include "EffectSettingsPage.h"
 #include "common/njmisc.h"
 #include "common/UserPrivs.h"
 
@@ -253,11 +252,11 @@ MainWindow::MainWindow(QWidget *parent)
           metronomeBar, SLOT(setCurrentBeat(int)));
 
   portMidiStreamer.addInputQueue(&vstMidiInputQueue);
-  vstProcessor = new VSTProcessor(&vstMidiInputQueue,
-                                  portMidiStreamer.getOutputQueue(),
-                                  this);
-  settingsDialog->addPage(tr("VST plugins"),
-                          new VSTSettingsPage(vstProcessor));
+  effectProcessor = new EffectProcessor(&vstMidiInputQueue,
+                                        portMidiStreamer.getOutputQueue(),
+                                        this);
+  settingsDialog->addPage(tr("Effect plugins"),
+                          new EffectSettingsPage(effectProcessor));
 
   QTimer::singleShot(0, this, SLOT(Startup()));
 }
@@ -397,7 +396,7 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
     client.SetLocalChannelMonitoring(ch, false, 0, false, 0, true, !unmuteLocalChannels, false, false);
   }
 
-  vstProcessor->attach(&client, 0);
+  effectProcessor->attach(&client, 0);
 
   setWindowTitle(tr(APPNAME " - %1").arg(host));
 
@@ -414,7 +413,7 @@ void MainWindow::Disconnect()
   audio = NULL;
 
   client.Disconnect();
-  vstProcessor->detach();
+  effectProcessor->detach();
   portMidiStreamer.stop();
 
   QString workDirPath = QString::fromUtf8(client.GetWorkDir());
