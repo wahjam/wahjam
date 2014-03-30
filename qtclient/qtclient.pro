@@ -119,6 +119,7 @@ SOURCES += JammrAccessControlDialog.cpp
 SOURCES += JammrUpdateChecker.cpp
 SOURCES += NINJAMServerBrowser.cpp
 SOURCES += logging.cpp
+SOURCES += EffectPlugin.cpp
 SOURCES += VSTPlugin.cpp
 SOURCES += EffectProcessor.cpp
 SOURCES += PortMidiStreamer.cpp

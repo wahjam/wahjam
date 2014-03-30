@@ -32,13 +32,36 @@ class EffectPlugin : public QObject
   Q_OBJECT
   Q_PROPERTY(QString name READ getName)
 
+  /* Wet/dry mix level, range [0.0, 1.0]
+   *   0.0 - Dry 100%, wet 0%
+   *   0.5 - Dry 100%, wet 100%
+   *   1.0 - Dry 0%, wet 100%
+   *
+   * Examples:
+   *
+   * A delay effect is usually mixed together with the dry signal so a value in
+   * the range [0, 0.5] is typical.
+   *
+   * In order to bypass an effect, set its mix to 0.0.  Its processing function
+   * is still called so delay trails or any other time-based signal will still
+   * be calculated even while bypassed.
+   *
+   * In order to blend a virtual instrument like a drum machine with its input,
+   * set the mix to 0.5.  This sums the input and the virtual instrument.
+   */
+  Q_PROPERTY(float wetDryMix READ getWetDryMix WRITE setWetDryMix)
+
 public:
+  EffectPlugin();
   virtual ~EffectPlugin() {}
 
   virtual bool load() = 0;
   virtual void unload() = 0;
 
   virtual QString getName() const = 0;
+
+  float getWetDryMix() const;
+  void setWetDryMix(float mix);
 
   virtual void openEditor(QWidget *parent) = 0;
   virtual void closeEditor() = 0;
@@ -61,6 +84,9 @@ signals:
 
 public slots:
   virtual void idle() = 0;
+
+private:
+  float wetDryMix;
 };
 
 #endif /* _EFFECTPLUGIN_H_ */
