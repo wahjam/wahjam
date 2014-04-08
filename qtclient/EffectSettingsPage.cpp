@@ -84,6 +84,10 @@ EffectSettingsPage::EffectSettingsPage(EffectProcessor *processor_, QWidget *par
   connect(wetDryMixList, SIGNAL(currentIndexChanged(int)),
           this, SLOT(wetDryMixChanged(int)));
   buttonLayout->addWidget(wetDryMixList);
+  receiveMidiCheckbox = new QCheckBox("Receive MIDI");
+  connect(receiveMidiCheckbox, SIGNAL(stateChanged(int)),
+          this, SLOT(receiveMidiChanged(int)));
+  buttonLayout->addWidget(receiveMidiCheckbox);
   hBoxLayout->addLayout(buttonLayout);
 
   vBoxLayout->addLayout(hBoxLayout);
@@ -112,6 +116,7 @@ void EffectSettingsPage::itemSelectionChanged()
     } else {
       wetDryMixList->setCurrentIndex(1);
     }
+    receiveMidiCheckbox->setChecked(plugin->getReceiveMidi());
   }
 }
 
@@ -205,4 +210,14 @@ void EffectSettingsPage::wetDryMixChanged(int currentIndex)
 
   float mix = wetDryMixList->itemData(currentIndex).toFloat();
   plugin->setWetDryMix(mix);
+}
+
+void EffectSettingsPage::receiveMidiChanged(int state)
+{
+  EffectPlugin *plugin = processor->getPlugin(pluginList->currentRow());
+  if (!plugin) {
+    return;
+  }
+
+  plugin->setReceiveMidi(state == Qt::Checked);
 }
