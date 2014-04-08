@@ -19,7 +19,7 @@
 #include "EffectPlugin.h"
 
 EffectPlugin::EffectPlugin()
-  : wetDryMix(1)
+  : wetDryMix(1), receiveMidi(true)
 {
 }
 
@@ -31,4 +31,14 @@ float EffectPlugin::getWetDryMix() const
 void EffectPlugin::setWetDryMix(float mix)
 {
   wetDryMix = qMax(0.0f, qMin(1.0f, mix));
+}
+
+bool EffectPlugin::getReceiveMidi() const
+{
+  return receiveMidi;
+}
+
+void EffectPlugin::setReceiveMidi(bool receive)
+{
+  receiveMidi = receive;
 }

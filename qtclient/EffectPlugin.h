@@ -51,6 +51,13 @@ class EffectPlugin : public QObject
    */
   Q_PROPERTY(float wetDryMix READ getWetDryMix WRITE setWetDryMix)
 
+  /* Receive MIDI on/off
+   *
+   * Some plugins react to all MIDI events even when this is not desired.
+   * In order to disable MIDI input set to false.
+   */
+  Q_PROPERTY(bool receiveMidi READ getReceiveMidi WRITE setReceiveMidi)
+
 public:
   EffectPlugin();
   virtual ~EffectPlugin() {}
@@ -62,6 +69,8 @@ public:
 
   float getWetDryMix() const;
   void setWetDryMix(float mix);
+  bool getReceiveMidi() const;
+  void setReceiveMidi(bool receive);
 
   virtual void openEditor(QWidget *parent) = 0;
   virtual void closeEditor() = 0;
@@ -87,6 +96,7 @@ public slots:
 
 private:
   float wetDryMix;
+  bool receiveMidi;
 };
 
 #endif /* _EFFECTPLUGIN_H_ */
