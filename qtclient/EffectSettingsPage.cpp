@@ -21,6 +21,7 @@
 #include <QDialogButtonBox>
 #include "qtclient.h"
 #include "VSTPlugin.h"
+#include "EffectPluginRoutingDialog.h"
 #include "EffectSettingsPage.h"
 
 EffectSettingsPage::EffectSettingsPage(EffectProcessor *processor_, QWidget *parent)
@@ -77,17 +78,10 @@ EffectSettingsPage::EffectSettingsPage(EffectProcessor *processor_, QWidget *par
   connect(editButton, SIGNAL(clicked()),
           this, SLOT(openEditor()));
   buttonLayout->addWidget(editButton);
-  wetDryMixList = new QComboBox();
-  wetDryMixList->addItem("On", 1.0f);
-  wetDryMixList->addItem("Mix", 0.5f);
-  wetDryMixList->addItem("Bypass", 0.0f);
-  connect(wetDryMixList, SIGNAL(currentIndexChanged(int)),
-          this, SLOT(wetDryMixChanged(int)));
-  buttonLayout->addWidget(wetDryMixList);
-  receiveMidiCheckbox = new QCheckBox("Receive MIDI");
-  connect(receiveMidiCheckbox, SIGNAL(stateChanged(int)),
-          this, SLOT(receiveMidiChanged(int)));
-  buttonLayout->addWidget(receiveMidiCheckbox);
+  routeButton = new QPushButton(tr("Route..."));
+  connect(routeButton, SIGNAL(clicked()),
+          this, SLOT(routeClicked()));
+  buttonLayout->addWidget(routeButton);
   hBoxLayout->addLayout(buttonLayout);
 
   vBoxLayout->addLayout(hBoxLayout);
@@ -104,20 +98,7 @@ void EffectSettingsPage::itemSelectionChanged()
   upButton->setEnabled(selected);
   downButton->setEnabled(selected);
   editButton->setEnabled(selected);
-  wetDryMixList->setEnabled(selected);
-
-  if (selected) {
-    int index = pluginList->currentRow();
-    EffectPlugin *plugin = processor->getPlugin(index);
-    if (plugin->getWetDryMix() < 0.49) {
-      wetDryMixList->setCurrentIndex(2);
-    } else if (plugin->getWetDryMix() > 0.51) {
-      wetDryMixList->setCurrentIndex(0);
-    } else {
-      wetDryMixList->setCurrentIndex(1);
-    }
-    receiveMidiCheckbox->setChecked(plugin->getReceiveMidi());
-  }
+  routeButton->setEnabled(selected);
 }
 
 void EffectSettingsPage::addPlugin()
@@ -201,23 +182,17 @@ void EffectSettingsPage::openEditor()
   plugin->openEditor(parentWidget());
 }
 
-void EffectSettingsPage::wetDryMixChanged(int currentIndex)
+void EffectSettingsPage::routeClicked()
 {
-  EffectPlugin *plugin = processor->getPlugin(pluginList->currentRow());
-  if (!plugin) {
-    return;
+  int index = pluginList->currentRow();
+  EffectPlugin *plugin = processor->getPlugin(index);
+  EffectPluginRoutingDialog dialog(plugin->getName());
+
+  dialog.setWetDryMix(plugin->getWetDryMix());
+  dialog.setReceiveMidi(plugin->getReceiveMidi());
+
+  if (dialog.exec() == QDialog::Accepted) {
+    plugin->setWetDryMix(dialog.getWetDryMix());
+    plugin->setReceiveMidi(dialog.getReceiveMidi());
   }
-
-  float mix = wetDryMixList->itemData(currentIndex).toFloat();
-  plugin->setWetDryMix(mix);
-}
-
-void EffectSettingsPage::receiveMidiChanged(int state)
-{
-  EffectPlugin *plugin = processor->getPlugin(pluginList->currentRow());
-  if (!plugin) {
-    return;
-  }
-
-  plugin->setReceiveMidi(state == Qt::Checked);
 }

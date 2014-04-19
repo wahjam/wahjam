@@ -21,8 +21,6 @@
 
 #include <QWidget>
 #include <QListWidget>
-#include <QCheckBox>
-#include <QComboBox>
 #include <QPushButton>
 #include "EffectProcessor.h"
 #include "AddEffectPluginDialog.h"
@@ -41,8 +39,7 @@ private slots:
   void movePluginUp();
   void movePluginDown();
   void openEditor();
-  void wetDryMixChanged(int currentIndex);
-  void receiveMidiChanged(int state);
+  void routeClicked();
 
 private:
   EffectProcessor *processor;
@@ -52,8 +49,7 @@ private:
   QPushButton *upButton;
   QPushButton *downButton;
   QPushButton *editButton;
-  QComboBox *wetDryMixList;
-  QCheckBox *receiveMidiCheckbox;
+  QPushButton *routeButton;
 };
 
 #endif /* _EFFECTSETTINGSPAGE_H_ */
