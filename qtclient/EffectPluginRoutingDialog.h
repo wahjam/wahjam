@@ -16,29 +16,34 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include "EffectPlugin.h"
+#ifndef _EFFECTPLUGINROUTINGDIALOG_H_
+#define _EFFECTPLUGINROUTINGDIALOG_H_
 
-EffectPlugin::EffectPlugin()
-  : wetDryMix(1), receiveMidi(true)
-{
-}
+#include <QDialog>
+#include <QComboBox>
+#include <QCheckBox>
+#include "PluginScanner.h"
 
-float EffectPlugin::getWetDryMix() const
+class EffectPluginRoutingDialog : public QDialog
 {
-  return wetDryMix;
-}
+  Q_OBJECT
+  Q_PROPERTY(float wetDryMix READ getWetDryMix WRITE setWetDryMix)
+  Q_PROPERTY(bool receiveMidi READ getReceiveMidi WRITE setReceiveMidi)
 
-void EffectPlugin::setWetDryMix(float mix)
-{
-  wetDryMix = qMax(0.0f, qMin(1.0f, mix));
-}
+public:
+  EffectPluginRoutingDialog(const QString &name, QWidget *parent = 0);
+  ~EffectPluginRoutingDialog();
 
-bool EffectPlugin::getReceiveMidi() const
-{
-  return receiveMidi;
-}
+  float getWetDryMix() const;
+  void setWetDryMix(float wetDryMix);
+  bool getReceiveMidi() const;
+  void setReceiveMidi(bool receive);
 
-void EffectPlugin::setReceiveMidi(bool receive)
-{
-  receiveMidi = receive;
-}
+private slots:
+
+private:
+  QComboBox *wetDryMixList;
+  QCheckBox *receiveMidiCheckbox;
+};
+
+#endif /* _EFFECTPLUGINROUTINGDIALOG_H_ */

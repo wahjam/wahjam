@@ -267,7 +267,9 @@ void EffectProcessor::process(float *buf, int ns)
   }
 
   foreach (EffectPlugin *plugin, plugins) {
-    plugin->processEvents(vstEvents);
+    if (plugin->getReceiveMidi()) {
+      plugin->processEvents(vstEvents);
+    }
     plugin->process(a, b, ns);
 
     float dry = qMin(2 * (1.0f - plugin->getWetDryMix()), 1.0f);
