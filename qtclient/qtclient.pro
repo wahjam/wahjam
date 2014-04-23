@@ -53,7 +53,13 @@ include(../common/libcommon.pri)
 QMAKE_CXXFLAGS += -Wno-write-strings
 CONFIG += link_pkgconfig
 PKGCONFIG += ogg vorbis vorbisenc portaudio-2.0
-LIBS += -lportmidi # does not use pkg-config
+
+# portmidi does not use pkg-config
+mac {
+       INCLUDEPATH += /usr/local/Cellar/portmidi/217/include
+       LIBS += -L/usr/local/Cellar/portmidi/217/lib
+}
+LIBS += -lportmidi
 
 # On Ubuntu PortTime is separate from PortMidi
 !isEmpty(USE_LIBPORTTIME) {

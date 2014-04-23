@@ -7,6 +7,10 @@ QT -= gui
 CONFIG += link_pkgconfig
 PKGCONFIG += ogg vorbis vorbisenc portaudio-2.0
 
+mac {
+       INCLUDEPATH += /usr/local/Cellar/portmidi/217/include
+}
+
 QMAKE_CXXFLAGS += -Wno-write-strings
 win32:DEFINES -= UNICODE
 SOURCES = audiostream_pa.cpp \
