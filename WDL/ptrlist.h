@@ -112,7 +112,7 @@ template<class PTRTYPE> class WDL_PtrList
           if (delfunc) delfunc(Get(index));
           else delete Get(index);
         }
-        if (index < --size) memcpy(list+index,list+index+1,sizeof(PTRTYPE *)*(size-index));
+        if (index < --size) memmove(list+index,list+index+1,sizeof(PTRTYPE *)*(size-index));
         m_hb.Resize(size * sizeof(PTRTYPE*));
       }
     }
