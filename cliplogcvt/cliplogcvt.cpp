@@ -101,20 +101,9 @@ int resolveFile(const char *name, std::string &outpath, const char *path)
 
 }
 
-void usage()
+void usage(const char *argv)
 {
-   printf("Usage: \n"
-          "  cliplogcvt session_directory [options]\n"
-          "\n"
-          "Options:\n"
-          "  -skip <intervals>\n"
-          "  -maxlen <intervals>\n"
-          "  -concat\n"
-          "  -decode\n"
-          "  -decodebits 16|24\n"
-          "  -insertsilence maxseconds   -- valid only with -concat -decode\n"
-
-      );
+   printf("Usage: %s <session_directory>\n", argv[0]);
    exit(1);
 }
 
@@ -251,51 +240,24 @@ void WriteOutTrack(const char *chname, UserChannelList *list, int *track_id, con
   if (y) (*track_id)++;
 }
 
-int main(int argc, char **argv)
+static bool parseCliplog(FILE *logfile, UserChannelList localrecs[32],
+                          std::vector<UserChannelList*> &curintrecs)
 {
-  printf("ClipLogCvt v0.02 - Copyright (C) 2005, Cockos, Inc.\n"
-         "(Converts NINJAM sessions to EDL/LOF,\n"
-         " optionally writing uncompressed WAVs etc)\n\n");
-  if (argc !=  2)
-  {
-    usage();
-  }
+  double cur_bpm = -1.0;
+  int cur_bpi = -1;
+  int cur_interval = 0;
+  double cur_position = 0.0;
+  double cur_lenblock = 0.0;
 
-  int start_interval=1;
-  int end_interval=0x40000001;
-
-  std::string logfn = argv[1];
-  logfn += DIRCHAR_S "clipsort.log";
-  FILE *logfile=fopen(logfn.c_str(),"rt");
-  if (!logfile)
-  {
-    printf("Error opening logfile\n");
-    return -1;
-  }
-
-  g_concatdir = argv[1];
-  g_concatdir += DIRCHAR_S "concat";
-  mkdir(g_concatdir.c_str(),0755);
-
-  double m_cur_bpm=-1.0;
-  int m_cur_bpi=-1;
-  int m_interval=0;
-  
-  double m_cur_position=0.0;
-  double m_cur_lenblock=0.0;
-
-  UserChannelList localrecs[32];
-  std::vector<UserChannelList*> curintrecs;
-  
-
-  // go through the log file
   for (;;)
   {
     char buf[4096];
-    buf[0]=0;
-    fgets(buf,sizeof(buf),logfile);
+    buf[0] = '\0';
+    fgets(buf, sizeof(buf), logfile);
     if (!buf[0]) break;
-    if (buf[strlen(buf)-1]=='\n') buf[strlen(buf)-1]=0;
+    if (buf[strlen(buf) - 1] == '\n') {
+      buf[strlen(buf) - 1] = '\0';
+    }
     if (!buf[0]) continue;
 
     std::istringstream stream(buf);
@@ -309,94 +271,116 @@ int main(int argc, char **argv)
       if (fields.size() != 4)
       {
         printf("interval line has wrong number of tokens\n");
-        return -2;
+        return false;
       }
 
-      m_cur_position+=m_cur_lenblock;
+      cur_position += cur_lenblock;
 
-      int idx=0;
-      double bpm=0.0;
-      int bpi=0;
+      int idx = 0;
+      double bpm = 0.0;
+      int bpi = 0;
       idx = atoi(fields[1].c_str());
       bpm = atof(fields[2].c_str());
       bpi = atoi(fields[3].c_str());
 
-      m_cur_bpi=bpi;
-      m_cur_bpm=bpm;
+      cur_bpi = bpi;
+      cur_bpm = bpm;
 
-      m_cur_lenblock=((double)m_cur_bpi * 60000.0 / m_cur_bpm);
-      m_interval++;
+      cur_lenblock = ((double)cur_bpi * 60000.0 / cur_bpm);
+      cur_interval++;
     } else if (fields[0] == "local") {
-      if (m_interval >= start_interval && m_interval < end_interval)
+      if (fields.size() != 3)
       {
-        if (fields.size() != 3)
-        {
-          printf("local line has wrong number of tokens\n");
-          return -2;
-        }
-        UserChannelValueRec *p = new UserChannelValueRec;
-        p->position = m_cur_position;
-        p->length = m_cur_lenblock;
-        p->guidstr = fields[1];
-        localrecs[atoi(fields[2].c_str()) & 31].items.push_back(p);
+        printf("local line has wrong number of tokens\n");
+        return false;
       }
+      UserChannelValueRec *p = new UserChannelValueRec;
+      p->position = cur_position;
+      p->length = cur_lenblock;
+      p->guidstr = fields[1];
+      localrecs[atoi(fields[2].c_str()) & 31].items.push_back(p);
     } else if (fields[0] == "user") {
-      if (m_interval >= start_interval && m_interval < end_interval)
+      if (fields.size() != 5)
       {
-        if (fields.size() != 5)
-        {
-          printf("user line has wrong number of tokens\n");
-          return -2;
-        }
-
-        std::string username = fields[2];
-        int chidx = atoi(fields[3].c_str());
-
-        UserChannelValueRec *ucvr = new UserChannelValueRec;
-        ucvr->guidstr = fields[1];
-        ucvr->position = m_cur_position;
-        ucvr->length = m_cur_lenblock;
-
-        int x;
-        for (x = 0; x < curintrecs.size(); x ++)
-        {
-          if (!strcasecmp(curintrecs[x]->user.c_str(), username.c_str()) &&
-              curintrecs[x]->chidx == chidx)
-          {
-            break;
-          }
-        }
-        if (x == curintrecs.size())
-        {
-          // add the rec
-          UserChannelList *t = new UserChannelList;
-          t->user = username;
-          t->chidx = chidx;
-
-          curintrecs.push_back(t);
-        }
-        if (curintrecs[x]->items.size())
-        {
-          UserChannelValueRec *lastitem = curintrecs[x]->items[curintrecs[x]->items.size() - 1]; // this is for when the server sometimes groups them in the wrong interval
-          double last_end=lastitem->position + lastitem->length;
-          if (ucvr->position < last_end)
-          {
-            ucvr->position = last_end;
-          }
-        }
-        curintrecs[x]->items.push_back(ucvr);
-        // add this record to it
+        printf("user line has wrong number of tokens\n");
+        return false;
       }
+
+      std::string username = fields[2];
+      int chidx = atoi(fields[3].c_str());
+
+      UserChannelValueRec *ucvr = new UserChannelValueRec;
+      ucvr->guidstr = fields[1];
+      ucvr->position = cur_position;
+      ucvr->length = cur_lenblock;
+
+      int x;
+      for (x = 0; x < curintrecs.size(); x ++)
+      {
+        if (!strcasecmp(curintrecs[x]->user.c_str(), username.c_str()) &&
+            curintrecs[x]->chidx == chidx)
+        {
+          break;
+        }
+      }
+      if (x == curintrecs.size())
+      {
+        // add the rec
+        UserChannelList *t = new UserChannelList;
+        t->user = username;
+        t->chidx = chidx;
+
+        curintrecs.push_back(t);
+      }
+      if (curintrecs[x]->items.size())
+      {
+        UserChannelValueRec *lastitem = curintrecs[x]->items[curintrecs[x]->items.size() - 1]; // this is for when the server sometimes groups them in the wrong interval
+        double last_end=lastitem->position + lastitem->length;
+        if (ucvr->position < last_end)
+        {
+          ucvr->position = last_end;
+        }
+      }
+      curintrecs[x]->items.push_back(ucvr);
+      // add this record to it
     } else if (fields[0] == "end") {
       /* Do nothing */
     } else {
       printf("unknown token %s\n", fields[0].c_str());
-      return -1;
+      return false;
     }
   }
+  return true;
+}
+
+int main(int argc, char **argv)
+{
+  if (argc != 2) {
+    printf("Usage: %s <session_directory>\n", argv[0]);
+    return 1;
+  }
+
+  std::string logfn = argv[1];
+  logfn += DIRCHAR_S "clipsort.log";
+  FILE *logfile = fopen(logfn.c_str(), "rt");
+  if (!logfile) {
+    printf("Error opening logfile \"%s\": %m\n", logfn.c_str());
+    return 1;
+  }
+
+  UserChannelList localrecs[32];
+  std::vector<UserChannelList*> curintrecs;
+  if (!parseCliplog(logfile, localrecs, curintrecs)) {
+    return 1;
+  }
+
   fclose(logfile);
 
   printf("Done analyzing log, building output...\n");
+
+  g_concatdir = argv[1];
+  g_concatdir += DIRCHAR_S "concat";
+  mkdir(g_concatdir.c_str(), 0755);
 
   int track_id=0;
   int x;
