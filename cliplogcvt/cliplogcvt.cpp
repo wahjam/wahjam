@@ -51,7 +51,7 @@ public:
 #define DIRCHAR '/'
 #define DIRCHAR_S "/"
 
-int resolveFile(const char *name, std::string &outpath, char *path)
+int resolveFile(const char *name, std::string &outpath, const char *path)
 {
   const char *p=name;
   while (*p && *p == '0') p++;
@@ -120,7 +120,7 @@ void usage()
 
 std::string g_concatdir;
 
-void WriteOutTrack(char *chname, UserChannelList *list, int *track_id, char *path)
+void WriteOutTrack(const char *chname, UserChannelList *list, int *track_id, const char *path)
 {
   int y;
   FILE *concatout=NULL;
