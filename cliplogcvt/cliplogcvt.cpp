@@ -17,6 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -29,7 +30,203 @@
 #include <sstream>
 #include <vector>
 
+#include <libresample.h>
+
 #include "../WDL/vorbisencdec.h"
+
+/* Output audio parameters */
+#define SAMPLE_RATE 44100 /* Hz */
+#define NCHANNELS 1
+#define BITRATE 64 /* kbps */
+
+class AudioBuffer
+{
+public:
+  AudioBuffer(float *samples, int frames, int channels, bool interleaved);
+  AudioBuffer(int frames, int channels, bool interleaved);
+  ~AudioBuffer();
+
+  void setInterleaved(bool enable);
+  void setStereo();
+  void setMono();
+  void clear();
+  void resample(void *resampleState, double factor, bool drain);
+
+  float *getSamples();
+  int getFrames();
+  int getChannels();
+
+private:
+  float *samples;
+  int frames;
+  int channels;
+  bool interleaved;
+  bool needDelete;
+};
+
+AudioBuffer::AudioBuffer(float *samples_, int frames_, int channels_, bool interleaved_)
+  : samples(samples_), frames(frames_), channels(channels_), interleaved(interleaved_), needDelete(false)
+{
+}
+
+AudioBuffer::AudioBuffer(int frames_, int channels_, bool interleaved_)
+  : frames(frames_), channels(channels_), interleaved(interleaved_), needDelete(true)
+{
+  samples = new float[frames * channels];
+}
+
+AudioBuffer::~AudioBuffer()
+{
+  if (needDelete) {
+    delete [] samples;
+  }
+}
+
+void AudioBuffer::setInterleaved(bool enable)
+{
+  if (interleaved == enable) {
+    return;
+  }
+  interleaved = enable;
+  if (channels == 1) {
+    return;
+  }
+
+  float *newSamples = new float[frames * channels];
+
+  if (enable) {
+    for (int i = 0; i < frames; i++) {
+      newSamples[i * 2] = samples[i];
+      newSamples[i * 2 + 1] = samples[frames + i];
+    }
+  } else {
+    for (int i = 0; i < frames; i++) {
+      newSamples[i] = samples[i * 2];
+      newSamples[frames + i] = samples[i * 2 + 1];
+    }
+  }
+
+  if (needDelete) {
+    delete [] samples;
+  }
+  samples = newSamples;
+  needDelete = true;
+}
+
+void AudioBuffer::setStereo()
+{
+  if (channels == 2) {
+    return;
+  }
+
+  assert(channels == 1);
+  channels = 2;
+  float *newSamples = new float[frames * channels];
+
+  if (interleaved) {
+    for (int i = 0; i < frames; i++) {
+      newSamples[i * 2] = newSamples[i * 2 + 1] = samples[i];
+    }
+  } else {
+    memcpy(newSamples, samples, frames * sizeof(float));
+    memcpy(&newSamples[frames], samples, frames * sizeof(float));
+  }
+
+  if (needDelete) {
+    delete [] samples;
+  }
+  samples = newSamples;
+  needDelete = true;
+}
+
+void AudioBuffer::setMono()
+{
+  if (channels == 1) {
+    return;
+  }
+
+  assert(channels == 2);
+  channels = 1;
+  float *newSamples = new float[frames * channels];
+
+  if (interleaved) {
+    for (int i = 0; i < frames; i++) {
+      newSamples[i] = 0.5 * samples[i * 2] + 0.5 * samples[i * 2 + 1];
+    }
+  } else {
+    for (int i = 0; i < frames; i++) {
+      newSamples[i] = 0.5 * samples[i] + 0.5 * samples[frames + i];
+    }
+  }
+
+  if (needDelete) {
+    delete [] samples;
+  }
+  samples = newSamples;
+  needDelete = true;
+}
+
+void AudioBuffer::clear()
+{
+  memset(samples, 0, frames * channels * sizeof(float));
+}
+
+void AudioBuffer::resample(void *resampleState, double factor, bool drain)
+{
+  assert(channels == 1);
+
+  int newFrames = (frames + 1) * factor * 2; /* double size just to make sure */
+  float *newSamples = new float[newFrames];
+
+  int inFrames = 0;
+  int outFrames = 0;
+  while (inFrames < frames) {
+    int inUsed = 0;
+    int ret;
+
+    ret = resample_process(resampleState, factor,
+                           &samples[inFrames], frames - inFrames,
+                           drain, &inUsed,
+                           &newSamples[outFrames], newFrames - outFrames);
+    inFrames += inUsed;
+    outFrames += ret;
+
+    /* We should never exhaust the buffer since we double-sized it */
+    if (outFrames >= newFrames) {
+      fprintf(stderr, "resample exhausted double-sized output buffer!\n");
+      exit(1);
+    }
+  }
+
+  /* Cap buffer size */
+  if (outFrames < newFrames) {
+    newFrames = outFrames;
+  }
+
+  /* Maybe not all frames were filled by the resampler so cap buffer size */
+  frames = newFrames;
+
+  if (needDelete) {
+    delete [] samples;
+  }
+  samples = newSamples;
+  needDelete = true;
+}
+
+float *AudioBuffer::getSamples()
+{
+  return samples;
+}
+
+int AudioBuffer::getFrames()
+{
+  return frames;
+}
+
+int AudioBuffer::getChannels()
+{
+  return channels;
+}
 
 class UserChannelValueRec
 {
@@ -51,11 +248,11 @@ public:
 #define DIRCHAR '/'
 #define DIRCHAR_S "/"
 
-int resolveFile(const char *name, std::string &outpath, const char *path)
+bool resolveFile(const char *name, std::string &outpath, const char *path)
 {
   const char *p=name;
   while (*p && *p == '0') p++;
-  if (!*p) return 0; // empty name
+  if (!*p) return false;
 
   const char *exts[] = {".ogg", ".OGG"};
   std::string fnfind;
@@ -87,18 +284,13 @@ int resolveFile(const char *name, std::string &outpath, const char *path)
       fclose(tmp);
       if (l) 
       {
-        char buf[4096];
-        if (realpath(fnfind.c_str(), buf))
-        {
-          outpath = buf;
-        }       
-        return 1;
+        outpath = fnfind;
+        return true;
       }
     }
   }
   printf("Error resolving guid %s\n",name);
-  return 0;
-
+  return false;
 }
 
 void usage(const char *argv)
@@ -109,135 +301,153 @@ void usage(const char *argv)
 
 std::string g_concatdir;
 
+static void fillSilenceSamples(FILE *outfile, VorbisEncoder *encoder, uint64_t framesRemaining)
+{
+  AudioBuffer zeroes(1024, NCHANNELS, true);
+  zeroes.clear();
+
+  while (framesRemaining) {
+    uint64_t nframes = framesRemaining;
+    if (nframes > 1024) {
+      nframes = 1024;
+    }
+
+    encoder->Encode(zeroes.getSamples(), nframes);
+    framesRemaining -= nframes;
+
+    if (encoder->outqueue.Available() >= 64 * 1024 * 1024 ||
+        framesRemaining == 0) {
+      fwrite(encoder->outqueue.Get(), 1, encoder->outqueue.Available(), outfile);
+      encoder->outqueue.Advance(encoder->outqueue.Available());
+    }
+  }
+
+  encoder->outqueue.Compact();
+}
+
+static void fillSilence(FILE *outfile, VorbisEncoder *encoder, double msecs)
+{
+  fillSilenceSamples(outfile, encoder, msecs * SAMPLE_RATE / 1000.0);
+}
+
+static void transcode(FILE *infile, FILE *outfile, void **resampleState, VorbisEncoder *encoder, double msecs)
+{
+  uint64_t framesRemaining = msecs * SAMPLE_RATE / 1000.0;
+  VorbisDecoder decoder;
+  bool drainResampler = false;
+
+  while (framesRemaining) {
+    while (decoder.m_samples_used < 1024 * NCHANNELS) {
+      size_t nread = fread(decoder.DecodeGetSrcBuffer(4096), 1, 4096, infile);
+      if (nread == 0 && decoder.m_samples_used == 0) {
+        /* Silence left-over frames and then finish */
+        fillSilenceSamples(outfile, encoder, framesRemaining);
+        return;
+      }
+      if (nread > 0) {
+        decoder.DecodeWrote(nread);
+      }
+      if (nread < 4096) {
+        drainResampler = true;
+        break;
+      }
+    }
+
+    int nframes = decoder.m_samples_used / decoder.GetNumChannels();
+    AudioBuffer abuf((float*)decoder.m_samples.Get(), nframes, decoder.GetNumChannels(), true);
+    decoder.m_samples_used = 0;
+    if (NCHANNELS == 1) {
+      abuf.setMono();
+    } else {
+      abuf.setStereo();
+    }
+    if (decoder.GetSampleRate() != SAMPLE_RATE) {
+      double factor = (double)SAMPLE_RATE / decoder.GetSampleRate();
+      if (!*resampleState) {
+        *resampleState = resample_open(1, factor, factor);
+      }
+
+      abuf.resample(*resampleState, factor, drainResampler);
+    }
+
+    if (abuf.getFrames() > framesRemaining) {
+      encoder->Encode(abuf.getSamples(), framesRemaining);
+      framesRemaining = 0;
+    } else {
+      encoder->Encode(abuf.getSamples(), abuf.getFrames());
+      framesRemaining -= abuf.getFrames();
+    }
+
+    if (encoder->outqueue.Available() >= 64 * 1024 * 1024 ||
+        framesRemaining == 0) {
+      fwrite(encoder->outqueue.Get(), 1, encoder->outqueue.Available(), outfile);
+      encoder->outqueue.Advance(encoder->outqueue.Available());
+    }
+  }
+
+  encoder->outqueue.Compact();
+}
+
 void WriteOutTrack(const char *chname, UserChannelList *list, int *track_id, const char *path)
 {
-  int y;
-  FILE *concatout=NULL;
-  double last_pos=-1000.0, last_len=0.0;
-  std::string concat_fn;
-  int concat_filen=0;
+  std::string outfilename = g_concatdir;
+  outfilename += DIRCHAR_S;
+  outfilename += chname;
+  outfilename += ".ogg";
 
-  const double DELTA=0.0000001;
-  for (y = 0; y < list->items.size(); y ++)
-  {
-    std::string op;
-    if (!resolveFile(list->items[y]->guidstr.c_str(), op, path)) 
-    {
-      if (concatout) 
-      {
-        if (concatout) fclose(concatout);
-      }
-      concatout=0;
-      continue;
-    }
-
-    fprintf(stderr, "%s position %g\n", op.c_str(), list->items[y]->position);
-
-/*    if (concatout && fabs(last_pos+last_len - list->items[y]->position) > DELTA)
-    {
-      if (concatout) fclose(concatout);
-      concatout=0;
-    }
-
-    if (!concatout)
-    {
-      concat_fn = g_concatdir;
-      char buf[4096];
-      sprintf(buf, DIRCHAR_S "%s_%03d.%s", chname, concat_filen++, "ogg");
-      concat_fn += buf;
-
-      if (realpath(concat_fn.c_str(),buf))
-      {
-        concat_fn = buf;
-      }
-
-      concatout = fopen(concat_fn.c_str(), "wb");
-      if (!concatout)
-      {
-        printf("Warning: error opening %s. RESULTING TXT WILL LACK REFERENCE TO THIS FILE! ACK!\n", concat_fn.c_str());
-      }
-      last_pos = list->items[y]->position;
-      last_len = 0.0;
-    }
-
-    if (concatout)
-    {
-      FILE *fp = fopen(op.c_str(),"rb");
-      if (fp)
-      {
-        // decode file
-        VorbisDecoder decoder;
-        int did_write=0;
-
-        for (;;)
-        {
-          int l=fread(decoder.DecodeGetSrcBuffer(1024),1,1024,fp);
-          decoder.DecodeWrote(l);
-
-          if (decoder.m_samples_used>0)
-          {
-
-            if (concatout_wav->Status() && (decoder.GetNumChannels() != concatout_wav->get_nch() || decoder.GetSampleRate() != concatout_wav->get_srate()))
-            {
-              // output parameter change
-//                printf("foo\n");
-
-              delete concatout_wav;
-
-              concat_fn = g_concatdir;
-              char buf[4096];
-              sprintf(buf,DIRCHAR_S "%s_%03d.wav",chname,concat_filen++);
-              concat_fn += buf;
-
-              if (realpath(concat_fn.c_str(), buf))
-              {
-                concat_fn = buf;
-              }
-
-              concatout_wav = new WaveWriter;
-              last_pos = list->items[y]->position;
-              last_len = 0.0;
-
-            }
-
-            if (!concatout_wav->Status() && decoder.GetNumChannels() && decoder.GetSampleRate())
-            {
-//                  printf("opening new wav\n");
-              if (!concatout_wav->Open(concat_fn.c_str(),g_write_wav_bits, decoder.GetNumChannels(), decoder.GetSampleRate(),0))
-              {
-                printf("Warning: error opening %s to write WAV\n",concat_fn.c_str());
-                break;
-              }
-            }
-
-            if (concatout_wav->Status())
-            {
-              concatout_wav->WriteFloats((float *)decoder.m_samples.Get(),decoder.m_samples_used);
-            }
-            did_write += decoder.m_samples_used;
-
-            decoder.m_samples_used=0;
-          }
-
-          if (!l) break;
-        }
-
-        last_len += did_write * 1000.0 / (double)concatout_wav->get_srate() / (double)concatout_wav->get_nch();
-        if (!did_write)
-        {
-          printf("Warning: error decoding %s to convert to WAV\n", op.c_str());
-        }
-
-        fclose(fp);
-      }
-    } */
+  if (list->items.size() == 0) {
+    return;
   }
-  if (concatout)
+
+  FILE *outfile = fopen(outfilename.c_str(), "wb");
+  if (!outfile)
   {
-    if (concatout) fclose(concatout);
-    concatout=0;
+    printf("Unable to open \"%s\" for writing: %m", outfilename.c_str());
+    return;
   }
-  if (y) (*track_id)++;
+
+  void *resampleState = NULL;
+  VorbisEncoder encoder(SAMPLE_RATE, NCHANNELS, BITRATE, 0);
+
+  double position = 0.0; /* in milliseconds */
+  for (size_t i = 0; i < list->items.size(); i++) {
+    UserChannelValueRec *rec = list->items[i];
+
+    if (rec->position > position + 1e-5) {
+      fillSilence(outfile, &encoder, rec->position - position);
+      position = rec->position;
+    }
+
+    std::string infilename;
+    if (!resolveFile(rec->guidstr.c_str(), infilename, path)) {
+      position += rec->length;
+      continue; /* skip this interval */
+    }
+
+    FILE *infile = fopen(infilename.c_str(), "rb");
+    if (!infile) {
+      printf("Unable to open \"%s\" for reading: %m", infilename.c_str());
+      goto out;
+    }
+
+    transcode(infile, outfile, &resampleState, &encoder, rec->length);
+    fclose(infile);
+    position += rec->length;
+  }
+
+  if (resampleState) {
+    resample_close(resampleState);
+  }
+
+  /* Flush encoder */
+  encoder.Encode(NULL, 0);
+  fwrite(encoder.outqueue.Get(), 1, encoder.outqueue.Available(), outfile);
+  encoder.outqueue.Advance(encoder.outqueue.Available());
+
+  (*track_id)++;
+
+out:
+  fclose(outfile);
 }
 
 static bool parseCliplog(FILE *logfile, UserChannelList localrecs[32],
