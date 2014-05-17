@@ -33,7 +33,6 @@ JammrUserLookup::JammrUserLookup(const QUrl &apiUrl,
 {
   QUrlQuery query;
   query.addQueryItem("server", apiServerName);
-  query.addQueryItem("format", "xml");
 
   tokenUrl = apiUrl;
   tokenUrl.setPath(apiUrl.path() + "tokens/" + username_ + "/");
