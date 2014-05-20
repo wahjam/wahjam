@@ -30,6 +30,7 @@
 #include <sys/stat.h>
 #include <QUuid>
 #include <QCryptographicHash>
+#include <QDir>
 #include "njclient.h"
 #include "mpb.h"
 #include "../WDL/pcmfmtcvt.h"
@@ -2028,18 +2029,13 @@ void NJClient::SetWorkDir(char *path)
 #endif
 
   // create subdirectories for ogg files
+  QDir workdir(m_workdir.Get());
   int a;
   for (a = 0; a < 16; a ++)
   {
-    WDL_String tmp(m_workdir.Get());
     char buf[5];
-    sprintf(buf,"%x",a);
-    tmp.Append(buf);
-#ifdef _WIN32
-    CreateDirectory(tmp.Get(),NULL);
-#else
-    mkdir(tmp.Get(),0700);
-#endif
+    sprintf(buf, "%x", a);
+    workdir.mkdir(buf);
   }
 }
 
