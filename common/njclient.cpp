@@ -30,6 +30,7 @@
 #include <sys/stat.h>
 #include <QUuid>
 #include <QCryptographicHash>
+#include <QFile>
 #include <QDir>
 #include "njclient.h"
 #include "mpb.h"
@@ -69,20 +70,15 @@ class DecodeState
       if (decode_fp) fclose(decode_fp);
       decode_fp=0;
 
-      if (delete_on_delete.Get()[0])
-      {
-#ifdef _WIN32
-        DeleteFile(delete_on_delete.Get());
-#else
-        remove(delete_on_delete.Get());
-#endif
+      if (!delete_on_delete.fileName().isEmpty()) {
+        delete_on_delete.remove();
       }
     }
 
     unsigned char guid[16];
     double decode_peak_vol;
 
-    WDL_String delete_on_delete;
+    QFile delete_on_delete;
 
     FILE *decode_fp;
     I_NJDecoder *decode_codec;
@@ -1305,7 +1301,7 @@ DecodeState *NJClient::start_decode(unsigned char *guid, unsigned int fourcc)
   {
     if (config_savelocalaudio<0)
     {
-      newstate->delete_on_delete.Set(s.Get());
+      newstate->delete_on_delete.setFileName(s.Get());
     }
     newstate->decode_codec= new I_NJDecoder;
     // run some decoding
