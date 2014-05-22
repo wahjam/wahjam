@@ -43,8 +43,9 @@
 
 #include "ninjamsrv.h"
 #include "usercon.h"
-#include "../common/mpb.h"
+#include "common/mpb.h"
 #include "common/UserPrivs.h"
+#include "common/njmisc.h"
 
 #ifdef _WIN32
 #define strncasecmp strnicmp
@@ -631,7 +632,7 @@ void User_Connection::processMessage(Net_Message *msg)
               WDL_String tmp(group->m_logdir.Get());                
               tmp.Append(fn);
 
-              newrecv->fp = fopen(tmp.Get(),"wb");
+              newrecv->fp = utf8_fopen(tmp.Get(),"wb");
 
               if (group->m_logfp)
               {
@@ -855,7 +856,7 @@ void User_Group::SetLogDir(const char *path) // NULL to not log
 
   WDL_String cl(path);
   cl.Append("/clipsort.log");
-  m_logfp=fopen(cl.Get(),"at");
+  m_logfp = utf8_fopen(cl.Get(), "at");
 
   int a;
   for (a = 0; a < 16; a ++)

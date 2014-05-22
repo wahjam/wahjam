@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <QDateTime>
 
+#include "common/njmisc.h"
 #include "logging.h"
 
 static FILE *logfp;
@@ -65,7 +66,7 @@ void logInit(const QString &filename)
 
   if (!filename.isEmpty() && filename != "-")
   {
-    logfp = fopen(filename.toUtf8().data(), "at");
+    logfp = utf8_fopen(filename.toUtf8().data(), "at");
     if (logfp) {
       fprintf(logfp, "Wahjam Server " VERSION " (" COMMIT_ID ") built on " __DATE__ " at " __TIME__ "\n");
     } else {

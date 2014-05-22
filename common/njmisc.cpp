@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <float.h>
+#include <QDir>
 
 #include "njmisc.h"
 
@@ -78,4 +79,16 @@ void mkvolstr(char *str, double vol)
   double v=VAL2DB(vol);
   if (vol < 0.0000001 || v < -120.0) v=-120.0;
   sprintf(str,"%s%2.1fdB",v>0.0?"+":"",v);   
+}
+
+FILE *utf8_fopen(const char *utf8_path, const char *utf8_mode)
+{
+#ifdef Q_OS_WIN
+  QString path(QDir::toNativeSeparators(QString::fromUtf8(utf8_path)));
+  QString mode(QString::fromUtf8(utf8_mode));
+
+  return _wfopen((const wchar_t*)path.utf16(), (const wchar_t*)mode.utf16());
+#else
+  return fopen(utf8_path, utf8_mode);
+#endif
 }

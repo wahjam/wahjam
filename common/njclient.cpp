@@ -34,6 +34,7 @@
 #include <QDir>
 #include "njclient.h"
 #include "mpb.h"
+#include "njmisc.h"
 #include "../WDL/pcmfmtcvt.h"
 #include "../WDL/wavwrite.h"
 
@@ -434,10 +435,10 @@ void NJClient::SetLogFile(char *name)
     {
       WDL_String s(m_workdir.Get());
       s.Append(name);
-      m_logFile=fopen(s.Get(),"a+t");
+      m_logFile = utf8_fopen(s.Get(), "a+t");
     }
     else
-      m_logFile=fopen(name,"a+t");
+      m_logFile = utf8_fopen(name, "a+t");
   }
   m_log_cs.Leave();
 }
@@ -1294,7 +1295,7 @@ DecodeState *NJClient::start_decode(unsigned char *guid, unsigned int fourcc)
   for (x = 0; !newstate->decode_fp && x < sizeof(types)/sizeof(types[0]); x ++)
   {
     type_to_string(types[x],s.Get()+oldl);
-    newstate->decode_fp=fopen(s.Get(),"rb");
+    newstate->decode_fp = utf8_fopen(s.Get(), "rb");
   }
 
   if (newstate->decode_fp)
@@ -2068,7 +2069,7 @@ void RemoteDownload::Open(NJClient *parent, unsigned int fourcc)
   s.Append(buf);
 
   m_fourcc=fourcc;
-  fp=fopen(s.Get(),"wb");
+  fp = utf8_fopen(s.Get(), "wb");
 }
 
 void RemoteDownload::startPlaying(int force)

@@ -25,6 +25,7 @@
 #ifndef _NJMISC_H_
 #define _NJMISC_H_
 
+#include <stdio.h>
 #include <math.h>
 
 // some utility functions
@@ -35,5 +36,7 @@ double VAL2DB(double x);
 void mkvolpanstr(char *str, double vol, double pan);
 void mkvolstr(char *str, double vol);
 void mkpanstr(char *str, double pan);
+
+FILE *utf8_fopen(const char *utf8_path, const char *utf8_mode);
 
 #endif

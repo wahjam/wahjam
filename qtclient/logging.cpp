@@ -20,6 +20,8 @@
 #include <QDateTime>
 #include <QSysInfo>
 
+#include "common/njmisc.h"
+
 static FILE *logfp;
 
 static void logMsgHandler(QtMsgType type, const QMessageLogContext &context,
@@ -102,7 +104,7 @@ static void logSystemInformation()
   }
 #elif defined(Q_OS_LINUX)
   {
-    FILE *issuefp = fopen("/etc/issue", "r");
+    FILE *issuefp = utf8_fopen("/etc/issue", "r");
     qDebug("Reading /etc/issue...");
     if (issuefp) {
       char buf[BUFSIZ];
@@ -126,7 +128,7 @@ static void logSystemInformation()
 
 void logInit(const QString &filename)
 {
-  logfp = fopen(filename.toUtf8().data(), "w");
+  logfp = utf8_fopen(filename.toUtf8().data(), "w");
   if (!logfp) {
     logfp = stderr;
   }

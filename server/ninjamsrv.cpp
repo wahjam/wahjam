@@ -43,9 +43,10 @@
 #include <QCoreApplication>
 #include <QCryptographicHash>
 
-#include "../common/netmsg.h"
-#include "../common/mpb.h"
+#include "common/netmsg.h"
+#include "common/mpb.h"
 #include "common/UserPrivs.h"
+#include "common/njmisc.h"
 #include "usercon.h"
 #include "JammrUserLookup.h"
 
@@ -295,7 +296,7 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
   else if (token == QString("ServerLicense").toLower())
   {
     if (lp->getnumtokens() != 2) return -1;
-    FILE *fp=fopen(lp->gettoken_str(1),"rt");
+    FILE *fp = utf8_fopen(lp->gettoken_str(1), "rt");
     if (!fp) 
     {
       qWarning("Error opening license file %s",lp->gettoken_str(1));
@@ -434,7 +435,7 @@ static int ReadConfig(ServerConfig *config, char *configfile)
   bool comment_state=0;
   int linecnt=0;
   WDL_String linebuild;
-  FILE *fp=strcmp(configfile,"-")?fopen(configfile,"rt"):stdin; 
+  FILE *fp = strcmp(configfile,"-") ? utf8_fopen(configfile, "rt") : stdin; 
   if (!fp)
   {
     qWarning("Error opening config file '%s'", configfile);
@@ -627,7 +628,7 @@ int main(int argc, char **argv)
 
   if (g_config.pidFilename.Get()[0])
   {
-    FILE *fp=fopen(g_config.pidFilename.Get(),"w");
+    FILE *fp = utf8_fopen(g_config.pidFilename.Get(), "w");
     if (fp)
     {
       fprintf(fp,"%d\n",getpid());
