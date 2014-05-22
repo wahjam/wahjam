@@ -12,7 +12,6 @@ mac {
 }
 
 QMAKE_CXXFLAGS += -Wno-write-strings
-win32:DEFINES -= UNICODE
 SOURCES = audiostream_pa.cpp \
           mpb.cpp \
           netmsg.cpp \

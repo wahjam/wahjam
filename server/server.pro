@@ -16,9 +16,6 @@ QT += network
 
 include(../common/libcommon.pri)
 
-# Code in common/ does not use wide characters
-win32:DEFINES -= UNICODE
-
 # Build console application
 win32:CONFIG += console
 

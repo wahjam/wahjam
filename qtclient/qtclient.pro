@@ -67,9 +67,6 @@ LIBS += -lportmidi
 }
 
 win32 {
-	# Code in common/ does not use wide characters
-	DEFINES -= UNICODE
-
 	exists($${TARGET}.rc) {
 		RC_FILE = $${TARGET}.rc
 	}
