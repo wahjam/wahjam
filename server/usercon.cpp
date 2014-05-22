@@ -39,6 +39,7 @@
 #include <QHostAddress>
 #include <QCryptographicHash>
 #include <QUuid>
+#include <QDir>
 
 #include "ninjamsrv.h"
 #include "usercon.h"
@@ -844,11 +845,10 @@ void User_Group::SetLogDir(const char *path) // NULL to not log
     return;
   }
 
-#ifdef _WIN32
-    CreateDirectory(path,NULL);
-#else
-    mkdir(path,0755);
-#endif
+  QDir logdir(path);
+  QString dirName(logdir.dirName());
+  logdir.cdUp();
+  logdir.mkdir(dirName);
 
   m_logdir.Set(path);
   m_logdir.Append("/");
@@ -860,15 +860,9 @@ void User_Group::SetLogDir(const char *path) // NULL to not log
   int a;
   for (a = 0; a < 16; a ++)
   {
-    WDL_String tmp(path);
     char buf[5];
-    sprintf(buf,"/%x",a);
-    tmp.Append(buf);
-#ifdef _WIN32
-    CreateDirectory(tmp.Get(),NULL);
-#else
-    mkdir(tmp.Get(),0755);
-#endif
+    sprintf(buf,"%x",a);
+    logdir.mkdir(buf);
   }
 
   intervalExpired();
