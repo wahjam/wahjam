@@ -20,6 +20,7 @@
 #include <QDir>
 #include <QApplication>
 #include <QMessageBox>
+#include <QTextCodec>
 
 #include "logging.h"
 #include "common/audiostream.h"
@@ -32,6 +33,13 @@ QString logFilePath;
 int main(int argc, char *argv[])
 {
   QApplication app(argc, argv);
+
+  /* Workaround for Qt5 Windows builds that cannot find their default codec.
+   * See http://qt-project.org/forums/viewthread/24896/P15/#121196
+   */
+  if (!QTextCodec::codecForLocale()) {
+    QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
+  }
 
   /* These are used by QSettings persistent settings */
   app.setOrganizationName(ORGNAME);
