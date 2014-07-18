@@ -256,9 +256,9 @@ static bool setupParameters(const char *hostAPI, const char *inputDevice,
   inputParams->sampleFormat = sampleFormat;
   outputParams->sampleFormat = sampleFormat;
 
-  /* TODO support stereo and user-defined channel configuration */
-  inputParams->channelCount = 1;
-  outputParams->channelCount = 1;
+  /* TODO support user-defined channel configuration */
+  inputParams->channelCount = inputDeviceInfo->maxInputChannels > 1 ? 2 : 1;
+  outputParams->channelCount = outputDeviceInfo->maxOutputChannels > 1 ? 2 : 1;
 
   inputParams->suggestedLatency = latency;
   outputParams->suggestedLatency = latency;
