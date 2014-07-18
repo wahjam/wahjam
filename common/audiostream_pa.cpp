@@ -58,6 +58,8 @@ public:
 private:
   SPLPROC splproc;
   PaStream *stream;
+  float *inputMonoBuf;
+  unsigned long inputMonoBufFrames;
 };
 
 const char *PortAudioStreamer::GetChannelName(int idx)
@@ -83,7 +85,29 @@ int PortAudioStreamer::streamCallback(const void *input, void *output,
   float **outbuf = static_cast<float**>(output);
   const PaStreamInfo *info = Pa_GetStreamInfo(stream);
 
-  splproc(inbuf, m_innch, outbuf, m_outnch, frameCount, info->sampleRate);
+  /* Mix down to mono */
+  if (m_innch == 2) {
+    if (inputMonoBufFrames < frameCount) {
+      /* Allocation should happen rarely so don't worry about real-time */
+      delete [] inputMonoBuf;
+      inputMonoBuf = new float[frameCount];
+      inputMonoBufFrames = frameCount;
+    }
+    for (unsigned long i = 0; i < frameCount; i++) {
+      inputMonoBuf[i] = inbuf[0][i] * 0.5 + inbuf[1][i] * 0.5;
+    }
+    inbuf = &inputMonoBuf;
+  }
+
+  splproc(inbuf, 1, outbuf, 1, frameCount, info->sampleRate);
+
+  /* Mix up to stereo */
+  if (m_outnch == 2) {
+    for (unsigned long i = 0; i < frameCount; i++) {
+      outbuf[0][i] = outbuf[1][i] = outbuf[0][i] * 0.5;
+    }
+  }
+
   return paContinue;
 }
 
@@ -97,13 +121,14 @@ int PortAudioStreamer::streamCallbackTrampoline(const void *input, void *output,
 }
 
 PortAudioStreamer::PortAudioStreamer(SPLPROC proc)
-  : splproc(proc), stream(NULL)
+  : splproc(proc), stream(NULL), inputMonoBuf(NULL), inputMonoBufFrames(0)
 {
 }
 
 PortAudioStreamer::~PortAudioStreamer()
 {
   Stop();
+  delete [] inputMonoBuf;
 }
 
 /* Returns true on success, false on failure */
