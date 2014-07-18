@@ -212,13 +212,26 @@ void PortAudioSettingsPage::populateSampleRateList()
 
   PaStreamParameters inputParams;
   inputParams.device = inputDeviceList->itemData(inputDeviceList->currentIndex()).toInt(NULL);
-  inputParams.channelCount = 1 /* TODO mono */;
   inputParams.sampleFormat = paFloat32 | paNonInterleaved;
   inputParams.suggestedLatency = 0;
   inputParams.hostApiSpecificStreamInfo = NULL;
 
+  const PaDeviceInfo *inputDeviceInfo = Pa_GetDeviceInfo(inputParams.device);
+  if (inputDeviceInfo && inputDeviceInfo->maxInputChannels > 1) {
+    inputParams.channelCount = 2;
+  } else {
+    inputParams.channelCount = 1;
+  }
+
   PaStreamParameters outputParams = inputParams;
   outputParams.device = outputDeviceList->itemData(outputDeviceList->currentIndex()).toInt(NULL);
+
+  const PaDeviceInfo *outputDeviceInfo = Pa_GetDeviceInfo(outputParams.device);
+  if (outputDeviceInfo && outputDeviceInfo->maxOutputChannels > 1) {
+    outputParams.channelCount = 2;
+  } else {
+    outputParams.channelCount = 1;
+  }
 
   sampleRateList->clear();
   for (i = 0; i < sizeof(rates) / sizeof(rates[0]); i++) {
