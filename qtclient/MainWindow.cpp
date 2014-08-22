@@ -117,14 +117,21 @@ MainWindow::MainWindow(QWidget *parent)
 
   QMenu *fileMenu = theMenuBar->addMenu(tr("&File"));
   connectAction = fileMenu->addAction(tr("&Connect..."));
-  disconnectAction = fileMenu->addAction(tr("&Disconnect"));
-  QAction *settingsAction = fileMenu->addAction(tr("&Settings..."));
-  QAction *exitAction = fileMenu->addAction(tr("E&xit"));
-  exitAction->setShortcuts(QKeySequence::Quit);
   connect(connectAction, SIGNAL(triggered()), this, SLOT(ShowConnectDialog()));
+  disconnectAction = fileMenu->addAction(tr("&Disconnect"));
   connect(disconnectAction, SIGNAL(triggered()), this, SLOT(Disconnect()));
+
+  QAction *settingsAction = fileMenu->addAction(tr("&Settings..."));
+  settingsAction->setMenuRole(QAction::PreferencesRole);
   connect(settingsAction, SIGNAL(triggered()), settingsDialog, SLOT(show()));
+
+#ifndef Q_OS_MAC
+  /* Skip this on Mac since a Quit menu item is implicitly created */
+  QAction *exitAction = fileMenu->addAction(tr("E&xit"));
+  exitAction->setMenuRole(QAction::QuitRole);
+  exitAction->setShortcuts(QKeySequence::Quit);
   connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
+#endif
 
   voteMenu = theMenuBar->addMenu(tr("&Vote"));
   QAction *voteBPMAction = voteMenu->addAction(tr("BPM"));
@@ -151,8 +158,12 @@ MainWindow::MainWindow(QWidget *parent)
   QMenu *helpMenu = theMenuBar->addMenu(tr("&Help"));
   QAction *logAction = helpMenu->addAction(tr("Show &log"));
   connect(logAction, SIGNAL(triggered()), this, SLOT(ShowLog()));
+#ifndef Q_OS_MAC
+  /* Skip on Mac since the About menu item goes into a different menu */
   helpMenu->addSeparator();
+#endif
   QAction *aboutAction = helpMenu->addAction(tr("&About..."));
+  aboutAction->setMenuRole(QAction::AboutRole);
   connect(aboutAction, SIGNAL(triggered()), this, SLOT(ShowAboutDialog()));
 
   setupStatusBar();
