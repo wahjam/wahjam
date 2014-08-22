@@ -44,29 +44,24 @@
 #include "common/njmisc.h"
 #include "common/UserPrivs.h"
 
-MainWindow *MainWindow::instance; /* singleton */
+static MainWindow *mainWindow;
 
 void MainWindow::OnSamplesTrampoline(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate)
 {
-  MainWindow::GetInstance()->OnSamples(inbuf, innch, outbuf, outnch, len, srate);
+  mainWindow->OnSamples(inbuf, innch, outbuf, outnch, len, srate);
 }
 
 int MainWindow::LicenseCallbackTrampoline(int user32, char *licensetext)
 {
   Q_UNUSED(user32);
-  return MainWindow::GetInstance()->LicenseCallback(licensetext);
+  return mainWindow->LicenseCallback(licensetext);
 }
 
 void MainWindow::ChatMessageCallbackTrampoline(int user32, NJClient *inst, char **parms, int nparms)
 {
   Q_UNUSED(user32);
   Q_UNUSED(inst);
-  MainWindow::GetInstance()->ChatMessageCallback(parms, nparms);
-}
-
-MainWindow *MainWindow::GetInstance()
-{
-  return instance;
+  mainWindow->ChatMessageCallback(parms, nparms);
 }
 
 MainWindow::MainWindow(QWidget *parent)
@@ -76,11 +71,11 @@ MainWindow::MainWindow(QWidget *parent)
   /* Since the ninjam callbacks do not pass a void* opaque argument we rely on
    * a global variable.
    */
-  if (MainWindow::instance) {
+  if (mainWindow) {
     qFatal("MainWindow can only be instantiated once!");
     abort();
   }
-  MainWindow::instance = this;
+  mainWindow = this;
 
   client.config_savelocalaudio = -1;
   client.LicenseAgreementCallback = LicenseCallbackTrampoline;
@@ -267,6 +262,8 @@ MainWindow::~MainWindow()
 
   settings->setValue("main/enableXmit", xmitButton->isChecked());
   settings->setValue("main/enableMetronome", metronomeButton->isChecked());
+
+  mainWindow = NULL;
 }
 
 void MainWindow::setupStatusBar()
