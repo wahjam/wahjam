@@ -53,8 +53,6 @@ public:
 
   void Connect(const QString &host, const QString &user, const QString &pass);
 
-  static MainWindow *GetInstance();
-
 signals:
   void Connecting();
   void Connected();
@@ -90,8 +88,6 @@ private slots:
   void SettingsDialogClosed();
 
 private:
-  static MainWindow *instance;
-
   NJClient client;
   QUrl jammrApiUrl;
   QString jammrAuthToken;
