@@ -30,6 +30,7 @@
 #include <QStateMachine>
 #include <QState>
 #include <QNetworkAccessManager>
+#include <QMenuBar>
 
 #include "qtclient.h"
 #include "ChannelTreeWidget.h"
@@ -104,6 +105,7 @@ private:
   ChannelTreeWidget *channelTree;
   QAction *connectAction;
   QAction *disconnectAction;
+  QMenuBar *globalMenuBar;
   QMenu *voteMenu;
   QMenu *adminMenu;
   QAction *adminTopicAction;

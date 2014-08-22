@@ -20,7 +20,6 @@
 #include <QMessageBox>
 #include <QVBoxLayout>
 #include <QSplitter>
-#include <QMenuBar>
 #include <QMenu>
 #include <QStatusBar>
 #include <QDateTime>
@@ -66,7 +65,7 @@ void MainWindow::ChatMessageCallbackTrampoline(int user32, NJClient *inst, char 
 
 MainWindow::MainWindow(QWidget *parent)
   : QMainWindow(parent), audio(NULL),
-    vstMidiInputQueue(128)
+    vstMidiInputQueue(128), globalMenuBar(NULL)
 {
   /* Since the ninjam callbacks do not pass a void* opaque argument we rely on
    * a global variable.
@@ -109,7 +108,14 @@ MainWindow::MainWindow(QWidget *parent)
   setupPortAudioSettingsPage();
   setupPortMidiSettingsPage();
 
-  QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
+#ifdef Q_OS_MAC
+  /* Mac applications use a global menu not associated with a particular window */
+  QMenuBar *theMenuBar = globalMenuBar = new QMenuBar;
+#else
+  QMenuBar *theMenuBar = menuBar();
+#endif
+
+  QMenu *fileMenu = theMenuBar->addMenu(tr("&File"));
   connectAction = fileMenu->addAction(tr("&Connect..."));
   disconnectAction = fileMenu->addAction(tr("&Disconnect"));
   QAction *settingsAction = fileMenu->addAction(tr("&Settings..."));
@@ -120,13 +126,13 @@ MainWindow::MainWindow(QWidget *parent)
   connect(settingsAction, SIGNAL(triggered()), settingsDialog, SLOT(show()));
   connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
 
-  voteMenu = menuBar()->addMenu(tr("&Vote"));
+  voteMenu = theMenuBar->addMenu(tr("&Vote"));
   QAction *voteBPMAction = voteMenu->addAction(tr("BPM"));
   QAction *voteBPIAction = voteMenu->addAction(tr("BPI"));
   connect(voteBPMAction, SIGNAL(triggered()), this, SLOT(VoteBPMDialog()));
   connect(voteBPIAction, SIGNAL(triggered()), this, SLOT(VoteBPIDialog()));
 
-  adminMenu = menuBar()->addMenu(tr("&Admin"));
+  adminMenu = theMenuBar->addMenu(tr("&Admin"));
   adminTopicAction = adminMenu->addAction(tr("Set topic"));
   adminBPMAction = adminMenu->addAction(tr("Set BPM"));
   adminBPIAction = adminMenu->addAction(tr("Set BPI"));
@@ -142,7 +148,7 @@ MainWindow::MainWindow(QWidget *parent)
   connect(kickMenu, SIGNAL(triggered(QAction *)), this,
           SLOT(KickMenuTriggered(QAction *)));
 
-  QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
+  QMenu *helpMenu = theMenuBar->addMenu(tr("&Help"));
   QAction *logAction = helpMenu->addAction(tr("Show &log"));
   connect(logAction, SIGNAL(triggered()), this, SLOT(ShowLog()));
   helpMenu->addSeparator();
@@ -262,6 +268,8 @@ MainWindow::~MainWindow()
 
   settings->setValue("main/enableXmit", xmitButton->isChecked());
   settings->setValue("main/enableMetronome", metronomeButton->isChecked());
+
+  delete globalMenuBar;
 
   mainWindow = NULL;
 }
