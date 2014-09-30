@@ -517,6 +517,14 @@ static bool parseCliplog(FILE *logfile, UserChannelList localrecs[32],
       }
 
       std::string username = fields[2];
+      if (username.size() < 2 ||
+          username[0] != '"' ||
+          username[username.size() - 1] != '"') {
+        printf("user line has invalid username\n");
+        return false;
+      }
+      username = username.substr(1, username.size() - 2);
+
       int chidx = atoi(fields[3].c_str());
 
       UserChannelValueRec *ucvr = new UserChannelValueRec;
@@ -604,7 +612,7 @@ int main(int argc, char **argv)
   for (x= 0; x < curintrecs.size(); x ++)
   {
     char chname[4096];
-    sprintf(chname, "%s_%02d", curintrecs[x]->user.c_str(), x);
+    snprintf(chname, sizeof(chname), "%s_%02d", curintrecs[x]->user.c_str(), x);
     char *p=chname;
     while (*p)
     {
