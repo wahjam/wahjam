@@ -1,6 +1,7 @@
 /*
     NINJAM ClipLogCvt - cliplogcvt.cpp
     Copyright (C) 2005 Cockos Incorporated
+    Copyright (C) 2014 Stefan Hajnoczi <stefanha@gmail.com>
 
     NINJAM is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
