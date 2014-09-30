@@ -256,8 +256,8 @@ bool resolveFile(const char *name, std::string &outpath, const char *path)
 
   const char *exts[] = {".ogg", ".OGG"};
   std::string fnfind;
-  int x;
-  for (x = 0; x < (int)(sizeof(exts)/sizeof(exts[0])); x ++)
+  size_t x;
+  for (x = 0; x < sizeof(exts)/sizeof(exts[0]); x ++)
   {
     fnfind = path;
     fnfind += DIRCHAR_S;
@@ -291,12 +291,6 @@ bool resolveFile(const char *name, std::string &outpath, const char *path)
   }
   printf("Error resolving guid %s\n",name);
   return false;
-}
-
-void usage(const char *argv)
-{
-   printf("Usage: %s <session_directory>\n", argv[0]);
-   exit(1);
 }
 
 std::string g_concatdir;
@@ -370,7 +364,7 @@ static void transcode(FILE *infile, FILE *outfile, void **resampleState, VorbisE
       abuf.resample(*resampleState, factor, drainResampler);
     }
 
-    if (abuf.getFrames() > framesRemaining) {
+    if ((uint64_t)abuf.getFrames() > framesRemaining) {
       encoder->Encode(abuf.getSamples(), framesRemaining);
       framesRemaining = 0;
     } else {
@@ -463,8 +457,9 @@ static bool parseCliplog(FILE *logfile, UserChannelList localrecs[32],
   {
     char buf[4096];
     buf[0] = '\0';
-    fgets(buf, sizeof(buf), logfile);
-    if (!buf[0]) break;
+    if (!fgets(buf, sizeof(buf), logfile) || !buf[0]) {
+      break;
+    }
     if (buf[strlen(buf) - 1] == '\n') {
       buf[strlen(buf) - 1] = '\0';
     }
@@ -486,10 +481,8 @@ static bool parseCliplog(FILE *logfile, UserChannelList localrecs[32],
 
       cur_position += cur_lenblock;
 
-      int idx = 0;
       double bpm = 0.0;
       int bpi = 0;
-      idx = atoi(fields[1].c_str());
       bpm = atof(fields[2].c_str());
       bpi = atoi(fields[3].c_str());
 
@@ -532,7 +525,7 @@ static bool parseCliplog(FILE *logfile, UserChannelList localrecs[32],
       ucvr->position = cur_position;
       ucvr->length = cur_lenblock;
 
-      int x;
+      size_t x;
       for (x = 0; x < curintrecs.size(); x ++)
       {
         if (!strcasecmp(curintrecs[x]->user.c_str(), username.c_str()) &&
@@ -601,18 +594,18 @@ int main(int argc, char **argv)
   mkdir(g_concatdir.c_str(), 0755);
 
   int track_id=0;
-  int x;
-  for (x= 0; x < (int)(sizeof(localrecs)/sizeof(localrecs[0])); x ++)
+  size_t x;
+  for (x= 0; x < sizeof(localrecs)/sizeof(localrecs[0]); x ++)
   {
     char chname[512];
-    sprintf(chname,"local_%02d",x);
+    sprintf(chname,"local_%02zu",x);
     WriteOutTrack(chname,localrecs+x, &track_id, argv[1]);
 
   }
   for (x= 0; x < curintrecs.size(); x ++)
   {
     char chname[4096];
-    snprintf(chname, sizeof(chname), "%s_%02d", curintrecs[x]->user.c_str(), x);
+    snprintf(chname, sizeof(chname), "%s_%02zu", curintrecs[x]->user.c_str(), x);
     char *p=chname;
     while (*p)
     {
