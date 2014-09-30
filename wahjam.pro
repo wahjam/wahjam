@@ -1,6 +1,7 @@
 TEMPLATE = subdirs
 SUBDIRS = common \
           qtclient \
-	  server
+	  server \
+	  cliplogcvt
 qtclient.depends = common
 server.depends = common
