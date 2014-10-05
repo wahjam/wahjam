@@ -362,9 +362,9 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
   QString outputDevice = settings->value("audio/outputDevice").toString();
   double sampleRate = settings->value("audio/sampleRate").toDouble();
   double latency = settings->value("audio/latency").toDouble();
-  audio = create_audioStreamer_PortAudio(hostAPI.toLocal8Bit().data(),
-                                         inputDevice.toLocal8Bit().data(),
-                                         outputDevice.toLocal8Bit().data(),
+  audio = create_audioStreamer_PortAudio(hostAPI.toUtf8().data(),
+                                         inputDevice.toUtf8().data(),
+                                         outputDevice.toUtf8().data(),
                                          sampleRate, latency,
                                          OnSamplesTrampoline);
   if (!audio)
