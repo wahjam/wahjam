@@ -85,7 +85,7 @@ void PortAudioSettingsPage::populateHostAPIList()
     if (hostAPIInfo->deviceCount <= 0) {
       continue;
     }
-    QString name = QString::fromLocal8Bit(hostAPIInfo->name);
+    QString name = QString::fromUtf8(hostAPIInfo->name);
     hostAPIList->addItem(name, i);
   }
 }
@@ -158,7 +158,7 @@ void PortAudioSettingsPage::populateDeviceList()
   for (i = 0; i < hostAPIInfo->deviceCount; i++) {
     PaDeviceIndex devIndex = Pa_HostApiDeviceIndexToDeviceIndex(apiIndex, i);
     const PaDeviceInfo *devInfo = Pa_GetDeviceInfo(devIndex);
-    QString name = QString::fromLocal8Bit(devInfo->name);
+    QString name = QString::fromUtf8(devInfo->name);
 
     if (devInfo->maxInputChannels > 0) {
       inputDeviceList->addItem(name, devIndex);
