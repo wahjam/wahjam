@@ -257,6 +257,14 @@ static const PaDeviceInfo *findDeviceInfo(PaHostApiIndex hostAPI, const char *na
     deviceIndex = isInput ? hostAPIInfo->defaultInputDevice :
                             hostAPIInfo->defaultOutputDevice;
     deviceInfo = Pa_GetDeviceInfo(deviceIndex);
+    if (deviceInfo) {
+      qDebug("Unable to find %s device \"%s\", falling back to \"%s\" (%d)",
+             isInput ? "input" : "output",
+             name, deviceInfo->name, deviceIndex);
+    } else {
+      qDebug("Unable to find %s device \"%s\" and no fallback available",
+             isInput ? "input" : "output", name);
+    }
   }
 
   if (index) {
