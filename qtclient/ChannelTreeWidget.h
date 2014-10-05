@@ -32,11 +32,9 @@ public:
 
   /*
    * Remote user and channel updates must be performed by enumerating all users
-   * and their channels each time.  Any users or channels present in the last
-   * update but not in the current update will be removed.
-   *
-   * This interface is an artifact of how NJClient only informs us that user
-   * information has changed, but not what specifically to add/remove/update.
+   * and their channels each time.  This interface is an artifact of how
+   * NJClient only informs us that user information has changed, but not what
+   * specifically to add/remove/update.
    */
   class RemoteChannelUpdater
   {
@@ -44,15 +42,11 @@ public:
     RemoteChannelUpdater(ChannelTreeWidget *owner);
     void addUser(int useridx, const QString &name);
     void addChannel(int channelidx, const QString &name, bool mute);
-    void commit();
 
   private:
     ChannelTreeWidget *owner;
-    int toplevelidx;
-    int childidx;
+    QTreeWidgetItem *user;
     int useridx;
-
-    void prunePreviousUser();
   };
 
 signals:
@@ -63,7 +57,8 @@ private slots:
 
 private:
   QTreeWidgetItem *addRootItem(const QString &text);
-  QTreeWidgetItem *addChannelItem(QTreeWidgetItem *parent, const QString &text);
+  void addChannelItem(QTreeWidgetItem *parent, const QString &text,
+                      int useridx, int channelidx, bool mute);
 };
 
 #endif /* _CHANNELTREEWIDGET_H */

@@ -615,8 +615,6 @@ void MainWindow::UserInfoChanged()
       updater.addChannel(channelidx, QString::fromUtf8(name), mute);
     }
   }
-
-  updater.commit();
 }
 
 void MainWindow::OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate)
