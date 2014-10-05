@@ -223,7 +223,7 @@ static const PaHostApiInfo *findHostAPIInfo(const char *hostAPI, PaHostApiIndex 
 }
 
 static const PaDeviceInfo *findDeviceInfo(PaHostApiIndex hostAPI, const char *name,
-                                          PaDeviceIndex *index)
+                                          PaDeviceIndex *index, bool isInput)
 {
   const PaHostApiInfo *hostAPIInfo = Pa_GetHostApiInfo(hostAPI);
   if (!hostAPIInfo) {
@@ -240,12 +240,22 @@ static const PaDeviceInfo *findDeviceInfo(PaHostApiIndex hostAPI, const char *na
     }
 
     deviceInfo = Pa_GetDeviceInfo(deviceIndex);
-    if (deviceInfo && strcmp(name, deviceInfo->name) == 0) {
+    if (!deviceInfo) {
+      continue;
+    }
+    if (isInput && deviceInfo->maxInputChannels == 0) {
+      continue;
+    }
+    if (!isInput && deviceInfo->maxOutputChannels == 0) {
+      continue;
+    }
+    if (strcmp(deviceInfo->name, name) == 0) {
       break;
     }
   }
   if (i >= hostAPIInfo->deviceCount) {
-    deviceIndex = hostAPIInfo->defaultInputDevice;
+    deviceIndex = isInput ? hostAPIInfo->defaultInputDevice :
+                            hostAPIInfo->defaultOutputDevice;
     deviceInfo = Pa_GetDeviceInfo(deviceIndex);
   }
 
@@ -265,13 +275,13 @@ static bool setupParameters(const char *hostAPI, const char *inputDevice,
   }
 
   const PaDeviceInfo *inputDeviceInfo = findDeviceInfo(hostAPIIndex,
-      inputDevice, &inputParams->device);
+      inputDevice, &inputParams->device, true);
   if (!inputDeviceInfo) {
     return false;
   }
 
   const PaDeviceInfo *outputDeviceInfo = findDeviceInfo(hostAPIIndex,
-      outputDevice, &outputParams->device);
+      outputDevice, &outputParams->device, false);
   if (!outputDeviceInfo) {
     return false;
   }
