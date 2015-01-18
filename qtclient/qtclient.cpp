@@ -18,6 +18,7 @@
 
 #include <QStandardPaths>
 #include <QDir>
+#include <QCoreApplication>
 #include <QApplication>
 #include <QMessageBox>
 #include <QTextCodec>
@@ -42,12 +43,13 @@ int main(int argc, char *argv[])
   }
 
   /* These are used by QSettings persistent settings */
-  app.setOrganizationName(ORGNAME);
-  app.setOrganizationDomain(ORGDOMAIN);
-  app.setApplicationName(APPNAME);
+  QCoreApplication::setOrganizationName(ORGNAME);
+  QCoreApplication::setOrganizationDomain(ORGDOMAIN);
+  QCoreApplication::setApplicationName(APPNAME);
 
   /* Instantiate QSettings now that application information has been set */
-  settings = new QSettings(&app);
+  QSettings appSettings;
+  settings = &appSettings;
 
   /* Set up log file */
   if (settings->contains("app/logFile")) {
