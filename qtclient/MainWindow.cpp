@@ -176,6 +176,7 @@ MainWindow::MainWindow(QWidget *parent)
                       this, SLOT(ChatLinkClicked(const QUrl&)));
 
   chatInput = new QLineEdit(this);
+  chatInput->setPlaceholderText("Enter your chat message here...");
   chatInput->connect(chatInput, SIGNAL(returnPressed()),
                      this, SLOT(ChatInputReturnPressed()));
 
