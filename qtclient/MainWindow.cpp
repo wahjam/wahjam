@@ -167,7 +167,6 @@ MainWindow::MainWindow(QWidget *parent)
   connect(aboutAction, SIGNAL(triggered()), this, SLOT(ShowAboutDialog()));
 
   setupStatusBar();
-  client.config_metronome_mute = !metronomeButton->isChecked();
 
   setWindowTitle(tr(APPNAME));
 
@@ -295,18 +294,20 @@ void MainWindow::setupStatusBar()
   xmitButton->setText("Send");
   xmitButton->setCheckable(true);
   xmitButton->setToolTip(tr("Send audio to other users"));
+  xmitButton->setChecked(enableXmit);
+  XmitToggled(enableXmit);
   connect(xmitButton, SIGNAL(toggled(bool)),
           this, SLOT(XmitToggled(bool)));
-  xmitButton->setChecked(enableXmit);
   statusBar()->addPermanentWidget(xmitButton);
 
   metronomeButton = new QToolButton(this);
   metronomeButton->setText("Metronome");
   metronomeButton->setCheckable(true);
   metronomeButton->setToolTip(tr("Enable metronome"));
+  metronomeButton->setChecked(enableMetronome);
+  MetronomeToggled(enableMetronome);
   connect(metronomeButton, SIGNAL(toggled(bool)),
           this, SLOT(MetronomeToggled(bool)));
-  metronomeButton->setChecked(enableMetronome);
   statusBar()->addPermanentWidget(metronomeButton);
 
   bpmLabel = new QLabel(this);
