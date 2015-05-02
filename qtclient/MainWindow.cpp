@@ -166,8 +166,6 @@ MainWindow::MainWindow(QWidget *parent)
   aboutAction->setMenuRole(QAction::AboutRole);
   connect(aboutAction, SIGNAL(triggered()), this, SLOT(ShowAboutDialog()));
 
-  setupStatusBar();
-
   setWindowTitle(tr(APPNAME));
 
   chatOutput = new ChatOutput(this);
@@ -205,6 +203,7 @@ MainWindow::MainWindow(QWidget *parent)
   splitter->setContentsMargins(5, 5, 5, 5);
 
   setCentralWidget(splitter);
+  setupStatusBar();
 
   BeatsPerIntervalChanged(0);
   BeatsPerMinuteChanged(0);
@@ -893,6 +892,7 @@ void MainWindow::XmitToggled(bool checked)
 void MainWindow::MetronomeToggled(bool checked)
 {
   client.config_metronome_mute = !checked;
+  metronomeBar->setVisible(checked);
 }
 
 void MainWindow::AdminTopicDialog()
