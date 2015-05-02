@@ -101,10 +101,12 @@ int PortAudioStreamer::streamCallback(const void *input, void *output,
 
   splproc(inbuf, 1, outbuf, 1, frameCount, info->sampleRate);
 
-  /* Mix up to stereo */
-  if (m_outnch == 2) {
-    for (unsigned long i = 0; i < frameCount; i++) {
-      outbuf[0][i] = outbuf[1][i] = outbuf[0][i] * 0.5;
+  /* Mix up to multi-channel audio */
+  if (m_outnch > 1) {
+    for (int channel = 1; channel < m_outnch; channel++) {
+      for (unsigned long i = 0; i < frameCount; i++) {
+        outbuf[channel][i] = outbuf[0][i];
+      }
     }
   }
 
@@ -300,8 +302,12 @@ static bool setupParameters(const char *hostAPI, const char *inputDevice,
   outputParams->sampleFormat = sampleFormat;
 
   /* TODO support user-defined channel configuration */
+  if (inputDeviceInfo->maxInputChannels == 0 ||
+      outputDeviceInfo->maxOutputChannels == 0) {
+    return false;
+  }
   inputParams->channelCount = inputDeviceInfo->maxInputChannels > 1 ? 2 : 1;
-  outputParams->channelCount = outputDeviceInfo->maxOutputChannels > 1 ? 2 : 1;
+  outputParams->channelCount = outputDeviceInfo->maxOutputChannels;
 
   inputParams->suggestedLatency = latency;
   outputParams->suggestedLatency = latency;

@@ -227,8 +227,8 @@ void PortAudioSettingsPage::populateSampleRateList()
   outputParams.device = outputDeviceList->itemData(outputDeviceList->currentIndex()).toInt(NULL);
 
   const PaDeviceInfo *outputDeviceInfo = Pa_GetDeviceInfo(outputParams.device);
-  if (outputDeviceInfo && outputDeviceInfo->maxOutputChannels > 1) {
-    outputParams.channelCount = 2;
+  if (outputDeviceInfo) {
+    outputParams.channelCount = outputDeviceInfo->maxOutputChannels;
   } else {
     outputParams.channelCount = 1;
   }
