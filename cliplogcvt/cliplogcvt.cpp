@@ -176,14 +176,29 @@ void AudioBuffer::resample(void *resampleState, double factor, bool drain)
 {
   assert(channels == 1);
 
-  int newFrames = (frames + 1) * factor * 2; /* double size just to make sure */
-  float *newSamples = new float[newFrames];
+  int newFrames = (frames + 1) * factor + 1; /* round up */
+  float *newSamples = NULL;
 
   int inFrames = 0;
   int outFrames = 0;
-  while (inFrames < frames) {
+  while (inFrames < frames || outFrames == newFrames) {
     int inUsed = 0;
     int ret;
+
+    /* Resize output buffer.  When draining, samples may be generated beyond
+     * the original size we anticipated.
+     */
+    if (!newSamples || outFrames == newFrames) {
+      float *tmp = newSamples;
+
+      newFrames *= 2;
+      newSamples = new float[newFrames];
+
+      if (tmp) {
+        memcpy(newSamples, tmp, newFrames / 2 * sizeof(newSamples[0]));
+        delete [] tmp;
+      }
+    }
 
     ret = resample_process(resampleState, factor,
                            &samples[inFrames], frames - inFrames,
@@ -191,12 +206,6 @@ void AudioBuffer::resample(void *resampleState, double factor, bool drain)
                            &newSamples[outFrames], newFrames - outFrames);
     inFrames += inUsed;
     outFrames += ret;
-
-    /* We should never exhaust the buffer since we double-sized it */
-    if (outFrames >= newFrames) {
-      fprintf(stderr, "resample exhausted double-sized output buffer!\n");
-      exit(1);
-    }
   }
 
   /* Cap buffer size */
