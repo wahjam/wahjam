@@ -210,20 +210,6 @@ void User_Connection::SendConfigChangeNotify(int bpm, int bpi)
 
 int User_Connection::OnRunAuth()
 {
-  {
-    // fix any invalid characters in username
-    char *p=m_lookup->username.Get();
-    int l=MAX_NICK_LEN;
-    while (*p)
-    {
-      char c=*p;
-      if (!isalnum(c) && c != '-' && c != '_' && c != '@' && c != '.') c='_';
-      *p++=c;
-
-      if (!--l) *p=0;
-    }
-  }
-
   /* Update logging prefix with the attempted username */
   name.append(QString(" [%1]").arg(m_lookup->username.Get()));
 
@@ -431,6 +417,21 @@ void User_Connection::processMessage(Net_Message *msg)
     if (!err_st) err_st = ( authrep.client_version < ver_min ||
                             authrep.client_version > ver_max ) ? 2 : 0;
     if (!err_st) err_st = ( group->m_licensetext.Get()[0] && !(authrep.client_caps & 1) ) ? 3 : 0;
+
+    if (!err_st) {
+      // Reject invalid usernames
+      if (strlen(authrep.username) >= MAX_NICK_LEN) {
+        err_st = 1;
+      } else {
+        char *p;
+        for (p = authrep.username; *p; p++) {
+          if (!isalnum(*p) && !strchr("@.+-_", *p)) {
+            err_st = 1;
+            break;
+          }
+        }
+      }
+    }
 
     if (err_st)
     {
