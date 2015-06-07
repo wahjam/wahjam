@@ -851,6 +851,7 @@ void User_Group::SetLogDir(const char *path) // NULL to not log
   QString dirName(logdir.dirName());
   logdir.cdUp();
   logdir.mkdir(dirName);
+  logdir.cd(dirName);
 
   m_logdir.Set(path);
   m_logdir.Append("/");
