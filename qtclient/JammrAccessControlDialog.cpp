@@ -160,7 +160,7 @@ static bool isUsernameValid(const QString &s)
   if (s.isEmpty() || s.size() > 30) {
     return false;
   }
-  return !s.contains(QRegExp("[^a-zA-Z@+\\.\\-_]"));
+  return !s.contains(QRegExp("[^a-zA-Z0-9@\\.+\\-_]"));
 }
 
 void JammrAccessControlDialog::addUsername()
