@@ -40,6 +40,7 @@ JammrConnectDialog::JammrConnectDialog(QNetworkAccessManager *netManager_,
           this, SLOT(onServerSelected(const QString &)));
 
   connectButton = new QPushButton(tr("&Connect"));
+  connectButton->setEnabled(false);
   connect(connectButton, SIGNAL(clicked()), this, SLOT(accept()));
 
   newJamButton = new QPushButton(tr("&New jam"));
@@ -68,6 +69,7 @@ QString JammrConnectDialog::host() const
 
 void JammrConnectDialog::setHost(const QString &host)
 {
+  connectButton->setEnabled(!host.isEmpty());
   selectedHost = host;
 }
 
