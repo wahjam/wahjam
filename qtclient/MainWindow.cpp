@@ -723,8 +723,10 @@ void MainWindow::BeatsPerIntervalChanged(int bpi)
 
 void MainWindow::ChatMessageCallback(char **charparms, int nparms)
 {
-  QString parms[nparms];
+  QString *parms;
   int i;
+
+  parms = new QString[nparms];
 
   for (i = 0; i < nparms; i++) {
     if (charparms[i]) {
@@ -788,6 +790,8 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
       chatOutput->addLine(QString("[%1]").arg(i), parms[i]);
     }
   }
+
+  delete [] parms;
 }
 
 void MainWindow::ChatLinkClicked(const QUrl &url)

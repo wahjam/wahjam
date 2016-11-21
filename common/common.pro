@@ -3,12 +3,9 @@ CONFIG += staticlib
 QT += network
 QT -= gui
 
-# We need the include path from pkgconfig so headers are found
-CONFIG += link_pkgconfig
-PKGCONFIG += ogg vorbis vorbisenc portaudio-2.0
-
+# For third-party library headers from Homebrew
 mac {
-       INCLUDEPATH += /usr/local/Cellar/portmidi/217/include
+       INCLUDEPATH += /usr/local/include
 }
 
 QMAKE_CXXFLAGS += -Wno-write-strings

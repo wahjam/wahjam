@@ -167,15 +167,19 @@ void User_Connection::Send(Net_Message *msg, bool deleteAfterSend)
 void User_Connection::SendChatMessage(const QStringList &list)
 {
   mpb_chat_message newmsg;
-  QByteArray parmsUtf8[list.size()]; // holds string memory until method returns
 
-  Q_ASSERT(list.size() <= sizeof(newmsg.parms) / sizeof(newmsg.parms[0]));
+  Q_ASSERT((size_t)list.size() <= sizeof(newmsg.parms) / sizeof(newmsg.parms[0]));
+
+  QByteArray *parmsUtf8 = new QByteArray[list.size()];
 
   for (int i = 0; i < list.size(); i++) {
     parmsUtf8[i] = list.at(i).toUtf8();
     newmsg.parms[i] = parmsUtf8[i].data();
   }
+
   Send(newmsg.build());
+
+  delete [] parmsUtf8;
 }
 
 User_Connection::~User_Connection()
