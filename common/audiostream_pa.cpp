@@ -337,7 +337,7 @@ audioStreamer *create_audioStreamer_PortAudio(const char *hostAPI,
 
 static void logPortAudioInfo()
 {
-  qDebug(Pa_GetVersionText());
+  qDebug("%s", Pa_GetVersionText());
 
   PaHostApiIndex api = 0;
   const PaHostApiInfo *apiInfo;
