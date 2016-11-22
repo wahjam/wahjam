@@ -40,6 +40,7 @@
 #include "PortAudioSettingsPage.h"
 #include "EffectProcessor.h"
 #include "EffectSettingsPage.h"
+#include "screensleep.h"
 #include "common/njmisc.h"
 #include "common/UserPrivs.h"
 
@@ -417,6 +418,8 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
 
   setWindowTitle(tr(APPNAME " - %1").arg(host));
 
+  screenPreventSleep();
+
   client.Connect(host.toLatin1().data(),
                  user.toUtf8().data(),
                  pass.toUtf8().data());
@@ -444,6 +447,7 @@ void MainWindow::Disconnect()
     chatOutput->addInfoMessage(tr("Disconnected"));
   }
 
+  screenAllowSleep();
   setWindowTitle(tr(APPNAME));
 
   BeatsPerMinuteChanged(0);

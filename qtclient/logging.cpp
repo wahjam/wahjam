@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <QDateTime>
 #include <QSysInfo>
+#include <QLoggingCategory>
 
 #include "common/njmisc.h"
 
@@ -59,70 +60,7 @@ static void logSystemInformation()
   qDebug("CPU architecture %d-bit %s", QSysInfo::WordSize,
          QSysInfo::ByteOrder == QSysInfo::LittleEndian ?
          "little-endian" : "big-endian");
-
-#if defined(Q_OS_WIN)
-  switch (QSysInfo::windowsVersion()) {
-  case QSysInfo::WV_2000:
-    qDebug("Windows 2000");
-    break;
-  case QSysInfo::WV_XP:
-    qDebug("Windows XP");
-    break;
-  case QSysInfo::WV_2003:
-    qDebug("Windows 2003");
-    break;
-  case QSysInfo::WV_VISTA:
-    qDebug("Windows Vista");
-    break;
-  case QSysInfo::WV_WINDOWS7:
-    qDebug("Windows 7");
-    break;
-  default:
-    qDebug("Unsupported or unrecognized Windows version");
-    break;
-  }
-#elif defined(Q_OS_MAC)
-  switch (QSysInfo::MacintoshVersion) {
-  case QSysInfo::MV_10_3:
-    qDebug("Mac OS X 10.3");
-    break;
-  case QSysInfo::MV_10_4:
-    qDebug("Mac OS X 10.4");
-    break;
-  case QSysInfo::MV_10_5:
-    qDebug("Mac OS X 10.5");
-    break;
-  case QSysInfo::MV_10_6:
-    qDebug("Mac OS X 10.6");
-    break;
-  case QSysInfo::MV_10_7:
-    qDebug("Mac OS X 10.7");
-    break;
-  default:
-    qDebug("Unsupported or unrecognized Mac OS version");
-    break;
-  }
-#elif defined(Q_OS_LINUX)
-  {
-    FILE *issuefp = utf8_fopen("/etc/issue", "r");
-    qDebug("Reading /etc/issue...");
-    if (issuefp) {
-      char buf[BUFSIZ];
-      while (fgets(buf, sizeof(buf), issuefp)) {
-        size_t len = strlen(buf);
-        if (len > 0 && buf[len - 1] == '\n') {
-          buf[len - 1] = '\0';
-          len--;
-        }
-        if (len > 0) {
-          qDebug(buf);
-        }
-      }
-      fclose(issuefp);
-    }
-    qDebug("End of /etc/issue");
-  }
-#endif
+  qDebug("OS: %s", QSysInfo::prettyProductName().toUtf8().data());
   qDebug("Qt %s", qVersion());
 }
 
@@ -142,6 +80,7 @@ void logInit(const QString &filename)
   setvbuf(logfp, NULL, _IOLBF, 0); /* use line buffering */
 #endif
 
+  QLoggingCategory::setFilterRules(QStringLiteral("*.debug=true\nqt.*.debug=false"));
   qInstallMessageHandler(logMsgHandler);
 
   qDebug(APPNAME " %s (%s)", VERSION, COMMIT_ID);
