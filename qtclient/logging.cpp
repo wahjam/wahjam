@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <QDateTime>
 #include <QSysInfo>
+#include <QLoggingCategory>
 
 #include "common/njmisc.h"
 
@@ -142,6 +143,7 @@ void logInit(const QString &filename)
   setvbuf(logfp, NULL, _IOLBF, 0); /* use line buffering */
 #endif
 
+  QLoggingCategory::setFilterRules(QStringLiteral("*.debug=true\nqt.*.debug=false"));
   qInstallMessageHandler(logMsgHandler);
 
   qDebug(APPNAME " %s (%s)", VERSION, COMMIT_ID);
