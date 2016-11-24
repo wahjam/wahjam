@@ -690,6 +690,12 @@ void MainWindow::ClientStatusChanged(int newStatus)
 
   case NJClient::NJC_STATUS_OK:
     resetReconnect();
+    chatOutput->addBannerMessage(
+        "Welcome!  Tips for successful jams:\n"
+        "1. Set length of chord progression (in beats) with '!vote bpi NUMBER'\n"
+        "2. Set tempo with '!vote bpm NUMBER' and enable Metronome button if no drums\n"
+        "3. Take turns soloing.  For example 1 minute per person."
+    );
     emit Connected();
     return;
 

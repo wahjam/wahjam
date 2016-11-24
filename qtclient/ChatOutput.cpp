@@ -154,3 +154,7 @@ void ChatOutput::addErrorMessage(const QString &message)
   addLine(tr("[ERROR] "), message);
 }
 
+void ChatOutput::addBannerMessage(const QString &message)
+{
+  addLine(QString(), message);
+}
