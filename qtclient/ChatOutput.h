@@ -41,6 +41,7 @@ public slots:
   void addPrivateMessage(const QString &src, const QString &message);
   void addInfoMessage(const QString &message);
   void addErrorMessage(const QString &message);
+  void addBannerMessage(const QString &message);
 
 private:
   QRegExp autolinkRegexp;
