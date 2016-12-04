@@ -134,7 +134,6 @@ public:
   int GetBPI() { return m_active_bpi; }
   void GetPosition(int *pos, int *length);  // positions in samples
   int GetLoopCount() { return m_loopcnt; }  
-  unsigned int GetSessionPosition(); // returns milliseconds
   int GetSampleRate() { return m_srate; }
 
   int GetNumUsers() { return m_remoteusers.GetSize(); }
@@ -243,8 +242,6 @@ protected:
   int m_audio_enable;
   int m_srate;
   int m_issoloactive;
-
-  unsigned int m_session_pos_ms,m_session_pos_samples; // samples just keeps track of any samples lost to precision errors
 
   int m_loopcnt;
   int m_active_bpm, m_active_bpi;

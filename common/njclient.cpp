@@ -355,8 +355,6 @@ NJClient::NJClient(QObject *parent)
 
   _reinit();
 
-  m_session_pos_ms=m_session_pos_samples=0;
-
   QTimer *tickTimer = new QTimer(this);
   tickTimer->setInterval(20 /* milliseconds */);
   connect(tickTimer, SIGNAL(timeout()), this, SLOT(tick()));
@@ -489,14 +487,6 @@ void NJClient::GetPosition(int *pos, int *length)  // positions in samples
   m_misc_cs.Leave();
 }
 
-unsigned int NJClient::GetSessionPosition()// returns milliseconds
-{
-  unsigned int a=m_session_pos_ms;
-  if (m_srate)
-    a+=(m_session_pos_samples*1000)/m_srate;
-  return a;
-}
-
 // Called from the audio thread
 void NJClient::updateInterval(int nsamples)
 {
@@ -507,7 +497,7 @@ void NJClient::updateInterval(int nsamples)
     return;
   }
 
-  // Lock so GetSessionPosition() sees a consistent update when interval length
+  // Lock so GetPosition() sees a consistent update when interval length
   // and interval position are set together.
   m_misc_cs.Enter();
   if (m_beatinfo_updated)
@@ -555,24 +545,6 @@ void NJClient::AudioProc(float **inbuf, int innch, float **outbuf, int outnch, i
   {
     process_samples(inbuf,innch,outbuf,outnch,len,srate,0,1);
     return;
-  }
-
-  if (srate>0)
-  {
-    unsigned int spl=m_session_pos_samples;
-    unsigned int sec=m_session_pos_ms;
-
-    spl += len;
-    if (spl >= (unsigned int)srate)
-    {
-      sec += (spl/srate)*1000;
-      spl %= srate;
-    }
-    // writing these both like this reduces the chance that the 
-    // main thread will read them and get a mix. still possible, tho,
-    // but super unlikely
-    m_session_pos_samples=spl;
-    m_session_pos_ms=sec;
   }
 
   int offs=0;
@@ -643,8 +615,6 @@ void NJClient::Disconnect()
 void NJClient::Connect(char *host, char *user, char *pass)
 {
   Disconnect();
-
-  m_session_pos_ms=m_session_pos_samples=0;
 
   m_host.Set(host);
   m_user.Set(user);
