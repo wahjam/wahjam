@@ -338,8 +338,6 @@ NJClient::NJClient(QObject *parent)
   LicenseAgreementCallback=0;
   ChatMessage_Callback=0;
   ChatMessage_User32=0;
-  ChannelMixer=0;
-  ChannelMixer_User32=0;
 
   waveWrite=0;
 #ifndef NJCLIENT_NO_XMIT_SUPPORT
@@ -1325,16 +1323,12 @@ void NJClient::process_samples(float **inbuf, int innch, float **outbuf, int out
     float *src=NULL;
     if (sc >= 0 && sc < innch) src=inbuf[sc]+offset;
 
-    if (lc->cbf || !src || ChannelMixer)
+    if (lc->cbf || !src)
     {
       int bytelen=len*(int)sizeof(float);
       if (tmpblock.GetSize() < bytelen) tmpblock.Resize(bytelen);
 
-      if (ChannelMixer && ChannelMixer(ChannelMixer_User32,inbuf,offset,innch,sc,(float*)tmpblock.Get(),len))
-      {
-        // channelmixer succeeded
-      }
-      else if (src) memcpy(tmpblock.Get(),src,bytelen);
+      if (src) memcpy(tmpblock.Get(),src,bytelen);
       else memset(tmpblock.Get(),0,bytelen);
 
       src=(float* )tmpblock.Get();

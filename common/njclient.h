@@ -193,12 +193,6 @@ public:
   void (*ChatMessage_Callback)(int user32, NJClient *inst, char **parms, int nparms); 
   int ChatMessage_User32;
 
-
-  // set these if you want to mix multiple channels into the output channel
-  // return 0 if you want the default behavior
-  int (*ChannelMixer)(int user32, float **inbuf, int in_offset, int innch, int chidx, float *outbuf, int len);
-  int ChannelMixer_User32;
-
 signals:
   void userInfoChanged();
   void statusChanged(int newStatus);
