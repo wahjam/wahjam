@@ -68,6 +68,7 @@ private:
   int localChannel;
 
   size_t blockSize;
+  int lastTempo; /* used for signalling BPM changes */
 
   /* Plugins may have differing numbers of inputs/outputs, we keep around
    * scratch buffers that we fill with silence.
