@@ -2194,7 +2194,7 @@ void NJClient::SetOggOutFile(FILE *fp, int srate, int nch, int bitrate)
 void NJClient::sendMidiMessage(PmMessage msg)
 {
   if (midiOutput) {
-    PmEvent pmEvent = {0};
+    PmEvent pmEvent = {};
     pmEvent.message = msg;
     midiOutput->write(&pmEvent, 1);
   }
