@@ -43,6 +43,7 @@
 #include "PortAudioSettingsPage.h"
 #include "PortMidiSettingsPage.h"
 #include "PortMidiStreamer.h"
+#include "UISettingsPage.h"
 
 class MainWindow : public QMainWindow
 {
@@ -99,6 +100,7 @@ private:
   SettingsDialog *settingsDialog;
   PortAudioSettingsPage *portAudioSettingsPage;
   PortMidiSettingsPage *portMidiSettingsPage;
+  UISettingsPage *uiSettingsPage;
   QNetworkAccessManager *netManager;
   ChatOutput *chatOutput;
   QLineEdit *chatInput;
@@ -125,15 +127,18 @@ private:
   QTimer *reconnectTimer;
   int reconnectTries;
   int reconnectMilliseconds;
+  int defaultChatInputFontSize;
 
   void setupChannelTree();
   void setupStatusBar();
   void setupPortAudioSettingsPage();
   void setupPortMidiSettingsPage();
+  void setupUISettingsPage();
   bool setupWorkDir();
   void cleanupWorkDir(const QString &path);
   bool tryReconnect();
   void resetReconnect();
+  void updateChatFontSize(int size);
   void ShowNINJAMConnectDialog();
   void ShowJammrConnectDialog();
   void OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);

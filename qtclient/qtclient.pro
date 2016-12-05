@@ -104,6 +104,7 @@ HEADERS += VSTPlugin.h
 HEADERS += EffectProcessor.h
 HEADERS += PortMidiStreamer.h
 HEADERS += screensleep.h
+HEADERS += UISettingsPage.h
 
 SOURCES += qtclient.cpp
 SOURCES += MainWindow.cpp
@@ -136,3 +137,4 @@ win32 {
 } else {
 	SOURCES += screensleep_stub.cpp
 }
+SOURCES += UISettingsPage.cpp
