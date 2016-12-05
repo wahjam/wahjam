@@ -29,20 +29,36 @@ ChatOutput::ChatOutput(QWidget *parent)
   setReadOnly(true);
   setOpenLinks(false);
   setUndoRedoEnabled(false);
+  setFontSize(0);
 
+  cursor = textCursor();
+
+  Q_ASSERT(autolinkRegexp.isValid());
+}
+
+void ChatOutput::setFontSize(int size)
+{
+  normalFormat = QTextCharFormat();
   normalFormat.setFontWeight(QFont::Normal);
+  if (size) {
+    normalFormat.setFontPointSize(size);
+  }
 
+  boldFormat = QTextCharFormat();
   boldFormat.setFontWeight(QFont::Bold);
+  if (size) {
+    boldFormat.setFontPointSize(size);
+  }
 
+  linkFormat = QTextCharFormat();
   linkFormat.setAnchor(true);
   linkFormat.setAnchorHref("");
   linkFormat.setFontWeight(QFont::Bold);
   linkFormat.setForeground(palette().link());
   linkFormat.setUnderlineStyle(QTextCharFormat::SingleUnderline);
-
-  cursor = textCursor();
-
-  Q_ASSERT(autolinkRegexp.isValid());
+  if (size) {
+    linkFormat.setFontPointSize(size);
+  }
 }
 
 void ChatOutput::addText(const QString &text, const QTextCharFormat &format)
