@@ -148,7 +148,8 @@ private:
   FILE *fp;
 };
 
-
+/* Sentinel WDL_HeapBuf for silent intervals */
+static WDL_HeapBuf silence_buf;
 
 class BufferQueue
 {
@@ -173,7 +174,7 @@ class BufferQueue
       WDL_HeapBuf **bufs=(WDL_HeapBuf **)m_samplequeue.Get();
       if (bufs) while (l--)
       {
-        if ((uintptr_t)*bufs != 0 && (uintptr_t)*bufs != -1) delete *bufs;
+        if (*bufs && *bufs != &silence_buf) delete *bufs;
         bufs++;
       }
       m_samplequeue.Advance(m_samplequeue.Available());
@@ -1038,13 +1039,13 @@ int NJClient::Run() // nonzero if sleep ok
       wantsleep=0;
       if (u >= m_max_localch)
       {
-        if (p && (uintptr_t)p != -1)
+        if (p && p != &silence_buf)
           lc->m_bq.DisposeBlock(p);
         p=0;
         continue;
       }
 
-      if ((uintptr_t)p == -1)
+      if (p == &silence_buf)
       {
         mpb_client_upload_interval_begin cuib;
         cuib.chidx=lc->channel_idx;
@@ -2104,7 +2105,7 @@ int BufferQueue::GetBlock(WDL_HeapBuf **b) // return 0 if got one, 1 if none ava
 void BufferQueue::DisposeBlock(WDL_HeapBuf *b)
 {
   m_cs.Enter();
-  if (b && (uintptr_t)b != -1) m_emptybufs.Add(b);
+  if (b && b != &silence_buf) m_emptybufs.Add(b);
   m_cs.Leave();
 }
 
@@ -2141,8 +2142,9 @@ void BufferQueue::AddBlock(float *samples, int len, float *samples2)
     memcpy(mybuf->Get(),samples,len*sizeof(float));
     if (samples2)
       memcpy((float*)mybuf->Get()+len,samples2,len*sizeof(float));
+  } else if (len == -1) {
+    mybuf = &silence_buf;
   }
-  else if (len == -1) mybuf=(WDL_HeapBuf *)-1;
 
   m_cs.Enter();
   m_samplequeue.Add(&mybuf,sizeof(mybuf));
