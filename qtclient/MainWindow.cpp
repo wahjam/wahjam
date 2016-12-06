@@ -19,7 +19,6 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QVBoxLayout>
-#include <QSplitter>
 #include <QMenu>
 #include <QStatusBar>
 #include <QDateTime>
@@ -188,7 +187,7 @@ MainWindow::MainWindow(QWidget *parent)
   connect(this, SIGNAL(Disconnected()),
           metronomeBar, SLOT(reset()));
 
-  QSplitter *splitter = new QSplitter(this);
+  splitter = new QSplitter(this);
   QWidget *content = new QWidget;
   QVBoxLayout *layout = new QVBoxLayout;
 

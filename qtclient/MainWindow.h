@@ -31,6 +31,7 @@
 #include <QState>
 #include <QNetworkAccessManager>
 #include <QMenuBar>
+#include <QSplitter>
 
 #include "qtclient.h"
 #include "ChannelTreeWidget.h"
@@ -105,6 +106,7 @@ private:
   ChatOutput *chatOutput;
   QLineEdit *chatInput;
   ChannelTreeWidget *channelTree;
+  QSplitter *splitter;
   QAction *connectAction;
   QAction *disconnectAction;
   QMenuBar *globalMenuBar;
