@@ -26,7 +26,7 @@ enum
 };
 
 ChannelTreeWidget::ChannelTreeWidget(QWidget *parent)
-  : QTreeWidget(parent)
+  : QTreeWidget(parent), defaultFont(font())
 {
   setHeaderLabels(QStringList("Name") << "Mute");
   setRootIsDecorated(false);
@@ -89,4 +89,13 @@ void ChannelTreeWidget::RemoteChannelUpdater::addUser(int useridx_, const QStrin
 void ChannelTreeWidget::RemoteChannelUpdater::addChannel(int channelidx, const QString &name, bool mute)
 {
   owner->addChannelItem(user, name, useridx, channelidx, mute);
+}
+
+void ChannelTreeWidget::setFontSize(int size)
+{
+  QFont font(defaultFont);
+  if (size) {
+    font.setPointSize(size);
+  }
+  setFont(font);
 }

@@ -30,6 +30,8 @@ public:
 
   QSize sizeHint() const;
 
+  void setFontSize(int size);
+
   /*
    * Remote user and channel updates must be performed by enumerating all users
    * and their channels each time.  This interface is an artifact of how
@@ -59,6 +61,7 @@ private:
   QTreeWidgetItem *addRootItem(const QString &text);
   void addChannelItem(QTreeWidgetItem *parent, const QString &text,
                       int useridx, int channelidx, bool mute);
+  QFont defaultFont;
 };
 
 #endif /* _CHANNELTREEWIDGET_H */

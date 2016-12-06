@@ -30,6 +30,8 @@ class ChatOutput : public QTextBrowser
 public:
   ChatOutput(QWidget *parent=0);
 
+  void setFontSize(int size);
+
 public slots:
   void addText(const QString &text, const QTextCharFormat &format);
   void addContent(const QString &content, const QTextCharFormat &format);

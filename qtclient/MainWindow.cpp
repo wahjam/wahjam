@@ -19,7 +19,6 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QVBoxLayout>
-#include <QSplitter>
 #include <QMenu>
 #include <QStatusBar>
 #include <QDateTime>
@@ -40,6 +39,7 @@
 #include "PortAudioSettingsPage.h"
 #include "EffectProcessor.h"
 #include "EffectSettingsPage.h"
+#include "UISettingsPage.h"
 #include "screensleep.h"
 #include "common/njmisc.h"
 #include "common/UserPrivs.h"
@@ -177,6 +177,7 @@ MainWindow::MainWindow(QWidget *parent)
   chatInput->setPlaceholderText("Enter your chat message here...");
   chatInput->connect(chatInput, SIGNAL(returnPressed()),
                      this, SLOT(ChatInputReturnPressed()));
+  defaultChatInputFontSize = chatInput->font().pointSize();
 
   channelTree = new ChannelTreeWidget(this);
   connect(channelTree, SIGNAL(RemoteChannelMuteChanged(int, int, bool)),
@@ -186,7 +187,7 @@ MainWindow::MainWindow(QWidget *parent)
   connect(this, SIGNAL(Disconnected()),
           metronomeBar, SLOT(reset()));
 
-  QSplitter *splitter = new QSplitter(this);
+  splitter = new QSplitter(this);
   QWidget *content = new QWidget;
   QVBoxLayout *layout = new QVBoxLayout;
 
@@ -269,6 +270,11 @@ MainWindow::MainWindow(QWidget *parent)
                                         this);
   settingsDialog->addPage(tr("Effect plugins"),
                           new EffectSettingsPage(effectProcessor));
+  setupUISettingsPage();
+
+  restoreGeometry(settings->value("main/geometry").toByteArray());
+  restoreState(settings->value("main/windowState").toByteArray());
+  splitter->restoreState(settings->value("main/splitterState").toByteArray());
 
   QTimer::singleShot(0, this, SLOT(Startup()));
 }
@@ -283,6 +289,14 @@ MainWindow::~MainWindow()
   delete globalMenuBar;
 
   mainWindow = NULL;
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+  settings->setValue("main/geometry", saveGeometry());
+  settings->setValue("main/windowState", saveState());
+  settings->setValue("main/splitterState", splitter->saveState());
+  QMainWindow::closeEvent(event);
 }
 
 void MainWindow::setupStatusBar()
@@ -342,6 +356,18 @@ void MainWindow::setupPortMidiSettingsPage()
   portMidiSettingsPage->setSendMidiBeatClock(settings->value("midi/sendMidiBeatClock", false).toBool());
 
   settingsDialog->addPage(tr("MIDI"), portMidiSettingsPage);
+}
+
+void MainWindow::setupUISettingsPage()
+{
+  int chatFontSize = settings->value("ui/chatFontSize").toInt();
+
+  uiSettingsPage = new UISettingsPage;
+  uiSettingsPage->setChatFontSize(chatFontSize);
+
+  settingsDialog->addPage(tr("User interface"), uiSettingsPage);
+
+  updateChatFontSize(chatFontSize);
 }
 
 /* Idle processing once event loop has started */
@@ -980,4 +1006,26 @@ void MainWindow::SettingsDialogClosed()
   settings->setValue("midi/inputDevice", portMidiSettingsPage->inputDevice());
   settings->setValue("midi/outputDevice", portMidiSettingsPage->outputDevice());
   settings->setValue("midi/sendMidiBeatClock", portMidiSettingsPage->sendMidiBeatClock());
+
+  /* Save UI settings */
+  int chatFontSize = uiSettingsPage->chatFontSize();
+  settings->setValue("ui/chatFontSize", chatFontSize);
+  updateChatFontSize(chatFontSize);
+}
+
+void MainWindow::updateChatFontSize(int size)
+{
+  int chatInputFontSize = size;
+
+  if (size == 0) {
+    chatInputFontSize = defaultChatInputFontSize;
+  }
+
+  QFont font(chatInput->font());
+  font.setPointSize(chatInputFontSize);
+  chatInput->setFont(font);
+
+  chatOutput->setFontSize(size);
+
+  channelTree->setFontSize(size);
 }
