@@ -166,7 +166,7 @@ void EffectProcessor::activatePlugin(EffectPlugin *plugin)
 {
   plugin->changeMains(false);
   plugin->setSampleRate(client->GetSampleRate());
-  plugin->setTempo(client->GetActualBPM()); // TODO update when bpm changes
+  plugin->setTempo(client->GetActualBPM());
   plugin->changeMains(true);
 }
 
@@ -177,6 +177,7 @@ void EffectProcessor::attach(NJClient *client_, int ch)
   }
 
   client = client_;
+  lastTempo = client->GetActualBPM();
 
   EffectPlugin *plugin;
   foreach (plugin, plugins) {
@@ -244,6 +245,14 @@ void EffectProcessor::fillVstEvents()
 void EffectProcessor::process(float *buf, int ns)
 {
   QMutexLocker locker(&pluginsLock);
+  int tempo = client->GetActualBPM();
+
+  if (tempo != lastTempo) {
+    foreach (EffectPlugin *plugin, plugins) {
+      plugin->setTempo(tempo);
+    }
+    lastTempo = tempo;
+  }
 
   fillVstEvents();
 
