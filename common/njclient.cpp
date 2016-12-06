@@ -148,7 +148,8 @@ private:
   FILE *fp;
 };
 
-
+/* Sentinel WDL_HeapBuf for silent intervals */
+static WDL_HeapBuf silence_buf;
 
 class BufferQueue
 {
@@ -173,7 +174,7 @@ class BufferQueue
       WDL_HeapBuf **bufs=(WDL_HeapBuf **)m_samplequeue.Get();
       if (bufs) while (l--)
       {
-        if ((uintptr_t)*bufs != 0 && (uintptr_t)*bufs != -1) delete *bufs;
+        if (*bufs && *bufs != &silence_buf) delete *bufs;
         bufs++;
       }
       m_samplequeue.Advance(m_samplequeue.Available());
@@ -338,8 +339,6 @@ NJClient::NJClient(QObject *parent)
   LicenseAgreementCallback=0;
   ChatMessage_Callback=0;
   ChatMessage_User32=0;
-  ChannelMixer=0;
-  ChannelMixer_User32=0;
 
   waveWrite=0;
 #ifndef NJCLIENT_NO_XMIT_SUPPORT
@@ -354,8 +353,6 @@ NJClient::NJClient(QObject *parent)
   midiOutput = NULL;
 
   _reinit();
-
-  m_session_pos_ms=m_session_pos_samples=0;
 
   QTimer *tickTimer = new QTimer(this);
   tickTimer->setInterval(20 /* milliseconds */);
@@ -489,14 +486,6 @@ void NJClient::GetPosition(int *pos, int *length)  // positions in samples
   m_misc_cs.Leave();
 }
 
-unsigned int NJClient::GetSessionPosition()// returns milliseconds
-{
-  unsigned int a=m_session_pos_ms;
-  if (m_srate)
-    a+=(m_session_pos_samples*1000)/m_srate;
-  return a;
-}
-
 // Called from the audio thread
 void NJClient::updateInterval(int nsamples)
 {
@@ -507,7 +496,7 @@ void NJClient::updateInterval(int nsamples)
     return;
   }
 
-  // Lock so GetSessionPosition() sees a consistent update when interval length
+  // Lock so GetPosition() sees a consistent update when interval length
   // and interval position are set together.
   m_misc_cs.Enter();
   if (m_beatinfo_updated)
@@ -555,24 +544,6 @@ void NJClient::AudioProc(float **inbuf, int innch, float **outbuf, int outnch, i
   {
     process_samples(inbuf,innch,outbuf,outnch,len,srate,0,1);
     return;
-  }
-
-  if (srate>0)
-  {
-    unsigned int spl=m_session_pos_samples;
-    unsigned int sec=m_session_pos_ms;
-
-    spl += len;
-    if (spl >= (unsigned int)srate)
-    {
-      sec += (spl/srate)*1000;
-      spl %= srate;
-    }
-    // writing these both like this reduces the chance that the 
-    // main thread will read them and get a mix. still possible, tho,
-    // but super unlikely
-    m_session_pos_samples=spl;
-    m_session_pos_ms=sec;
   }
 
   int offs=0;
@@ -643,8 +614,6 @@ void NJClient::Disconnect()
 void NJClient::Connect(char *host, char *user, char *pass)
 {
   Disconnect();
-
-  m_session_pos_ms=m_session_pos_samples=0;
 
   m_host.Set(host);
   m_user.Set(user);
@@ -1070,13 +1039,13 @@ int NJClient::Run() // nonzero if sleep ok
       wantsleep=0;
       if (u >= m_max_localch)
       {
-        if (p && (uintptr_t)p != -1)
+        if (p && p != &silence_buf)
           lc->m_bq.DisposeBlock(p);
         p=0;
         continue;
       }
 
-      if ((uintptr_t)p == -1)
+      if (p == &silence_buf)
       {
         mpb_client_upload_interval_begin cuib;
         cuib.chidx=lc->channel_idx;
@@ -1355,16 +1324,12 @@ void NJClient::process_samples(float **inbuf, int innch, float **outbuf, int out
     float *src=NULL;
     if (sc >= 0 && sc < innch) src=inbuf[sc]+offset;
 
-    if (lc->cbf || !src || ChannelMixer)
+    if (lc->cbf || !src)
     {
       int bytelen=len*(int)sizeof(float);
       if (tmpblock.GetSize() < bytelen) tmpblock.Resize(bytelen);
 
-      if (ChannelMixer && ChannelMixer(ChannelMixer_User32,inbuf,offset,innch,sc,(float*)tmpblock.Get(),len))
-      {
-        // channelmixer succeeded
-      }
-      else if (src) memcpy(tmpblock.Get(),src,bytelen);
+      if (src) memcpy(tmpblock.Get(),src,bytelen);
       else memset(tmpblock.Get(),0,bytelen);
 
       src=(float* )tmpblock.Get();
@@ -2140,7 +2105,7 @@ int BufferQueue::GetBlock(WDL_HeapBuf **b) // return 0 if got one, 1 if none ava
 void BufferQueue::DisposeBlock(WDL_HeapBuf *b)
 {
   m_cs.Enter();
-  if (b && (uintptr_t)b != -1) m_emptybufs.Add(b);
+  if (b && b != &silence_buf) m_emptybufs.Add(b);
   m_cs.Leave();
 }
 
@@ -2177,8 +2142,9 @@ void BufferQueue::AddBlock(float *samples, int len, float *samples2)
     memcpy(mybuf->Get(),samples,len*sizeof(float));
     if (samples2)
       memcpy((float*)mybuf->Get()+len,samples2,len*sizeof(float));
+  } else if (len == -1) {
+    mybuf = &silence_buf;
   }
-  else if (len == -1) mybuf=(WDL_HeapBuf *)-1;
 
   m_cs.Enter();
   m_samplequeue.Add(&mybuf,sizeof(mybuf));
@@ -2228,7 +2194,7 @@ void NJClient::SetOggOutFile(FILE *fp, int srate, int nch, int bitrate)
 void NJClient::sendMidiMessage(PmMessage msg)
 {
   if (midiOutput) {
-    PmEvent pmEvent = {0};
+    PmEvent pmEvent = {};
     pmEvent.message = msg;
     midiOutput->write(&pmEvent, 1);
   }

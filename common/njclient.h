@@ -134,7 +134,6 @@ public:
   int GetBPI() { return m_active_bpi; }
   void GetPosition(int *pos, int *length);  // positions in samples
   int GetLoopCount() { return m_loopcnt; }  
-  unsigned int GetSessionPosition(); // returns milliseconds
   int GetSampleRate() { return m_srate; }
 
   int GetNumUsers() { return m_remoteusers.GetSize(); }
@@ -194,12 +193,6 @@ public:
   void (*ChatMessage_Callback)(int user32, NJClient *inst, char **parms, int nparms); 
   int ChatMessage_User32;
 
-
-  // set these if you want to mix multiple channels into the output channel
-  // return 0 if you want the default behavior
-  int (*ChannelMixer)(int user32, float **inbuf, int in_offset, int innch, int chidx, float *outbuf, int len);
-  int ChannelMixer_User32;
-
 signals:
   void userInfoChanged();
   void statusChanged(int newStatus);
@@ -243,8 +236,6 @@ protected:
   int m_audio_enable;
   int m_srate;
   int m_issoloactive;
-
-  unsigned int m_session_pos_ms,m_session_pos_samples; // samples just keeps track of any samples lost to precision errors
 
   int m_loopcnt;
   int m_active_bpm, m_active_bpi;
