@@ -272,6 +272,10 @@ MainWindow::MainWindow(QWidget *parent)
                           new EffectSettingsPage(effectProcessor));
   setupUISettingsPage();
 
+  restoreGeometry(settings->value("main/geometry").toByteArray());
+  restoreState(settings->value("main/windowState").toByteArray());
+  splitter->restoreState(settings->value("main/splitterState").toByteArray());
+
   QTimer::singleShot(0, this, SLOT(Startup()));
 }
 
@@ -285,6 +289,14 @@ MainWindow::~MainWindow()
   delete globalMenuBar;
 
   mainWindow = NULL;
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+  settings->setValue("main/geometry", saveGeometry());
+  settings->setValue("main/windowState", saveState());
+  settings->setValue("main/splitterState", splitter->saveState());
+  QMainWindow::closeEvent(event);
 }
 
 void MainWindow::setupStatusBar()

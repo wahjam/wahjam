@@ -141,6 +141,7 @@ private:
   bool tryReconnect();
   void resetReconnect();
   void updateChatFontSize(int size);
+  void closeEvent(QCloseEvent *event);
   void ShowNINJAMConnectDialog();
   void ShowJammrConnectDialog();
   void OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
