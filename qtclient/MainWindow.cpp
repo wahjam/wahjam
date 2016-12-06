@@ -1026,4 +1026,6 @@ void MainWindow::updateChatFontSize(int size)
   chatInput->setFont(font);
 
   chatOutput->setFontSize(size);
+
+  channelTree->setFontSize(size);
 }
