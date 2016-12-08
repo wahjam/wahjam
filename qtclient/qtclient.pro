@@ -101,6 +101,7 @@ HEADERS += NINJAMServerBrowser.h
 HEADERS += logging.h
 HEADERS += EffectPlugin.h
 HEADERS += VSTPlugin.h
+mac:HEADERS += PmEventParser.h
 HEADERS += EffectProcessor.h
 HEADERS += PortMidiStreamer.h
 HEADERS += screensleep.h
@@ -128,6 +129,7 @@ SOURCES += NINJAMServerBrowser.cpp
 SOURCES += logging.cpp
 SOURCES += EffectPlugin.cpp
 SOURCES += VSTPlugin.cpp
+mac:SOURCES += PmEventParser.cpp
 SOURCES += EffectProcessor.cpp
 SOURCES += PortMidiStreamer.cpp
 win32 {
