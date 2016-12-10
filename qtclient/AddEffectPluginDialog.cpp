@@ -23,12 +23,18 @@
 #include <QFileDialog>
 #include <QLibrary>
 #include <QApplication>
+#ifdef Q_OS_MAC
+#include "AudioUnitPlugin.h"
+#endif
 #include "VSTPlugin.h"
 #include "AddEffectPluginDialog.h"
 
 AddEffectPluginDialog::AddEffectPluginDialog(QWidget *parent)
   : QDialog(parent)
 {
+#ifdef Q_OS_MAC
+  scanners.append(new AudioUnitScanner);
+#endif
   scanners.append(new VSTScanner);
 
   QVBoxLayout *vBoxLayout = new QVBoxLayout;
@@ -176,7 +182,7 @@ void AddEffectPluginDialog::scan()
   pluginsList->clear();
   QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-  QStringList searchPaths = searchPathEdit->text().split(";");
+  QStringList searchPaths = searchPathEdit->text().split(";", QString::SkipEmptyParts);
   PluginScanner *scanner;
   foreach (scanner, scanners) {
     QStringList plugins = scanner->scan(searchPaths);
