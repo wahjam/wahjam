@@ -9,14 +9,14 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleGetInfoString</key>
-	<string>@SHORT_VERSION@</string>
+	<string>@FULL_VERSION@</string>
 	<key>CFBundleShortVersionString</key>
-	<string>@SHORT_VERSION@</string>
+	<string>@FULL_VERSION@</string>
 	<key>CFBundleSignature</key>
 	<string>@TYPEINFO@</string>
 	<key>CFBundleExecutable</key>
 	<string>@EXECUTABLE@</string>
 	<key>CFBundleIdentifier</key>
-	<string>org.wahjam.@EXECUTABLE@</string>
+	<string>@BUNDLEIDENTIFIER@</string>
 </dict>
 </plist>
