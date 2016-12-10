@@ -67,14 +67,17 @@ LIBS += -lportmidi
 }
 
 win32 {
-	exists($${TARGET}.rc) {
-		RC_FILE = $${TARGET}.rc
+	exists($${TARGET}.ico) {
+		RC_ICONS = $${TARGET}.ico
 	}
 }
 
 mac {
 	LIBS += -framework Foundation -framework AudioUnit -framework AppKit
-	QMAKE_INFO_PLIST = Info.plist-$${TARGET}
+	QMAKE_TARGET_BUNDLE_PREFIX = $$split(ORGDOMAIN, .)
+	QMAKE_TARGET_BUNDLE_PREFIX = $$reverse(QMAKE_TARGET_BUNDLE_PREFIX)
+	QMAKE_TARGET_BUNDLE_PREFIX = $$join(QMAKE_TARGET_BUNDLE_PREFIX, .)
+	QMAKE_INFO_PLIST = Info.plist
 
 	exists($${TARGET}.icns) {
 		ICON = $${TARGET}.icns
