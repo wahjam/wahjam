@@ -18,11 +18,13 @@ on run (volumeName)
 				set statusbar visible to false
 				set the bounds to {theXOrigin, theYOrigin, theBottomRightX, theBottomRightY}
 				set statusbar visible to false
+				REPOSITION_HIDDEN_FILES_CLAUSE
 			end tell
 			
 			set opts to the icon view options of container window
 			tell opts
 				set icon size to ICON_SIZE
+				set text size to TEXT_SIZE
 				set arrangement to not arranged
 			end tell
 			BACKGROUND_CLAUSE

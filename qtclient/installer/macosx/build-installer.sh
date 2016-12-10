@@ -26,7 +26,7 @@ then
 	background_opts="--window-size 800 600 --background background-$1.png --icon $1 200 351 --app-drop-link 596 351"
 fi
 
-yoursway-create-dmg/create-dmg \
+create-dmg/create-dmg \
 	--volname $1 \
 	--eula license.txt \
 	$background_opts \
