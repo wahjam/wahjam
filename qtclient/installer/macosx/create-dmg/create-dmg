@@ -28,6 +28,8 @@ function usage() {
   echo "      set position the folder window"
   echo "  --window-size width height"
   echo "      set size of the folder window"
+  echo "  --text-size text_size"
+  echo "      set window text size (10-16)"
   echo "  --icon-size icon_size"
   echo "      set window icons size (up to 128)"
   echo "  --icon file_name x y"
@@ -40,6 +42,8 @@ function usage() {
   echo "      make a drop link to Applications, at location x,y"
   echo "  --eula eula_file"
   echo "      attach a license file to the dmg"
+  echo "  --no-internet-enable"
+  echo "      disable automatic mount&copy"
   echo "  --version         show tool version number"
   echo "  -h, --help        display this help"
   exit 0
@@ -50,6 +54,7 @@ WINY=60
 WINW=500
 WINH=350
 ICON_SIZE=128
+TEXT_SIZE=16
 
 while test "${1:0:1}" = "-"; do
   case $1 in
@@ -63,9 +68,13 @@ while test "${1:0:1}" = "-"; do
       BACKGROUND_FILE="$2"
       BACKGROUND_FILE_NAME="$(basename $BACKGROUND_FILE)"
       BACKGROUND_CLAUSE="set background picture of opts to file \".background:$BACKGROUND_FILE_NAME\""
+      REPOSITION_HIDDEN_FILES_CLAUSE="set position of every item to {theBottomRightX + 100, 100}"
       shift; shift;;
     --icon-size)
       ICON_SIZE="$2"
+      shift; shift;;
+    --text-size)
+      TEXT_SIZE="$2"
       shift; shift;;
     --window-pos)
       WINX=$2; WINY=$3
@@ -78,7 +87,8 @@ while test "${1:0:1}" = "-"; do
 "
       shift; shift; shift; shift;;
     --hide-extension)
-      HIDING_CLAUSE="${HIDING_CLAUSE}set the extension hidden of item \"$2\" to true"
+      HIDING_CLAUSE="${HIDING_CLAUSE}set the extension hidden of item \"$2\" to true
+"
       shift; shift;;
     --custom-icon)
       shift; shift; shift; shift; shift;;
@@ -96,6 +106,9 @@ while test "${1:0:1}" = "-"; do
     --eula)
       EULA_RSRC=$2
       shift; shift;;
+    --no-internet-enable)
+      NOINTERNET=1
+      shift;;
     -*)
       echo "Unknown option $1. Run with --help for help."
       exit 1;;
@@ -107,15 +120,16 @@ test -z "$2" && {
   exit 1
 }
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DMG_PATH="$1"
 DMG_DIRNAME="$(dirname "$DMG_PATH")"
-DMG_DIR="$(cd $DMG_DIRNAME > /dev/null; pwd)"
+DMG_DIR="$(cd "$DMG_DIRNAME" > /dev/null; pwd)"
 DMG_NAME="$(basename "$DMG_PATH")"
 DMG_TEMP_NAME="$DMG_DIR/rw.${DMG_NAME}"
 SRC_FOLDER="$(cd "$2" > /dev/null; pwd)"
 test -z "$VOLUME_NAME" && VOLUME_NAME="$(basename "$DMG_PATH" .dmg)"
 
-AUX_PATH="$(dirname $0)/support"
+AUX_PATH="$SCRIPT_DIR/support"
 
 test -d "$AUX_PATH" || {
   echo "Cannot find support directory: $AUX_PATH"
@@ -167,7 +181,7 @@ fi
 
 # run applescript
 APPLESCRIPT=$(mktemp -t createdmg)
-cat "$AUX_PATH/template.applescript" | sed -e "s/WINX/$WINX/g" -e "s/WINY/$WINY/g" -e "s/WINW/$WINW/g" -e "s/WINH/$WINH/g" -e "s/BACKGROUND_CLAUSE/$BACKGROUND_CLAUSE/g" -e "s/ICON_SIZE/$ICON_SIZE/g" | perl -pe  "s/POSITION_CLAUSE/$POSITION_CLAUSE/g" | perl -pe "s/APPLICATION_CLAUSE/$APPLICATION_CLAUSE/g" | perl -pe "s/HIDING_CLAUSE/$HIDING_CLAUSE/" >"$APPLESCRIPT"
+cat "$AUX_PATH/template.applescript" | sed -e "s/WINX/$WINX/g" -e "s/WINY/$WINY/g" -e "s/WINW/$WINW/g" -e "s/WINH/$WINH/g" -e "s/BACKGROUND_CLAUSE/$BACKGROUND_CLAUSE/g" -e "s/REPOSITION_HIDDEN_FILES_CLAUSE/$REPOSITION_HIDDEN_FILES_CLAUSE/g" -e "s/ICON_SIZE/$ICON_SIZE/g" -e "s/TEXT_SIZE/$TEXT_SIZE/g" | perl -pe  "s/POSITION_CLAUSE/$POSITION_CLAUSE/g" | perl -pe "s/APPLICATION_CLAUSE/$APPLICATION_CLAUSE/g" | perl -pe "s/HIDING_CLAUSE/$HIDING_CLAUSE/" >"$APPLESCRIPT"
 
 echo "Running Applescript: /usr/bin/osascript \"${APPLESCRIPT}\" \"${VOLUME_NAME}\""
 "/usr/bin/osascript" "${APPLESCRIPT}" "${VOLUME_NAME}" || true
@@ -204,6 +218,12 @@ rm -f "${DMG_TEMP_NAME}"
 if [ ! -z "${EULA_RSRC}" -a "${EULA_RSRC}" != "-null-" ]; then
         echo "adding EULA resources"
         "${AUX_PATH}/dmg-license.py" "${DMG_DIR}/${DMG_NAME}" "${EULA_RSRC}"
+fi
+
+if [ ! -z "${NOINTERNET}" -a "${NOINTERNET}" == 1 ]; then
+        echo "not setting 'internet-enable' on the dmg"
+else
+        hdiutil internet-enable -yes "${DMG_DIR}/${DMG_NAME}"
 fi
 
 echo "Disk image done"
