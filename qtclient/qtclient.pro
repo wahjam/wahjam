@@ -67,8 +67,8 @@ LIBS += -lportmidi
 }
 
 win32 {
-	exists($${TARGET}.rc) {
-		RC_FILE = $${TARGET}.rc
+	exists($${TARGET}.ico) {
+		RC_ICONS = $${TARGET}.ico
 	}
 }
 
