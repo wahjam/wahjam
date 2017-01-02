@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2012 Stefan Hajnoczi <stefanha@gmail.com>
+    Copyright (C) 2012-2017 Stefan Hajnoczi <stefanha@gmail.com>
 
     Wahjam is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -122,7 +122,11 @@ void JammrLoginDialog::requestFinished()
     QString message;
     switch (err) {
     case QNetworkReply::AuthenticationRequiredError:
-      message = tr("Invalid username/password, please try again.");
+      if (username().contains('@')) {
+        message = tr("Invalid username/password.  Your username may be different from your email address.  Please try again with your username.");
+      } else {
+        message = tr("Invalid username/password, please try again.");
+      }
       break;
 
     case QNetworkReply::ConnectionRefusedError:
