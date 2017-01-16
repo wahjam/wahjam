@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <portaudio.h>
 #include <QtGlobal>
-#include "audiostream.h"
+#include "common/audiostream.h"
 
 static void logPortAudioError(const char *msg, PaError error)
 {

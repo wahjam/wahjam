@@ -9,8 +9,7 @@ mac {
 }
 
 QMAKE_CXXFLAGS += -Wno-write-strings
-SOURCES = audiostream_pa.cpp \
-          mpb.cpp \
+SOURCES = mpb.cpp \
           netmsg.cpp \
           njclient.cpp \
           njmisc.cpp \

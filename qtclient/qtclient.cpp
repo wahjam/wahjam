@@ -24,7 +24,7 @@
 #include <QTextCodec>
 
 #include "logging.h"
-#include "common/audiostream.h"
+#include "audiostream_pa.h"
 #include "PortMidiStreamer.h"
 #include "MainWindow.h"
 
