@@ -40,6 +40,7 @@
 #include "EffectProcessor.h"
 #include "EffectSettingsPage.h"
 #include "UISettingsPage.h"
+#include "audiostream_pa.h"
 #include "screensleep.h"
 #include "common/njmisc.h"
 #include "common/UserPrivs.h"

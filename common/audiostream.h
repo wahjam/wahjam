@@ -46,9 +46,4 @@ class audioStreamer
 
 typedef void (*SPLPROC)(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
 
-audioStreamer *create_audioStreamer_PortAudio(const char *hostAPI,
-    const char *inputDevice, const char *outputDevice,
-    double sampleRate, double latency, SPLPROC proc);
-bool portAudioInit();
-
 #endif

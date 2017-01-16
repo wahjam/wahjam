@@ -3,14 +3,10 @@ CONFIG += staticlib
 QT += network
 QT -= gui
 
-# For third-party library headers from Homebrew
-mac {
-       INCLUDEPATH += /usr/local/include
-}
-
 QMAKE_CXXFLAGS += -Wno-write-strings
-SOURCES = audiostream_pa.cpp \
-          mpb.cpp \
+CONFIG += link_pkgconfig
+PKGCONFIG += ogg vorbis vorbisenc portaudio-2.0
+SOURCES = mpb.cpp \
           netmsg.cpp \
           njclient.cpp \
           njmisc.cpp \
