@@ -46,7 +46,7 @@ Wahjam's dependencies on ogg, vorbis, the Qt framework, and PortAudio.
 
 1. Clone mxe:
 
-  git clone -b stable https://github.com/mxe/mxe.git
+  git clone https://github.com/mxe/mxe.git
 
 1. Build the cross-compiler and dependencies:
 
