@@ -64,9 +64,22 @@ void ServerBrowser::onItemActivated(QTreeWidgetItem *item, int column)
   emit serverItemActivated(item->data(0, Qt::UserRole).toString());
 }
 
+void ServerBrowser::selectBestItem()
+{
+  QTreeWidgetItem *item = topLevelItem(0);
+
+  if (item) {
+    setCurrentItem(item);
+  }
+}
+
 void ServerBrowser::completeDownloadServerList()
 {
   QTextStream stream(reply);
 
   parseServerList(&stream);
+
+  if (!currentItem()) {
+    selectBestItem();
+  }
 }

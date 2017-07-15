@@ -52,6 +52,7 @@ private slots:
 
 protected:
   virtual QNetworkReply *sendNetworkRequest(const QUrl &url) = 0;
+  virtual void selectBestItem();
 
   QNetworkAccessManager *netManager;
 
