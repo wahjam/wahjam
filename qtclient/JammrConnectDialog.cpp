@@ -58,6 +58,9 @@ JammrConnectDialog::JammrConnectDialog(QNetworkAccessManager *netManager_,
   layout->addWidget(serverBrowser);
   layout->addWidget(buttons);
   setLayout(layout);
+  setTabOrder(serverBrowser, connectButton);
+  setTabOrder(connectButton, newJamButton);
+  serverBrowser->setFocus();
   setWindowTitle(tr("Connect to server..."));
   loadServerList();
 }
