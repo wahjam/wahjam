@@ -34,7 +34,7 @@ JammrConnectDialog::JammrConnectDialog(QNetworkAccessManager *netManager_,
     upgradeUrl(upgradeUrl_), reply(NULL)
 {
   serverBrowser = new JammrServerBrowser(netManager, this);
-  connect(serverBrowser, SIGNAL(serverItemClicked(const QString &)),
+  connect(serverBrowser, SIGNAL(serverItemSelected(const QString &)),
           this, SLOT(setHost(const QString &)));
   connect(serverBrowser, SIGNAL(serverItemActivated(const QString &)),
           this, SLOT(onServerSelected(const QString &)));
@@ -58,6 +58,9 @@ JammrConnectDialog::JammrConnectDialog(QNetworkAccessManager *netManager_,
   layout->addWidget(serverBrowser);
   layout->addWidget(buttons);
   setLayout(layout);
+  setTabOrder(serverBrowser, connectButton);
+  setTabOrder(connectButton, newJamButton);
+  serverBrowser->setFocus();
   setWindowTitle(tr("Connect to server..."));
   loadServerList();
 }

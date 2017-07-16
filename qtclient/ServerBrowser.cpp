@@ -29,8 +29,8 @@ ServerBrowser::ServerBrowser(QNetworkAccessManager *manager_, QWidget *parent)
   setItemsExpandable(false);
   setColumnWidth(0, 200);
 
-  connect(this, SIGNAL(itemClicked(QTreeWidgetItem*,int)),
-          this, SLOT(onItemClicked(QTreeWidgetItem*,int)));
+  connect(this, SIGNAL(itemSelectionChanged()),
+          this, SLOT(onItemSelectionChanged()));
   connect(this, SIGNAL(itemActivated(QTreeWidgetItem*,int)),
           this, SLOT(onItemActivated(QTreeWidgetItem*,int)));
 }
@@ -46,10 +46,16 @@ void ServerBrowser::loadServerList(const QUrl &url)
 }
 
 
-void ServerBrowser::onItemClicked(QTreeWidgetItem *item, int column)
+void ServerBrowser::onItemSelectionChanged()
 {
-  Q_UNUSED(column);
-  emit serverItemClicked(item->data(0, Qt::UserRole).toString());
+  QTreeWidgetItem *item = currentItem();
+  QString hostname;
+
+  if (item) {
+    hostname = item->data(0, Qt::UserRole).toString();
+  }
+
+  emit serverItemSelected(hostname);
 }
 
 void ServerBrowser::onItemActivated(QTreeWidgetItem *item, int column)
@@ -58,9 +64,22 @@ void ServerBrowser::onItemActivated(QTreeWidgetItem *item, int column)
   emit serverItemActivated(item->data(0, Qt::UserRole).toString());
 }
 
+void ServerBrowser::selectBestItem()
+{
+  QTreeWidgetItem *item = topLevelItem(0);
+
+  if (item) {
+    setCurrentItem(item);
+  }
+}
+
 void ServerBrowser::completeDownloadServerList()
 {
   QTextStream stream(reply);
 
   parseServerList(&stream);
+
+  if (!currentItem()) {
+    selectBestItem();
+  }
 }

@@ -33,6 +33,7 @@ public:
 
 protected:
   QNetworkReply *sendNetworkRequest(const QUrl &url);
+  void selectBestItem();
 };
 
 #endif /* _JAMMRSERVERBROWSER_H_ */

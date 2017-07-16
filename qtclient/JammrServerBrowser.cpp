@@ -38,6 +38,25 @@ QNetworkReply *JammrServerBrowser::sendNetworkRequest(const QUrl &apiUrl)
   return netManager->get(request);
 }
 
+void JammrServerBrowser::selectBestItem()
+{
+  QTreeWidgetItem *item = NULL;
+
+  // Select first jam with at least one user, otherwise select the last jam
+  for (int i = 0; i < topLevelItemCount(); i++) {
+    item = topLevelItem(i);
+
+    QString users = item->text(3);
+    if (!users.isEmpty()) {
+      break;
+    }
+  }
+
+  if (item) {
+    setCurrentItem(item);
+  }
+}
+
 void JammrServerBrowser::parseServerList(QTextStream *stream)
 {
   QJsonParseError err;

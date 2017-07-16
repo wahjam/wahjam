@@ -42,16 +42,17 @@ public:
   virtual void parseServerList(QTextStream *stream) = 0;
 
 signals:
-  void serverItemClicked(const QString &hostname);
+  void serverItemSelected(const QString &hostname);
   void serverItemActivated(const QString &hostname);
 
 private slots:
   void completeDownloadServerList();
-  void onItemClicked(QTreeWidgetItem *item, int column);
+  void onItemSelectionChanged();
   void onItemActivated(QTreeWidgetItem *item, int column);
 
 protected:
   virtual QNetworkReply *sendNetworkRequest(const QUrl &url) = 0;
+  virtual void selectBestItem();
 
   QNetworkAccessManager *netManager;
 
