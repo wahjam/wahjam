@@ -96,6 +96,13 @@ bool Server::setConfig(ServerConfig *config_)
 {
   config = config_;
 
+  /* Enable/disable SSL certificate verification */
+  QSslConfiguration sslConfig = QSslConfiguration::defaultConfiguration();
+  sslConfig.setPeerVerifyMode(config->sslVerify ?
+                              QSslSocket::AutoVerifyPeer :
+                              QSslSocket::QueryPeer);
+  QSslConfiguration::setDefaultConfiguration(sslConfig);
+
   group->m_max_users = config->maxUsers;
   if (!group->m_topictext.Get()[0]) {
       group->m_topictext.Set(config->defaultTopic.Get());

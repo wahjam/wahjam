@@ -425,6 +425,18 @@ static int ConfigOnToken(ServerConfig *config, LineParser *lp)
     config->jammrApiUrl.setPassword(lp->gettoken_str(3));
     config->jammrServerName = lp->gettoken_str(4);
   }
+  else if (token == QString("SslVerify").toLower())
+  {
+    if (lp->getnumtokens() != 2) {
+      return -1;
+    }
+
+    int x=lp->gettoken_enum(1,"no\0yes\0");
+    if (x < 0) {
+      return -2;
+    }
+    config->sslVerify = x;
+  }
   else return -3;
   return 0;
 }
@@ -468,6 +480,7 @@ static int ReadConfig(ServerConfig *config, char *configfile)
   config->acl.clear();
   config->jammrApiUrl.clear();
   config->jammrServerName.clear();
+  config->sslVerify = true;
 
   int x;
   for(x=0; x < config->userlist.GetSize(); x++)
