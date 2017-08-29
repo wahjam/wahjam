@@ -87,6 +87,7 @@ struct ServerConfig
   WDL_PtrList<UserPassEntry> userlist;
   QUrl jammrApiUrl;
   QString jammrServerName;
+  bool sslVerify;
 };
 
 class Server : public QObject
