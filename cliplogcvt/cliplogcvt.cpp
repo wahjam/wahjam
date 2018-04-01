@@ -51,7 +51,7 @@ public:
   void setStereo();
   void setMono();
   void clear();
-  void resample(void *resampleState, double factor, bool drain);
+  bool resample(void *resampleState, double factor, bool drain);
 
   float *getSamples();
   int getFrames();
@@ -172,7 +172,8 @@ void AudioBuffer::clear()
   memset(samples, 0, frames * channels * sizeof(float));
 }
 
-void AudioBuffer::resample(void *resampleState, double factor, bool drain)
+/* Returns true on success, false on error (buffer remains unmodified) */
+bool AudioBuffer::resample(void *resampleState, double factor, bool drain)
 {
   assert(channels == 1);
 
@@ -204,6 +205,10 @@ void AudioBuffer::resample(void *resampleState, double factor, bool drain)
                            &samples[inFrames], frames - inFrames,
                            drain, &inUsed,
                            &newSamples[outFrames], newFrames - outFrames);
+    if (ret < 0) {
+      delete [] newSamples;
+      return false;
+    }
     inFrames += inUsed;
     outFrames += ret;
   }
@@ -221,6 +226,7 @@ void AudioBuffer::resample(void *resampleState, double factor, bool drain)
   }
   samples = newSamples;
   needDelete = true;
+  return true;
 }
 
 float *AudioBuffer::getSamples()
@@ -371,7 +377,10 @@ static void transcode(FILE *infile, FILE *outfile, void **resampleState, VorbisE
         *resampleState = resample_open(1, factor, factor);
       }
 
-      abuf.resample(*resampleState, factor, drainResampler);
+      if (!abuf.resample(*resampleState, factor, drainResampler)) {
+        fillSilenceSamples(outfile, encoder, framesRemaining);
+        break;
+      }
     }
 
     if ((uint64_t)abuf.getFrames() > framesRemaining) {
