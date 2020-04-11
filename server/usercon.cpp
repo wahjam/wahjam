@@ -444,6 +444,7 @@ void User_Connection::processMessage(Net_Message *msg)
       bh.errmsg=tab[err_st-1];
 
       qDebug("%s: Refusing user, %s", name.toLatin1().constData(), bh.errmsg);
+      msg->debugDump();
 
       Send(bh.build());
       m_netcon.Kill();

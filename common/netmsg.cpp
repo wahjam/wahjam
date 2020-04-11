@@ -86,6 +86,14 @@ int Net_Message::parseMessageHeader(void *data, int len) // returns bytes used, 
   return 5;
 }
 
+void Net_Message::debugDump()
+{
+  int len = get_size();
+
+  qDebug("Net_Msg dump type=%d len=%d", m_type, len);
+  hexDump(get_data(), len);
+}
+
 int Net_Message::makeMessageHeader(void *data) // makes message header, data should be at least 16 bytes to be safe
 {
 	if (!data) return 0;

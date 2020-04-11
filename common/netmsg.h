@@ -69,6 +69,7 @@ class Net_Message
 		int parseMessageHeader(void *data, int len); // returns bytes used, if any (or 0 if more data needed), or -1 if invalid
     int parseBytesNeeded();
     int parseAddBytes(void *data, int len); // returns bytes actually added
+    void debugDump(); // qDebug() prints message bytes
 
 		int makeMessageHeader(void *data); // makes message header, returns length. data should be at least 16 bytes to be safe
 
