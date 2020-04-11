@@ -35,6 +35,15 @@
 
 #include "netmsg.h"
 
+static void hexDump(void *data, int len)
+{
+  for (int i = 0; i < len; i += 16) {
+    int line_len = qMin(len - i, 16);
+    QByteArray bytes = QByteArray::fromRawData((const char*)data + i, line_len);
+    qDebug(QString(bytes.toHex(' ')).toLatin1().constData());
+  }
+}
+
 int Net_Message::parseBytesNeeded()
 {
   return get_size()-m_parsepos;
@@ -63,14 +72,9 @@ int Net_Message::parseMessageHeader(void *data, int len) // returns bytes used, 
   size |= ((int)*dp++)<<24; 
   len -= 5;
   if (type == MESSAGE_INVALID || size < 0 || size > NET_MESSAGE_MAX_SIZE) {
-    fprintf(stderr, "len = %d\n", len);
-    for (int i = 0; i < len; i += 16) {
-      for (int j = 0; j < 16; j++) {
-        fprintf(stderr, "%02x ", ((uint8_t*)data)[i + j]);
-      }
-      fprintf(stderr, "\n");
-    }
-    fprintf(stderr, "\n");
+    int data_len = len + 5;
+    qDebug("Failed to parse Net_Message header with len=%d type=%d size=%d", data_len, type, size);
+    hexDump(data, data_len);
     return -1;
   }
 
