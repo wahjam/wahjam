@@ -417,7 +417,7 @@ void User_Connection::processMessage(Net_Message *msg)
     }
 
     // verify everything
-    int          err_st = ( msg->get_type() != MESSAGE_CLIENT_AUTH_USER || authrep.parse(msg) || !authrep.username || !authrep.username[0] ) ? 1 : 0;
+    int          err_st = ( authrep.parse(msg) || !authrep.username[0] ) ? 1 : 0;
     if (!err_st) err_st = ( authrep.client_version < ver_min ||
                             authrep.client_version > ver_max ) ? 2 : 0;
     if (!err_st) err_st = ( group->m_licensetext.Get()[0] && !(authrep.client_caps & 1) ) ? 3 : 0;
