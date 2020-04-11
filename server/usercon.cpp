@@ -404,6 +404,11 @@ void User_Connection::processMessage(Net_Message *msg)
     mpb_client_auth_user authrep;
     int ver_min, ver_max;
 
+    // Keepalives are allowed, do not process this message further
+    if (msg->get_type() == MESSAGE_KEEPALIVE) {
+      return;
+    }
+
     switch (group->GetProtocol()) {
     case JAM_PROTO_NINJAM:
       ver_min = PROTO_NINJAM_VER_MIN;
