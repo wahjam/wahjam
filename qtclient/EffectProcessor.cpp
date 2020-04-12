@@ -244,6 +244,12 @@ void EffectProcessor::fillVstEvents()
 
 void EffectProcessor::process(float *buf, int ns)
 {
+  // Skip if no processing is necessary.  The variable-length array below
+  // requires a non-zero length.
+  if (maxInputsOutputs == 0) {
+    return;
+  }
+
   QMutexLocker locker(&pluginsLock);
   int tempo = client->GetActualBPM();
 
