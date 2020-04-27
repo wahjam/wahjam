@@ -559,7 +559,7 @@ void MainWindow::cleanupWorkDir(const QString &path)
 void MainWindow::ShowNINJAMConnectDialog()
 {
   const QUrl url("http://autosong.ninjam.com/serverlist.php");
-  ConnectDialog connectDialog(netManager);
+  ConnectDialog connectDialog(netManager, this);
   QStringList hosts = settings->value("connect/hosts").toStringList();
 
   connectDialog.resize(600, 500);
@@ -593,7 +593,7 @@ void MainWindow::ShowJammrConnectDialog()
   /* Request login details if we haven't stashed them */
   if (jammrApiUrl.userName().isEmpty()) {
     QUrl registerUrl = settings->value("jammr/registerUrl", JAMMR_REGISTER_URL).toUrl();
-    JammrLoginDialog loginDialog(netManager, jammrApiUrl, registerUrl);
+    JammrLoginDialog loginDialog(netManager, jammrApiUrl, registerUrl, this);
 
     loginDialog.setUsername(settings->value("jammr/user").toString());
 
@@ -610,7 +610,7 @@ void MainWindow::ShowJammrConnectDialog()
   }
 
   QUrl upgradeUrl = settings->value("jammr/upgradeUrl", JAMMR_UPGRADE_URL).toUrl();
-  JammrConnectDialog connectDialog(netManager, jammrApiUrl, upgradeUrl);
+  JammrConnectDialog connectDialog(netManager, jammrApiUrl, upgradeUrl, this);
   connectDialog.resize(600, 500);
 
   if (connectDialog.exec() != QDialog::Accepted) {
