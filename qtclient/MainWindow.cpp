@@ -29,6 +29,7 @@
 #include <QInputDialog>
 #include <QRegExp>
 #include <QSslConfiguration>
+#include <qt5keychain/keychain.h>
 
 #include "MainWindow.h"
 #include "ConnectDialog.h"
@@ -556,6 +557,45 @@ void MainWindow::cleanupWorkDir(const QString &path)
   workDir.rmdir(name);
 }
 
+static QString keychainGetPassword()
+{
+  QKeychain::ReadPasswordJob job(ORGDOMAIN);
+  QEventLoop loop;
+
+  job.setAutoDelete(false);
+  job.connect(&job, SIGNAL(finished(QKeychain::Job*)), &loop, SLOT(quit()));
+  job.setKey("password");
+  job.start();
+  loop.exec();
+
+  return job.textData();
+}
+
+static void keychainSetPassword(const QString &password)
+{
+  QKeychain::WritePasswordJob job(ORGDOMAIN);
+  QEventLoop loop;
+
+  job.setAutoDelete(false);
+  job.connect(&job, SIGNAL(finished(QKeychain::Job*)), &loop, SLOT(quit()));
+  job.setKey("password");
+  job.setTextData(password);
+  job.start();
+  loop.exec();
+}
+
+static void keychainDeletePassword()
+{
+  QKeychain::DeletePasswordJob job(ORGDOMAIN);
+  QEventLoop loop;
+
+  job.setAutoDelete(false);
+  job.connect(&job, SIGNAL(finished(QKeychain::Job*)), &loop, SLOT(quit()));
+  job.setKey("password");
+  job.start();
+  loop.exec();
+}
+
 void MainWindow::ShowNINJAMConnectDialog()
 {
   const QUrl url("http://autosong.ninjam.com/serverlist.php");
@@ -567,6 +607,13 @@ void MainWindow::ShowNINJAMConnectDialog()
   connectDialog.setRecentHostsList(hosts);
   connectDialog.setUser(settings->value("connect/user").toString());
   connectDialog.setIsPublicServer(settings->value("connect/public", true).toBool());
+  connectDialog.setRememberPassword(settings->value("connect/rememberPassword", true).toBool());
+
+  bool passwordSaved = settings->value("connect/passwordSaved", false).toBool();
+
+  if (connectDialog.rememberPassword() && passwordSaved) {
+    connectDialog.setPass(keychainGetPassword());
+  }
 
   if (connectDialog.exec() != QDialog::Accepted) {
     return;
@@ -579,6 +626,17 @@ void MainWindow::ShowNINJAMConnectDialog()
   settings->setValue("connect/hosts", hosts);
   settings->setValue("connect/user", connectDialog.user());
   settings->setValue("connect/public", connectDialog.isPublicServer());
+
+  if (connectDialog.rememberPassword()) {
+    keychainSetPassword(connectDialog.pass());
+    settings->setValue("connect/passwordSaved", true);
+  } else if (passwordSaved) {
+    /* If it was previously saved, delete it now */
+    keychainDeletePassword();
+    settings->setValue("connect/passwordSaved", false);
+  }
+
+  settings->setValue("connect/rememberPassword", connectDialog.rememberPassword());
 
   QString user = connectDialog.user();
   if (connectDialog.isPublicServer()) {
@@ -596,12 +654,30 @@ void MainWindow::ShowJammrConnectDialog()
     JammrLoginDialog loginDialog(netManager, jammrApiUrl, registerUrl, this);
 
     loginDialog.setUsername(settings->value("jammr/user").toString());
+    loginDialog.setRememberPassword(settings->value("jammr/rememberPassword", true).toBool());
+
+    bool passwordSaved = settings->value("jammr/passwordSaved", false).toBool();
+
+    if (loginDialog.rememberPassword() && passwordSaved) {
+      loginDialog.setPassword(keychainGetPassword());
+    }
 
     if (loginDialog.exec() != QDialog::Accepted) {
       return;
     }
 
     settings->setValue("jammr/user", loginDialog.username());
+
+    if (loginDialog.rememberPassword()) {
+      keychainSetPassword(loginDialog.password());
+      settings->setValue("jammr/passwordSaved", true);
+    } else if (passwordSaved) {
+      /* If it was previously saved, delete it now */
+      keychainDeletePassword();
+      settings->setValue("jammr/passwordSaved", false);
+    }
+
+    settings->setValue("jammr/rememberPassword", loginDialog.rememberPassword());
 
     /* Stash login details into the API URL so others can use them */
     jammrApiUrl.setUserName(loginDialog.username());

@@ -39,6 +39,9 @@ ConnectDialog::ConnectDialog(QNetworkAccessManager *netManager, QWidget *parent)
   passEdit->setEchoMode(QLineEdit::Password);
   passEdit->setEnabled(false);
 
+  rememberPasswordCheckBox = new QCheckBox(tr("&Remember password"));
+  rememberPasswordCheckBox->setEnabled(false);
+
   QPushButton *connectButton = new QPushButton(tr("&Connect"));
   connect(connectButton, SIGNAL(clicked()), this, SLOT(accept()));
 
@@ -56,6 +59,7 @@ ConnectDialog::ConnectDialog(QNetworkAccessManager *netManager, QWidget *parent)
   formLayout->addWidget(publicCheckbox);
 
   formLayout->addRow(tr("&Password:"), passEdit);
+  formLayout->addWidget(rememberPasswordCheckBox);
   form->setLayout(formLayout);
   layout->setSpacing(2);
   layout->setContentsMargins(5, 5, 5, 5);
@@ -69,6 +73,7 @@ ConnectDialog::ConnectDialog(QNetworkAccessManager *netManager, QWidget *parent)
 void ConnectDialog::publicServerStateChanged(int state)
 {
   passEdit->setEnabled(state == Qt::Unchecked);
+  rememberPasswordCheckBox->setEnabled(state == Qt::Unchecked);
 }
 
 void ConnectDialog::setRecentHostsList(const QStringList &hosts)
@@ -102,9 +107,19 @@ QString ConnectDialog::pass() const
   return passEdit->text();
 }
 
+void ConnectDialog::setPass(const QString &pass)
+{
+  passEdit->setText(pass);
+}
+
 bool ConnectDialog::isPublicServer() const
 {
   return publicCheckbox->checkState() == Qt::Checked;
+}
+
+bool ConnectDialog::rememberPassword() const
+{
+  return rememberPasswordCheckBox->isChecked();
 }
 
 void ConnectDialog::setIsPublicServer(bool isPublicServer)
@@ -112,10 +127,17 @@ void ConnectDialog::setIsPublicServer(bool isPublicServer)
   if (isPublicServer) {
     publicCheckbox->setCheckState(Qt::Checked);
     passEdit->setEnabled(false);
+    rememberPasswordCheckBox->setEnabled(false);
   } else {
     publicCheckbox->setCheckState(Qt::Unchecked);
     passEdit->setEnabled(true);
+    rememberPasswordCheckBox->setEnabled(true);
   }
+}
+
+void ConnectDialog::setRememberPassword(bool value)
+{
+  rememberPasswordCheckBox->setChecked(value);
 }
 
 void ConnectDialog::loadServerList(const QUrl &url)

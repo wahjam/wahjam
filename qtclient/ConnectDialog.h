@@ -32,7 +32,8 @@ class ConnectDialog : public QDialog
   Q_PROPERTY(QString host READ host WRITE setHost)
   Q_PROPERTY(QString user READ user WRITE setUser)
   Q_PROPERTY(bool isPublicServer READ isPublicServer WRITE setIsPublicServer)
-  Q_PROPERTY(QString pass READ pass)
+  Q_PROPERTY(QString pass READ pass WRITE setPass)
+  Q_PROPERTY(bool rememberPassword READ rememberPassword WRITE setRememberPassword)
 
 public:
   ConnectDialog(QNetworkAccessManager *netManager, QWidget *parent = 0);
@@ -40,12 +41,15 @@ public:
   QString user() const;
   bool isPublicServer() const;
   QString pass() const;
+  bool rememberPassword() const;
 
 public slots:
   void setHost(const QString &host);
   void setUser(const QString &user);
+  void setPass(const QString &pass);
   void setRecentHostsList(const QStringList &hosts);
   void setIsPublicServer(bool isPublicServer);
+  void setRememberPassword(bool value);
   void loadServerList(const QUrl &url);
 
 private slots:
@@ -58,6 +62,7 @@ private:
   QLineEdit *userEdit;
   QCheckBox *publicCheckbox;
   QLineEdit *passEdit;
+  QCheckBox *rememberPasswordCheckBox;
 };
 
 #endif /* _CONNECTDIALOG_H_ */

@@ -21,6 +21,7 @@
 
 #include <QDialog>
 #include <QLineEdit>
+#include <QCheckBox>
 #include <QPushButton>
 #include <QUrl>
 #include <QNetworkAccessManager>
@@ -32,14 +33,17 @@ class JammrLoginDialog : public QDialog
   Q_PROPERTY(QString username READ username WRITE setUsername)
   Q_PROPERTY(QString password READ password WRITE setPassword)
   Q_PROPERTY(QString token READ token)
+  Q_PROPERTY(bool rememberPassword READ rememberPassword WRITE setRememberPassword)
 
 public:
   JammrLoginDialog(QNetworkAccessManager *netmanager_, const QUrl &apiUrl_,
                    const QUrl &registerUrl, QWidget *parent = 0);
   QString username() const;
   QString password() const;
+  bool rememberPassword() const;
   void setUsername(const QString &username);
   void setPassword(const QString &password);
+  void setRememberPassword(bool value);
   QString token() const;
 
 private slots:
@@ -49,6 +53,7 @@ private slots:
 private:
   QLineEdit *userEdit;
   QLineEdit *passEdit;
+  QCheckBox *rememberPasswordCheckBox;
   QPushButton *connectButton;
   QNetworkAccessManager *netmanager;
   QNetworkReply *reply;

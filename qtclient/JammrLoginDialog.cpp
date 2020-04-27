@@ -36,6 +36,8 @@ JammrLoginDialog::JammrLoginDialog(QNetworkAccessManager *netmanager_,
   passEdit = new QLineEdit;
   passEdit->setEchoMode(QLineEdit::Password);
 
+  rememberPasswordCheckBox = new QCheckBox(tr("Remember password"));
+
   QLabel *registerLabel = new QLabel(tr("<a href=\"%1\">Create a new account.</a>").arg(registerUrl.toString()));
   registerLabel->setOpenExternalLinks(true);
 
@@ -49,6 +51,7 @@ JammrLoginDialog::JammrLoginDialog(QNetworkAccessManager *netmanager_,
   formLayout->addRow(tr("&Password:"), passEdit);
   form->setLayout(formLayout);
   layout->addWidget(form);
+  layout->addWidget(rememberPasswordCheckBox);
   layout->addWidget(registerLabel);
   layout->addWidget(connectButton);
   setLayout(layout);
@@ -63,6 +66,11 @@ QString JammrLoginDialog::username() const
 QString JammrLoginDialog::password() const
 {
   return passEdit->text();
+}
+
+bool JammrLoginDialog::rememberPassword() const
+{
+  return rememberPasswordCheckBox->isChecked();
 }
 
 void JammrLoginDialog::setUsername(const QString &username)
@@ -80,6 +88,11 @@ void JammrLoginDialog::setUsername(const QString &username)
 void JammrLoginDialog::setPassword(const QString &password)
 {
   passEdit->setText(password);
+}
+
+void JammrLoginDialog::setRememberPassword(bool value)
+{
+  rememberPasswordCheckBox->setChecked(value);
 }
 
 void JammrLoginDialog::login()

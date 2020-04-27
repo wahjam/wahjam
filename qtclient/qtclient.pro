@@ -115,6 +115,9 @@ mac {
 }
 LIBS += -lportmidi
 
+# Add QtKeychain directly because its QT module file does not work
+LIBS += -lqt5keychain
+
 # On Ubuntu PortTime is separate from PortMidi
 !isEmpty(USE_LIBPORTTIME) {
 	LIBS += -lporttime
