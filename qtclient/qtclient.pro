@@ -109,10 +109,6 @@ CONFIG += link_pkgconfig
 PKGCONFIG += ogg vorbis vorbisenc portaudio-2.0
 
 # portmidi does not use pkg-config
-mac {
-       INCLUDEPATH += /usr/local/Cellar/portmidi/217/include
-       LIBS += -L/usr/local/Cellar/portmidi/217/lib
-}
 LIBS += -lportmidi
 
 # Add QtKeychain directly because its QT module file does not work
