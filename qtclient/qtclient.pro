@@ -9,24 +9,50 @@ isEmpty(VERSION) {
 
 # Application name displayed to user
 isEmpty(APPNAME) {
-        APPNAME = "Wahjam"
+        jammr {
+                APPNAME = "jammr"
+        } else {
+                APPNAME = "Wahjam"
+        }
 }
 
 # Organization name used for Qt settings
 isEmpty(ORGNAME) {
-        ORGNAME = "Wahjam Project"
+        jammr {
+                ORGNAME = "jammr"
+        } else {
+                ORGNAME = "Wahjam Project"
+        }
 }
 
 # Organization domain displayed to user and used for Qt settings
 isEmpty(ORGDOMAIN) {
-        ORGDOMAIN = "wahjam.org"
+        jammr {
+                ORGDOMAIN = "jammr.net"
+        } else {
+                ORGDOMAIN = "wahjam.org"
+        }
 }
 
 # Qt client binary name
 isEmpty(QTCLIENT_TARGET) {
-	TARGET = wahjam
+        jammr {
+                TARGET = jammr
+        } else {
+                TARGET = wahjam
+        }
 } else {
-	TARGET = $$QTCLIENT_TARGET
+        TARGET = $$QTCLIENT_TARGET
+}
+
+jammr {
+        JAMMR_API_URL = "https://jammr.net/api/"
+        JAMMR_REGISTER_URL = "https://jammr.net/accounts/register/"
+        JAMMR_UPGRADE_URL = "https://jammr.net/pricing.html"
+        win32:JAMMR_UPDATE_URL = "https://jammr.net/static/latest-windows.txt"
+        mac:JAMMR_UPDATE_URL = "https://jammr.net/static/latest-mac.txt"
+        linux:JAMMR_UPDATE_URL = "https://jammr.net/static/latest-linux.txt"
+        JAMMR_DOWNLOAD_URL = "https://jammr.net/download.html"
 }
 
 DEFINES += "VERSION=\'\"$$VERSION\"\'"
