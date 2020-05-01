@@ -651,7 +651,8 @@ void MainWindow::ShowJammrConnectDialog()
   /* Request login details if we haven't stashed them */
   if (jammrApiUrl.userName().isEmpty()) {
     QUrl registerUrl = settings->value("jammr/registerUrl", JAMMR_REGISTER_URL).toUrl();
-    JammrLoginDialog loginDialog(netManager, jammrApiUrl, registerUrl, this);
+    QUrl resetPasswordUrl = settings->value("jammr/resetPasswordUrl", JAMMR_RESET_PASSWORD_URL).toUrl();
+    JammrLoginDialog loginDialog(netManager, jammrApiUrl, registerUrl, resetPasswordUrl, this);
 
     loginDialog.setUsername(settings->value("jammr/user").toString());
     loginDialog.setRememberPassword(settings->value("jammr/rememberPassword", true).toBool());

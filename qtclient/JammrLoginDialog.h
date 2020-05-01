@@ -37,7 +37,8 @@ class JammrLoginDialog : public QDialog
 
 public:
   JammrLoginDialog(QNetworkAccessManager *netmanager_, const QUrl &apiUrl_,
-                   const QUrl &registerUrl, QWidget *parent = 0);
+                   const QUrl &registerUrl, const QUrl &resetPasswordUrl,
+                   QWidget *parent = 0);
   QString username() const;
   QString password() const;
   bool rememberPassword() const;

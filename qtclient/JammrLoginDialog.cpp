@@ -29,7 +29,9 @@
 
 JammrLoginDialog::JammrLoginDialog(QNetworkAccessManager *netmanager_,
                                    const QUrl &apiUrl_,
-                                   const QUrl &registerUrl, QWidget *parent)
+                                   const QUrl &registerUrl,
+                                   const QUrl &resetPasswordUrl,
+                                   QWidget *parent)
   : QDialog(parent), netmanager(netmanager_), apiUrl(apiUrl_)
 {
   userEdit = new QLineEdit;
@@ -37,6 +39,9 @@ JammrLoginDialog::JammrLoginDialog(QNetworkAccessManager *netmanager_,
   passEdit->setEchoMode(QLineEdit::Password);
 
   rememberPasswordCheckBox = new QCheckBox(tr("Remember password"));
+
+  QLabel *resetPasswordLabel = new QLabel(tr("<a href=\"%1\">Reset password.</a>").arg(resetPasswordUrl.toString()));
+  resetPasswordLabel->setOpenExternalLinks(true);
 
   QLabel *registerLabel = new QLabel(tr("<a href=\"%1\">Create a new account.</a>").arg(registerUrl.toString()));
   registerLabel->setOpenExternalLinks(true);
@@ -52,6 +57,7 @@ JammrLoginDialog::JammrLoginDialog(QNetworkAccessManager *netmanager_,
   form->setLayout(formLayout);
   layout->addWidget(form);
   layout->addWidget(rememberPasswordCheckBox);
+  layout->addWidget(resetPasswordLabel);
   layout->addWidget(registerLabel);
   layout->addWidget(connectButton);
   setLayout(layout);
