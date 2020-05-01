@@ -148,6 +148,10 @@ void JammrLoginDialog::requestFinished()
       }
       break;
 
+    case QNetworkReply::SslHandshakeFailedError:
+      message = tr("SSL handshake failed, please check that your computer's date and time are accurate.");
+      break;
+
     case QNetworkReply::ConnectionRefusedError:
     case QNetworkReply::RemoteHostClosedError:
     case QNetworkReply::HostNotFoundError:
