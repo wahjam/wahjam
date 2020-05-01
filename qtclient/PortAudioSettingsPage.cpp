@@ -20,6 +20,7 @@
 #include <portaudio.h>
 #include <QIcon>
 #include <QFormLayout>
+#include <QGroupBox>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -42,30 +43,47 @@ PortAudioSettingsPage::PortAudioSettingsPage(QWidget *parent)
           this, SLOT(deviceIndexChanged(int)));
 
   sampleRateList = new QComboBox;
+  sampleRateList->setToolTip(tr("Usually 441000 or 48000 Hz works best"));
   sampleRateList->setEditable(false);
   connect(sampleRateList, SIGNAL(currentIndexChanged(int)),
           this, SLOT(sampleRateIndexChanged(int)));
 
   latencyList = new QComboBox();
+  latencyList->setToolTip(tr("Usually 5-12 milliseconds works best"));
 
   hostAPIList = new QComboBox;
+#if defined(Q_OS_WIN)
+  hostAPIList->setToolTip(tr("Try Windows WDM-KS first and otherwise try WASAPI"));
+#elif defined(Q_OS_LINUX)
+  hostAPIList->setToolTip(tr("Try JACK for best results, ALSA can interfere with PulseAudio"));
+#endif
   hostAPIList->setEditable(false);
   connect(hostAPIList, SIGNAL(currentIndexChanged(int)),
           this, SLOT(hostAPIIndexChanged(int)));
 
-  QVBoxLayout *vlayout = new QVBoxLayout;
+  QLabel *troubleshooting = new QLabel(tr("<b>Troubleshooting</b>: See the <a href=\"https://forum.jammr.net/topic/1987/\">Audio Setup Guide</a> for help."));
+  troubleshooting->setOpenExternalLinks(true);
+
+  QGroupBox *advancedGroupBox = new QGroupBox(tr("Advanced"));
+  advancedGroupBox->setFlat(true);
+
   QFormLayout *formLayout = new QFormLayout;
+  formLayout->addRow(tr("Sample &rate (Hz):"), sampleRateList);
+  formLayout->addRow(tr("&Latency (ms):"), latencyList);
+  formLayout->addRow(tr("Audio &system:"), hostAPIList);
+  formLayout->addRow(new QLabel); /* just a spacer */
+  formLayout->addRow(troubleshooting);
+  advancedGroupBox->setLayout(formLayout);
+
+  QVBoxLayout *vlayout = new QVBoxLayout;
+  formLayout = new QFormLayout;
   formLayout->setSpacing(5);
   formLayout->setContentsMargins(2, 2, 2, 2);
   formLayout->addRow(tr("&Input device:"), inputDeviceList);
   formLayout->addRow(new QLabel, unmuteLocalChannelsBox);
   formLayout->addRow(tr("&Output device:"), outputDeviceList);
   formLayout->addRow(new QLabel); /* just a spacer */
-  formLayout->addRow(tr("Sample &rate (Hz):"), sampleRateList);
-  formLayout->addRow(tr("&Latency (ms):"), latencyList);
-  formLayout->addRow(new QLabel); /* just a spacer */
-  formLayout->addRow(new QLabel(tr("<b>Troubleshooting:</b> If you experience audio problems, try selecting another audio system.")));
-  formLayout->addRow(tr("Audio &system:"), hostAPIList);
+  formLayout->addRow(advancedGroupBox);
   vlayout->addLayout(formLayout);
   setLayout(vlayout);
 
