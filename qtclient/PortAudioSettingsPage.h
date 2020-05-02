@@ -22,6 +22,7 @@
 #include <QWidget>
 #include <QComboBox>
 #include <QCheckBox>
+#include <QListWidget>
 
 class PortAudioSettingsPage : public QWidget
 {
@@ -29,7 +30,9 @@ class PortAudioSettingsPage : public QWidget
   Q_PROPERTY(QString hostAPI READ hostAPI WRITE setHostAPI)
   Q_PROPERTY(QString inputDevice READ inputDevice WRITE setInputDevice)
   Q_PROPERTY(bool unmuteLocalChannels READ unmuteLocalChannels WRITE setUnmuteLocalChannels)
+  Q_PROPERTY(QList<QVariant> inputChannels READ inputChannels WRITE setInputChannels)
   Q_PROPERTY(QString outputDevice READ outputDevice WRITE setOutputDevice)
+  Q_PROPERTY(QList<QVariant> outputChannels READ outputChannels WRITE setOutputChannels)
   Q_PROPERTY(double sampleRate READ sampleRate WRITE setSampleRate)
   Q_PROPERTY(double latency READ latency WRITE setLatency)
 
@@ -41,15 +44,20 @@ public:
   void setInputDevice(const QString &name);
   bool unmuteLocalChannels() const;
   void setUnmuteLocalChannels(bool unmute);
+  QList<QVariant> inputChannels() const;
+  void setInputChannels(const QList<QVariant> &channels);
   QString outputDevice() const;
   void setOutputDevice(const QString &name);
+  QList<QVariant> outputChannels() const;
+  void setOutputChannels(const QList<QVariant> &channels);
   double sampleRate() const;
   void setSampleRate(double sampleRate);
   double latency() const;
   void setLatency(double latency);
 
 private slots:
-  void deviceIndexChanged(int index);
+  void inputDeviceIndexChanged(int index);
+  void outputDeviceIndexChanged(int index);
   void sampleRateIndexChanged(int index);
   void hostAPIIndexChanged(int index);
 
@@ -57,10 +65,16 @@ private:
   QComboBox *hostAPIList;
   QComboBox *inputDeviceList;
   QCheckBox *unmuteLocalChannelsBox;
+  QListWidget *inputChannelsList;
   QComboBox *outputDeviceList;
+  QListWidget *outputChannelsList;
   QComboBox *sampleRateList;
   QComboBox *latencyList;
 
+  QList<QVariant> getChannelsList(QListWidget *list) const;
+  void setChannelsList(QListWidget *list, const QList<QVariant> &channels);
+  void populateChannelsList(QComboBox *deviceList, QListWidget *channelsList,
+                            bool isInput);
   void populateHostAPIList();
   void populateDeviceList();
   void populateSampleRateList();

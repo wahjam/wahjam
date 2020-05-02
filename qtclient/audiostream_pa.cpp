@@ -21,6 +21,8 @@
 #include <stdlib.h>
 #include <portaudio.h>
 #include <QtGlobal>
+#include <QVariant>
+#include <QList>
 #include "common/audiostream.h"
 
 static void logPortAudioError(const char *msg, PaError error)
@@ -41,7 +43,9 @@ public:
   ~PortAudioStreamer();
 
   bool Start(const PaStreamParameters *inputParams,
+             const QList<QVariant> &inputChannels_,
              const PaStreamParameters *outputParams,
+             const QList<QVariant> &outputChannels_,
              double sampleRate);
   void Stop();
 
@@ -60,6 +64,12 @@ private:
   PaStream *stream;
   float *inputMonoBuf;
   unsigned long inputMonoBufFrames;
+
+  /* Channel routing */
+  size_t numInputChannels;
+  int *inputChannels;
+  size_t numOutputChannels;
+  int *outputChannels;
 };
 
 const char *PortAudioStreamer::GetChannelName(int idx)
@@ -86,28 +96,58 @@ int PortAudioStreamer::streamCallback(const void *input, void *output,
   const PaStreamInfo *info = Pa_GetStreamInfo(stream);
 
   /* Mix down to mono */
-  if (m_innch == 2) {
+  if (m_innch > 1) {
     if (inputMonoBufFrames < frameCount) {
       /* Allocation should happen rarely so don't worry about real-time */
       delete [] inputMonoBuf;
       inputMonoBuf = new float[frameCount];
       inputMonoBufFrames = frameCount;
     }
-    for (unsigned long i = 0; i < frameCount; i++) {
-      inputMonoBuf[i] = inbuf[0][i] * 0.5 + inbuf[1][i] * 0.5;
+
+    if (numInputChannels > 0) {
+      int channel = inputChannels[0];
+
+      for (unsigned long i = 0; i < frameCount; i++) {
+        inputMonoBuf[i] = inbuf[channel][i];
+      }
+
+      for (size_t chidx = 1; chidx < numInputChannels; chidx++) {
+        channel = inputChannels[chidx];
+
+        for (unsigned long i = 0; i < frameCount; i++) {
+          inputMonoBuf[i] += inbuf[channel][i];
+        }
+      }
+
+      for (unsigned long i = 0; i < frameCount; i++) {
+        inputMonoBuf[i] /= numInputChannels;
+      }
+    } else {
+      memset(inputMonoBuf, 0, sizeof(float) * frameCount);
     }
+
     inbuf = &inputMonoBuf;
   }
 
   splproc(inbuf, 1, outbuf, 1, frameCount, info->sampleRate);
 
   /* Mix up to multi-channel audio */
-  if (m_outnch > 1) {
-    for (int channel = 1; channel < m_outnch; channel++) {
-      for (unsigned long i = 0; i < frameCount; i++) {
-        outbuf[channel][i] = outbuf[0][i];
-      }
+  size_t chidx = 0;
+  for (int channel = 1; channel < m_outnch; channel++) {
+    while (chidx < numOutputChannels && channel > outputChannels[chidx]) {
+      chidx++;
     }
+
+    if (chidx >= numOutputChannels || channel < outputChannels[chidx]) {
+      memset(outbuf[channel], 0, sizeof(float) * frameCount);
+    } else {
+      memcpy(outbuf[channel], outbuf[0], sizeof(float) * frameCount);
+      chidx++;
+    }
+  }
+  if (numOutputChannels > 0 && outputChannels[0] != 0) {
+    /* Output was put into outbuf[0] but the channel is disabled, silence it */
+    memset(outbuf[0], 0, sizeof(float) * frameCount);
   }
 
   return paContinue;
@@ -123,7 +163,9 @@ int PortAudioStreamer::streamCallbackTrampoline(const void *input, void *output,
 }
 
 PortAudioStreamer::PortAudioStreamer(SPLPROC proc)
-  : splproc(proc), stream(NULL), inputMonoBuf(NULL), inputMonoBufFrames(0)
+  : splproc(proc), stream(NULL), inputMonoBuf(NULL), inputMonoBufFrames(0),
+    numInputChannels(0), inputChannels(NULL),
+    numOutputChannels(0), outputChannels(NULL)
 {
 }
 
@@ -133,9 +175,20 @@ PortAudioStreamer::~PortAudioStreamer()
   delete [] inputMonoBuf;
 }
 
+/* Used for qsort(3) on ints */
+static int compare_int(const void *a, const void *b)
+{
+  int i = *(const int *)a;
+  int j = *(const int *)b;
+
+  return i - j;
+}
+
 /* Returns true on success, false on failure */
 bool PortAudioStreamer::Start(const PaStreamParameters *inputParams,
+                              const QList<QVariant> &inputChannels_,
                               const PaStreamParameters *outputParams,
+                              const QList<QVariant> &outputChannels_,
                               double sampleRate)
 {
   PaError error;
@@ -158,6 +211,34 @@ bool PortAudioStreamer::Start(const PaStreamParameters *inputParams,
     qDebug("Output device: %s (%s)", deviceInfo->name,
            hostApiInfo ? hostApiInfo->name : "<invalid host api>");
   }
+
+  numInputChannels = inputChannels_.count();
+  inputChannels = new int[numInputChannels];
+  int i = 0;
+  for (const QVariant &channel : inputChannels_) {
+    inputChannels[i++] = channel.toInt();
+  }
+  qsort(inputChannels, numInputChannels, sizeof(inputChannels[0]),
+        compare_int);
+  QStringList inputChannelsStr;
+  for (size_t chidx = 0; chidx < numInputChannels; chidx++) {
+    inputChannelsStr.append(QString::number(inputChannels[chidx]));
+  }
+  qDebug("Input channels: %s", inputChannelsStr.join(' ').toLatin1().constData());
+
+  numOutputChannels = outputChannels_.count();
+  outputChannels = new int[numOutputChannels];
+  i = 0;
+  for (const QVariant &channel : outputChannels_) {
+    outputChannels[i++] = channel.toInt();
+  }
+  qsort(outputChannels, numOutputChannels, sizeof(outputChannels[0]),
+        compare_int);
+  QStringList outputChannelsStr;
+  for (size_t chidx = 0; chidx < numOutputChannels; chidx++) {
+    outputChannelsStr.append(QString::number(outputChannels[chidx]));
+  }
+  qDebug("Output channels: %s", outputChannelsStr.join(' ').toLatin1().constData());
 
   error = Pa_OpenStream(&stream, inputParams, outputParams,
                         sampleRate, paFramesPerBufferUnspecified,
@@ -198,6 +279,15 @@ void PortAudioStreamer::Stop()
   if (stream) {
     Pa_CloseStream(stream);
     stream = NULL;
+  }
+
+  if (numInputChannels > 0) {
+    numInputChannels = 0;
+    delete [] inputChannels;
+  }
+  if (numOutputChannels > 0) {
+    numOutputChannels = 0;
+    delete [] outputChannels;
   }
 }
 
@@ -301,12 +391,11 @@ static bool setupParameters(const char *hostAPI, const char *inputDevice,
   inputParams->sampleFormat = sampleFormat;
   outputParams->sampleFormat = sampleFormat;
 
-  /* TODO support user-defined channel configuration */
   if (inputDeviceInfo->maxInputChannels == 0 ||
       outputDeviceInfo->maxOutputChannels == 0) {
     return false;
   }
-  inputParams->channelCount = inputDeviceInfo->maxInputChannels > 1 ? 2 : 1;
+  inputParams->channelCount = inputDeviceInfo->maxInputChannels;
   outputParams->channelCount = outputDeviceInfo->maxOutputChannels;
 
   inputParams->suggestedLatency = latency;
@@ -318,7 +407,8 @@ static bool setupParameters(const char *hostAPI, const char *inputDevice,
 }
 
 audioStreamer *create_audioStreamer_PortAudio(const char *hostAPI,
-    const char *inputDevice, const char *outputDevice,
+    const char *inputDevice, const QList<QVariant> &inputChannels,
+    const char *outputDevice, const QList<QVariant> &outputChannels,
     double sampleRate, double latency, SPLPROC proc)
 {
   PaStreamParameters inputParams, outputParams;
@@ -328,7 +418,9 @@ audioStreamer *create_audioStreamer_PortAudio(const char *hostAPI,
   }
 
   PortAudioStreamer *streamer = new PortAudioStreamer(proc);
-  if (!streamer->Start(&inputParams, &outputParams, sampleRate)) {
+  if (!streamer->Start(&inputParams, inputChannels,
+                       &outputParams, outputChannels,
+                       sampleRate)) {
     delete streamer;
     return NULL;
   }

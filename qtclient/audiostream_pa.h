@@ -22,7 +22,10 @@
 #include "common/audiostream.h"
 
 audioStreamer *create_audioStreamer_PortAudio(const char *hostAPI,
-    const char *inputDevice, const char *outputDevice,
+    const char *inputDevice,
+    const QList<QVariant> &inputChannels,
+    const char *outputDevice,
+    const QList<QVariant> &outputChannels,
     double sampleRate, double latency, SPLPROC proc);
 bool portAudioInit();
 

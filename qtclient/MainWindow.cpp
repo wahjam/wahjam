@@ -343,7 +343,17 @@ void MainWindow::setupPortAudioSettingsPage()
   portAudioSettingsPage->setHostAPI(settings->value("audio/hostAPI").toString());
   portAudioSettingsPage->setInputDevice(settings->value("audio/inputDevice").toString());
   portAudioSettingsPage->setUnmuteLocalChannels(settings->value("audio/unmuteLocalChannels", true).toBool());
+  if (settings->contains("audio/inputChannels")) {
+    portAudioSettingsPage->setInputChannels(settings->value("audio/inputChannels").toList());
+  } else {
+    settings->setValue("audio/inputChannels", portAudioSettingsPage->inputChannels());
+  }
   portAudioSettingsPage->setOutputDevice(settings->value("audio/outputDevice").toString());
+  if (settings->contains("audio/outputChannels")) {
+    portAudioSettingsPage->setOutputChannels(settings->value("audio/outputChannels").toList());
+  } else {
+    settings->setValue("audio/outputChannels", portAudioSettingsPage->outputChannels());
+  }
   portAudioSettingsPage->setSampleRate(settings->value("audio/sampleRate").toDouble());
   portAudioSettingsPage->setLatency(settings->value("audio/latency").toDouble());
 
@@ -405,12 +415,16 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
   QString hostAPI = settings->value("audio/hostAPI").toString();
   QString inputDevice = settings->value("audio/inputDevice").toString();
   bool unmuteLocalChannels = settings->value("audio/unmuteLocalChannels", true).toBool();
+  QList<QVariant> inputChannels = settings->value("audio/inputChannels").toList();
   QString outputDevice = settings->value("audio/outputDevice").toString();
+  QList<QVariant> outputChannels = settings->value("audio/outputChannels").toList();
   double sampleRate = settings->value("audio/sampleRate").toDouble();
   double latency = settings->value("audio/latency").toDouble();
   audio = create_audioStreamer_PortAudio(hostAPI.toUtf8().data(),
                                          inputDevice.toUtf8().data(),
+                                         inputChannels,
                                          outputDevice.toUtf8().data(),
+                                         outputChannels,
                                          sampleRate, latency,
                                          OnSamplesTrampoline);
   if (!audio)
@@ -1076,7 +1090,9 @@ void MainWindow::SettingsDialogClosed()
   settings->setValue("audio/hostAPI", portAudioSettingsPage->hostAPI());
   settings->setValue("audio/inputDevice", portAudioSettingsPage->inputDevice());
   settings->setValue("audio/unmuteLocalChannels", portAudioSettingsPage->unmuteLocalChannels());
+  settings->setValue("audio/inputChannels", portAudioSettingsPage->inputChannels());
   settings->setValue("audio/outputDevice", portAudioSettingsPage->outputDevice());
+  settings->setValue("audio/outputChannels", portAudioSettingsPage->outputChannels());
   settings->setValue("audio/sampleRate", portAudioSettingsPage->sampleRate());
   settings->setValue("audio/latency", portAudioSettingsPage->latency());
 
