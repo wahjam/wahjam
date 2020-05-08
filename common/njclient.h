@@ -70,6 +70,7 @@ class I_NJEncoder;
 class RemoteDownload;
 class RemoteUser;
 class Local_Channel;
+class DecodeBuffer;
 class DecodeState;
 class BufferQueue;
 
@@ -107,6 +108,7 @@ public:
   int   config_debug_level; 
   int   config_play_prebuffer; // -1 means play instantly, 0 means play when full file is there, otherwise refers to how many
                                // bytes of compressed source to have before play. the default value is 4096.
+  bool  config_use_file_io;    // store compressed audio data in temporary files
 
   float GetOutputPeak();
 
@@ -252,7 +254,7 @@ protected:
   int lastBpi;
   int lastBeat;
 
-  DecodeState *start_decode(unsigned char *guid, unsigned int fourcc=0);
+  DecodeState *start_decode(unsigned char *guid, unsigned int fourcc, DecodeBuffer *decodeBuffer);
 
   BufferQueue *m_wavebq;
 

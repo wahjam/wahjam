@@ -55,13 +55,86 @@ enum {
 
 #define MAKE_NJ_FOURCC(A,B,C,D) ((A) | ((B)<<8) | ((C)<<16) | ((D)<<24))
 
+// Compressed audio data buffer. Written to by client event loop and read from
+// by audio processing thread.
+class DecodeBuffer
+{
+  public:
+    // Create a new instance with refcount set to 1
+    static DecodeBuffer *createAndRef()
+    {
+      return new DecodeBuffer;
+    }
+
+    // Release a reference
+    void ref()
+    {
+      refcount.fetchAndAddOrdered(1);
+    }
+
+    // Acquire a reference
+    void unref()
+    {
+      if (refcount.fetchAndSubOrdered(1) == 1) {
+        delete this;
+      }
+    }
+
+    // Return the number of bytes in the buffer
+    int size()
+    {
+      QMutexLocker locker(&lock);
+
+      return data.size();
+    }
+
+    // Write len bytes at end of buffer
+    void write(void *buf, int len)
+    {
+      QMutexLocker locker(&lock);
+
+      data.append(static_cast<const char*>(buf), len);
+    }
+
+    // Read up to len bytes from beginning of buffer
+    int read(void *buf, int len)
+    {
+      QMutexLocker locker(&lock);
+
+      if (data.size() < len) {
+        len = data.size();
+      }
+
+      memcpy(buf, data.constData(), len);
+      data.remove(0, len);
+      return len;
+    }
+
+  private:
+    QAtomicInteger<int> refcount;
+
+    QMutex lock; // protects data
+    QByteArray data;
+
+    // Only allocated on the heap using DecodeBuffer::create()
+    DecodeBuffer()
+      : refcount(1)
+    {
+      data.reserve(4096);
+    }
+};
+
 class DecodeState
 {
   public:
-    DecodeState()
+    DecodeState(DecodeBuffer *decodeBuffer_)
       : decode_peak_vol(0.0), decode_fp(0), decode_codec(0),
-        decode_samplesout(0), dump_samples(0), resample_state(0.0)
+        decode_samplesout(0), dump_samples(0), resample_state(0.0),
+        decodeBuffer(decodeBuffer_)
     {
+      if (decodeBuffer) {
+        decodeBuffer->ref();
+      }
       memset(guid,0,sizeof(guid));
     }
     ~DecodeState()
@@ -71,9 +144,36 @@ class DecodeState
       if (decode_fp) fclose(decode_fp);
       decode_fp=0;
 
+      if (decodeBuffer) {
+        decodeBuffer->unref();
+        decodeBuffer = 0;
+      }
+
       if (!delete_on_delete.fileName().isEmpty()) {
         delete_on_delete.remove();
       }
+    }
+
+    bool fillDecodeBuffer(int nbytes)
+    {
+      void *buffer = decode_codec->DecodeGetSrcBuffer(nbytes);
+
+      int l = 0;
+      if (decodeBuffer) {
+        l = decodeBuffer->read(buffer, nbytes);
+      } else if (decode_fp) {
+        l = fread(buffer, 1, nbytes, decode_fp);
+      }
+      if (!l)
+      {
+        if (decode_fp) {
+          clearerr(decode_fp);
+        }
+        return false;
+      }
+
+      decode_codec->DecodeWrote(l);
+      return true;
     }
 
     unsigned char guid[16];
@@ -86,7 +186,7 @@ class DecodeState
     int decode_samplesout;
     int dump_samples;
     double resample_state;
-
+    DecodeBuffer *decodeBuffer;
 };
 
 
@@ -133,7 +233,7 @@ public:
   void Close();
   void Open(NJClient *parent, unsigned int fourcc);
   void Write(void *buf, int len);
-  void startPlaying(int force=0); // call this with 1 to make sure it gets played ASAP, or let RemoteDownload call it automatically
+  void startPlaying(bool closing=false);
 
   time_t last_time;
   unsigned char guid[16];
@@ -146,6 +246,7 @@ private:
   unsigned int m_fourcc;
   NJClient *m_parent;
   FILE *fp;
+  DecodeBuffer *decodeBuffer;
 };
 
 /* Sentinel WDL_HeapBuf for silent intervals */
@@ -332,6 +433,7 @@ NJClient::NJClient(QObject *parent)
   config_masterpan=0.0f;
   config_mastermute=false;
   config_play_prebuffer=8192;
+  config_use_file_io = false;
 
   protocol = JAM_PROTO_NINJAM;
 
@@ -911,7 +1013,7 @@ void NJClient::processMessage(Net_Message *msg)
             }
             else
             {
-              DecodeState *tmp=start_decode(dib.guid);
+              DecodeState *tmp=start_decode(dib.guid, 0, 0);
               m_users_cs.Enter();
               int useidx=!!theuser->channels[dib.chidx].next_ds[0];
               DecodeState *t2=theuser->channels[dib.chidx].next_ds[useidx];
@@ -1254,46 +1356,49 @@ void NJClient::tick()
 }
 
 
-DecodeState *NJClient::start_decode(unsigned char *guid, unsigned int fourcc)
+DecodeState *NJClient::start_decode(unsigned char *guid, unsigned int fourcc,
+                                    DecodeBuffer *decodeBuffer)
 {
   Q_UNUSED(fourcc);
 
-  DecodeState *newstate=new DecodeState;
+  DecodeState *newstate = new DecodeState(decodeBuffer);
   memcpy(newstate->guid,guid,sizeof(newstate->guid));
 
-  WDL_String s;
+  if (!decodeBuffer) {
+    WDL_String s;
 
-  makeFilenameFromGuid(&s,guid);
+    makeFilenameFromGuid(&s,guid);
 
-  // todo: make plug-in system to allow encoders to add types allowed
-  // todo: with a preference for 'fourcc' if specified
-  unsigned int types[]={MAKE_NJ_FOURCC('O','G','G','v')}; // only types we understand
+    // todo: make plug-in system to allow encoders to add types allowed
+    // todo: with a preference for 'fourcc' if specified
+    unsigned int types[]={MAKE_NJ_FOURCC('O','G','G','v')}; // only types we understand
 
-  int oldl=strlen(s.Get())+1;
-  s.Append(".XXXXXXXXX");
-  unsigned int x;
-  for (x = 0; !newstate->decode_fp && x < sizeof(types)/sizeof(types[0]); x ++)
-  {
-    type_to_string(types[x],s.Get()+oldl);
-    newstate->decode_fp = utf8_fopen(s.Get(), "rb");
+    int oldl=strlen(s.Get())+1;
+    s.Append(".XXXXXXXXX");
+    unsigned int x;
+    for (x = 0; !newstate->decode_fp && x < sizeof(types)/sizeof(types[0]); x ++)
+    {
+      type_to_string(types[x],s.Get()+oldl);
+      newstate->decode_fp = utf8_fopen(s.Get(), "rb");
+    }
+
+    if (newstate->decode_fp)
+    {
+      if (config_savelocalaudio<0)
+      {
+        newstate->delete_on_delete.setFileName(s.Get());
+      }
+    }
   }
 
-  if (newstate->decode_fp)
+  if (decodeBuffer || newstate->decode_fp)
   {
-    if (config_savelocalaudio<0)
-    {
-      newstate->delete_on_delete.setFileName(s.Get());
-    }
     newstate->decode_codec= new I_NJDecoder;
     // run some decoding
 
     while (newstate->decode_codec->m_samples_used <= 0)
     {
-      int l=fread(newstate->decode_codec->DecodeGetSrcBuffer(128),1,128,newstate->decode_fp);          
-      if (l) newstate->decode_codec->DecodeWrote(l);
-      if (!l) 
-      {
-        clearerr(newstate->decode_fp);
+      if (!newstate->fillDecodeBuffer(128)) {
         break;
       }
     }
@@ -1570,17 +1675,13 @@ void NJClient::process_samples(float **inbuf, int innch, float **outbuf, int out
 
 void NJClient::mixInChannel(bool muted, float vol, float pan, DecodeState *chan, float **outbuf, int len, int srate, int outnch, int offs, double vudecay)
 {
-  if (!chan->decode_codec || !chan->decode_fp) return;
+  if (!chan->decode_codec || (!chan->decode_fp && !chan->decodeBuffer)) return;
 
   int needed;
   while (chan->decode_codec->m_samples_used <= 
         (needed=resampleLengthNeeded(chan->decode_codec->GetSampleRate(),srate,len,&chan->resample_state)*chan->decode_codec->GetNumChannels()))
   {
-    int l=fread(chan->decode_codec->DecodeGetSrcBuffer(128),1,128,chan->decode_fp);          
-    chan->decode_codec->DecodeWrote(l);
-    if (!l) 
-    {
-      clearerr(chan->decode_fp);
+    if (!chan->fillDecodeBuffer(128)) {
       break;
     }
   }
@@ -2012,7 +2113,8 @@ RemoteUser_Channel::~RemoteUser_Channel()
 }
 
 
-RemoteDownload::RemoteDownload() : chidx(-1), playtime(0), m_parent(0), fp(0)
+RemoteDownload::RemoteDownload()
+  : chidx(-1), playtime(0), m_parent(0), fp(0), decodeBuffer(0)
 {
   memset(&guid,0,sizeof(guid));
   time(&last_time);
@@ -2027,48 +2129,71 @@ void RemoteDownload::Close()
 {
   if (fp) fclose(fp);
   fp=0;
-  startPlaying(1);
+  startPlaying(true);
 }
 
 void RemoteDownload::Open(NJClient *parent, unsigned int fourcc)
 {    
   m_parent=parent;
   Close();
-  WDL_String s;
-  parent->makeFilenameFromGuid(&s,guid);
-
-
-  // append extension from fourcc
-  char buf[8];
-  type_to_string(fourcc, buf);
-  s.Append(".");
-  s.Append(buf);
 
   m_fourcc=fourcc;
-  fp = utf8_fopen(s.Get(), "wb");
+
+  if (parent->config_use_file_io) {
+    WDL_String s;
+    parent->makeFilenameFromGuid(&s,guid);
+
+    // append extension from fourcc
+    char buf[8];
+    type_to_string(fourcc, buf);
+    s.Append(".");
+    s.Append(buf);
+
+    fp = utf8_fopen(s.Get(), "wb");
+  } else {
+    decodeBuffer = DecodeBuffer::createAndRef();
+  }
 }
 
-void RemoteDownload::startPlaying(int force)
+void RemoteDownload::startPlaying(bool closing)
 {
-  if (m_parent && chidx >= 0 && (force || (playtime && fp && ftell(fp)>playtime))) 
-    // wait until we have config_play_prebuffer of data to start playing, or if config_play_prebuffer is 0, we are forced to play (download finished)
-  {
-    int x;
-    RemoteUser *theuser;
-    for (x = 0; x < m_parent->m_remoteusers.GetSize() && strcmp((theuser=m_parent->m_remoteusers.Get(x))->name.Get(),username.Get()); x ++);
-    if (x < m_parent->m_remoteusers.GetSize() && chidx >= 0 && chidx < MAX_USER_CHANNELS)
-    {
-       DecodeState *tmp=m_parent->start_decode(guid,m_fourcc);
+  int nbytes = 0;
+  int x;
+  RemoteUser *theuser;
 
-       DecodeState *tmp2;
-       m_parent->m_users_cs.Enter();
-       int useidx=!!theuser->channels[chidx].next_ds[0];
-       tmp2=theuser->channels[chidx].next_ds[useidx];
-       theuser->channels[chidx].next_ds[useidx]=tmp;
-       m_parent->m_users_cs.Leave();
-       delete tmp2;
-    }
-    chidx=-1;
+  if (!m_parent || chidx < 0) {
+    goto out;
+  }
+
+  // wait until we have config_play_prebuffer of data to start playing, or if config_play_prebuffer is 0, we are closingd to play (download finished)
+  if (fp) {
+    nbytes = ftell(fp);
+  } else if (decodeBuffer) {
+    nbytes = decodeBuffer->size();
+  }
+  if (!closing && playtime && nbytes < playtime) {
+    goto out;
+  }
+
+  for (x = 0; x < m_parent->m_remoteusers.GetSize() && strcmp((theuser=m_parent->m_remoteusers.Get(x))->name.Get(),username.Get()); x ++);
+  if (x < m_parent->m_remoteusers.GetSize() && chidx >= 0 && chidx < MAX_USER_CHANNELS)
+  {
+    DecodeState *tmp = m_parent->start_decode(guid, m_fourcc, decodeBuffer);
+
+    DecodeState *tmp2;
+    m_parent->m_users_cs.Enter();
+    int useidx=!!theuser->channels[chidx].next_ds[0];
+    tmp2=theuser->channels[chidx].next_ds[useidx];
+    theuser->channels[chidx].next_ds[useidx]=tmp;
+    m_parent->m_users_cs.Leave();
+    delete tmp2;
+  }
+  chidx=-1;
+
+out:
+  if (closing && decodeBuffer) {
+    decodeBuffer->unref();
+    decodeBuffer = 0;
   }
 }
 
@@ -2078,6 +2203,8 @@ void RemoteDownload::Write(void *buf, int len)
   {
     fwrite(buf,1,len,fp);
     fflush(fp);
+  } else if (decodeBuffer) {
+    decodeBuffer->write(buf, len);
   }
 
   startPlaying();  
