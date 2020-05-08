@@ -266,6 +266,9 @@ MainWindow::MainWindow(QWidget *parent)
   connect(&client, SIGNAL(currentBeatChanged(int)),
           metronomeBar, SLOT(setCurrentBeat(int)));
 
+  connect(&portAudioStreamer, SIGNAL(StoppedUnexpectedly()),
+          this, SLOT(AudioStoppedUnexpectedly()));
+
   portMidiStreamer.addInputQueue(&vstMidiInputQueue);
   effectProcessor = new EffectProcessor(&vstMidiInputQueue,
                                         portMidiStreamer.getOutputQueue(),
@@ -398,6 +401,25 @@ void MainWindow::Startup()
   }
 
   ShowConnectDialog();
+}
+
+void MainWindow::AudioStoppedUnexpectedly()
+{
+  Disconnect();
+
+  QMessageBox::critical(this, tr("Audio stopped unexpectedly"),
+      tr("<p>An audio error has occurred. This may indicate an incompatibility "
+         "with the input or output audio device."
+#ifndef Q_OS_MAC /* macOS only has only one audio system */
+         " Try selecting a different Audio System."
+#endif
+         "<p>If this problem continues please report a bug and include "
+         "contents of the log file at <a href=\"%1\">%2</a>.</p>").arg(
+             QUrl::fromLocalFile(logFilePath).toString(),
+             logFilePath));
+
+  settingsDialog->setPage(0);
+  settingsDialog->exec();
 }
 
 void MainWindow::Connect(const QString &host, const QString &user, const QString &pass)

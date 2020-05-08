@@ -67,6 +67,7 @@ public slots:
   void SendChatMessage(const QString &line);
 
 private slots:
+  void AudioStoppedUnexpectedly();
   void ChatInputReturnPressed();
   void ChatLinkClicked(const QUrl &url);
   void UserInfoChanged();

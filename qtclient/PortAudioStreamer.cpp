@@ -23,13 +23,15 @@
 
 static void logPortAudioError(const char *msg, PaError error)
 {
-  if (error == paUnanticipatedHostError) {
-    const PaHostErrorInfo *info = Pa_GetLastHostErrorInfo();
-    qCritical("%s: unanticipated host error: %s (%ld)",
-              msg, info->errorText, info->errorCode);
-  } else {
-    qCritical("%s: %s", msg, Pa_GetErrorText(error));
-  }
+  const PaHostErrorInfo *info = Pa_GetLastHostErrorInfo();
+
+  /* The documentation says Pa_GetLastHostErrorInfo() only returns valid data
+   * after paUnanticipatedHostError but some hostapis set it even when
+   * returning other error codes. Get as much information as we can but be
+   * aware that host info may be stale.
+   */
+  qCritical("%s: %s: %s (%ld)",
+            msg, Pa_GetErrorText(error), info->errorText, info->errorCode);
 }
 
 const char *PortAudioStreamer::GetChannelName(int idx)
@@ -113,6 +115,13 @@ int PortAudioStreamer::streamCallback(const void *input, void *output,
   return paContinue;
 }
 
+void PortAudioStreamer::streamFinishedCallback()
+{
+  if (!stopping) {
+    emit StoppedUnexpectedly();
+  }
+}
+
 int PortAudioStreamer::streamCallbackTrampoline(const void *input, void *output,
     unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo,
     PaStreamCallbackFlags statusFlags, void *userData)
@@ -122,9 +131,16 @@ int PortAudioStreamer::streamCallbackTrampoline(const void *input, void *output,
   return streamer->streamCallback(input, output, frameCount, timeInfo, statusFlags);
 }
 
+void PortAudioStreamer::streamFinishedCallbackTrampoline(void *userData)
+{
+  PortAudioStreamer *streamer = static_cast<PortAudioStreamer*>(userData);
+
+  streamer->streamFinishedCallback();
+}
+
 PortAudioStreamer::PortAudioStreamer(SPLPROC proc)
   : splproc(proc), stream(NULL), inputMonoBuf(NULL), inputMonoBufFrames(0),
-    numHWInputChannels(0), numHWOutputChannels(0),
+    numHWInputChannels(0), numHWOutputChannels(0), stopping(false),
     numInputChannels(0), inputChannels(NULL),
     numOutputChannels(0), outputChannels(NULL)
 {
@@ -148,7 +164,20 @@ static int compare_int(const void *a, const void *b)
 void PortAudioStreamer::Stop()
 {
   if (stream) {
-    PaError error = Pa_CloseStream(stream);
+    stopping = true;
+
+    /* Pa_AbortStream() can trigger a deadlock in the PulseAudio ALSA plugin,
+     * so call Pa_StopStream() before Pa_CloseStream(). Pa_CloseStream()
+     * implicitly aborts the stream if it's not already stopped.
+     */
+    PaError error = Pa_StopStream(stream);
+    if (error != paNoError) {
+      logPortAudioError("Pa_StopStream failed", error);
+    }
+
+    error = Pa_CloseStream(stream);
+    stopping = false;
+
     if (error != paNoError) {
       logPortAudioError("Pa_CloseStream failed", error);
     }
@@ -355,6 +384,13 @@ bool PortAudioStreamer::Start(const char *hostAPI,
 
   numHWInputChannels = inputParams.channelCount;
   numHWOutputChannels = outputParams.channelCount;
+
+  error = Pa_SetStreamFinishedCallback(stream, streamFinishedCallbackTrampoline);
+  if (error != paNoError) {
+    logPortAudioError("Pa_SetStreamFinishedCallback failed", error);
+    Stop();
+    return false;
+  }
 
   error = Pa_StartStream(stream);
   if (error != paNoError) {

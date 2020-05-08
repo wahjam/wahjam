@@ -50,9 +50,19 @@ public:
     unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo,
     PaStreamCallbackFlags statusFlags);
 
+  void streamFinishedCallback();
+
   static int streamCallbackTrampoline(const void *input, void *output,
       unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo,
       PaStreamCallbackFlags statusFlags, void *userData);
+
+  static void streamFinishedCallbackTrampoline(void *userData);
+
+signals:
+  /* Emitted when the stream fails after starting. Note this signal can be
+   * emitted from another thread!
+   */
+  void StoppedUnexpectedly();
 
 private:
   SPLPROC splproc;
@@ -61,6 +71,7 @@ private:
   unsigned long inputMonoBufFrames;
   int numHWInputChannels;
   int numHWOutputChannels;
+  bool stopping;
 
   /* Channel routing */
   size_t numInputChannels;
