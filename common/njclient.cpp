@@ -801,9 +801,12 @@ void NJClient::processMessage(Net_Message *msg)
               // printf("user %s, channel %d \"%s\": %s v:%d.%ddB p:%d flag=%d\n",un,cid,chn,a?"active":"inactive",(int)v/10,abs((int)v)%10,p,f);
 
 
-              m_users_cs.Enter();
               if (a)
               {
+                int submask = 0;
+
+                m_users_cs.Enter();
+
                 if (x == m_remoteusers.GetSize())
                 {
                   theuser=new RemoteUser;
@@ -814,12 +817,17 @@ void NJClient::processMessage(Net_Message *msg)
                 theuser->channels[cid].name.Set(chn);
                 theuser->chanpresentmask |= 1<<cid;
 
+                if (config_autosubscribe)
+                {
+                  submask = theuser->submask |= 1<<cid;
+                }
+
+                m_users_cs.Leave();
 
                 if (config_autosubscribe)
                 {
-                  theuser->submask |= 1<<cid;
                   mpb_client_set_usermask su;
-                  su.build_add_rec(un,theuser->submask);
+                  su.build_add_rec(un, submask);
                   m_netcon->Send(su.build());
                 }
               }
@@ -827,6 +835,8 @@ void NJClient::processMessage(Net_Message *msg)
               {
                 if (x < m_remoteusers.GetSize())
                 {
+                  m_users_cs.Enter();
+
                   theuser->channels[cid].name.Set("");
                   theuser->chanpresentmask &= ~(1<<cid);
                   theuser->submask &= ~(1<<cid);
@@ -856,9 +866,10 @@ void NJClient::processMessage(Net_Message *msg)
                     if (i < m_remoteusers.GetSize()) m_issoloactive|=1;
                     else m_issoloactive&=~1;
                   }
+
+                  m_users_cs.Leave();
                 }
               }
-              m_users_cs.Leave();
             }
           }
           emit userInfoChanged();
