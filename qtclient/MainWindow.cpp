@@ -429,7 +429,6 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
   QString midiInputDevice = settings->value("midi/inputDevice").toString();
   QString midiOutputDevice = settings->value("midi/outputDevice").toString();
   client.SetSendMidiBeatClock(settings->value("midi/sendMidiBeatClock").toBool());
-  portMidiStreamer.start(midiInputDevice, midiOutputDevice);
 
   QString hostAPI = settings->value("audio/hostAPI").toString();
   QString inputDevice = settings->value("audio/inputDevice").toString();
@@ -439,6 +438,8 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
   QList<QVariant> outputChannels = settings->value("audio/outputChannels").toList();
   double sampleRate = settings->value("audio/sampleRate").toDouble();
   double latency = settings->value("audio/latency").toDouble();
+
+  portMidiStreamer.start(midiInputDevice, midiOutputDevice, latency * 1000);
 
   if (!portAudioStreamer.Start(hostAPI.toUtf8().data(),
                                inputDevice.toUtf8().data(),

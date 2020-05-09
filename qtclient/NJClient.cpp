@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <porttime.h>
 #include <QUuid>
 #include <QCryptographicHash>
 #include <QFile>
@@ -425,7 +426,7 @@ void NJClient::_reinit()
   m_issoloactive&=~1;
 
   if (midiBeatClockStarted) {
-    sendMidiMessage(MIDI_STOP);
+    sendMidiMessage(MIDI_STOP, 0);
     midiBeatClockStarted = false;
   }
 
@@ -499,7 +500,7 @@ void NJClient::updateInterval(int nsamples)
 
     /* Restart MIDI Beat Clock when tempo changes */
     if (m_active_bpm != m_bpm && midiBeatClockStarted) {
-      sendMidiMessage(MIDI_STOP);
+      sendMidiMessage(MIDI_STOP, 0);
       midiBeatClockStarted = false;
     }
 
@@ -515,7 +516,8 @@ void NJClient::updateInterval(int nsamples)
   on_new_interval();
 }
 
-void NJClient::AudioProc(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate)
+void NJClient::AudioProc(float **inbuf, int innch, float **outbuf, int outnch,
+                         int len, int srate)
 {
   m_srate=srate;
   // zero output
@@ -1457,19 +1459,22 @@ void NJClient::process_samples(float **outbuf, int outnch,
   /* MIDI Beat Clock */
   if (!justmonitor) {
     if (sendMidiBeatClock) {
-      if (!midiBeatClockStarted) {
-        sendMidiMessage(MIDI_START);
-        midiBeatClockStarted = true;
-      }
+      /* The MIDI Beat Clock message is sent 24 times per quarter note */
+      int stepSize = m_metronome_interval / 24;
 
-      int midiBeatClockInterval = m_metronome_interval / 24;
-      for (int x = 0; x < len; x++) {
-        if (((m_interval_pos + x) % midiBeatClockInterval) == 0) {
-          sendMidiMessage(MIDI_CLOCK);
+      for (int x = (stepSize - ((m_interval_pos + offset) % stepSize)) % stepSize;
+           x < len;
+           x += stepSize) {
+        if (!midiBeatClockStarted) {
+          sendMidiMessage(MIDI_START, 0);
+          midiBeatClockStarted = true;
         }
+
+        PmTimestamp timestampMS = Pt_Time() + ((offset + x) * 1000.0) / srate + 0.5;
+        sendMidiMessage(MIDI_CLOCK, timestampMS);
       }
     } else if (midiBeatClockStarted) {
-      sendMidiMessage(MIDI_STOP);
+      sendMidiMessage(MIDI_STOP, 0);
       midiBeatClockStarted = false;
     }
   }
@@ -2017,11 +2022,13 @@ Local_Channel::~Local_Channel()
 #endif
 }
 
-void NJClient::sendMidiMessage(PmMessage msg)
+void NJClient::sendMidiMessage(PmMessage msg, PmTimestamp timestamp)
 {
   if (midiOutput) {
-    PmEvent pmEvent = {};
-    pmEvent.message = msg;
+    PmEvent pmEvent = {
+      .message = msg,
+      .timestamp = timestamp,
+    };
     midiOutput->write(&pmEvent, 1);
   }
 }

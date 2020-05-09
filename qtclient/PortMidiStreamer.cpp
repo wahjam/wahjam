@@ -67,8 +67,14 @@ PortMidiStreamer::PortMidiStreamer(QObject *parent)
   outputQueue.setDiscardWrites(true);
 }
 
+static PmTimestamp timeProc(void*)
+{
+  return Pt_Time();
+}
+
 void PortMidiStreamer::start(const QString &inputDeviceName,
-                               const QString &outputDeviceName)
+                             const QString &outputDeviceName,
+                             int latencyMilliseconds)
 {
   if (inputStream || outputStream) {
     return;
@@ -93,7 +99,7 @@ void PortMidiStreamer::start(const QString &inputDeviceName,
     qDebug("Trying Pm_OpenInput() with inputDeviceId %d for \"%s\"",
            inputDeviceId, inputDeviceName.toLatin1().constData());
     PmError pmError = Pm_OpenInput(&inputStream, inputDeviceId,
-                                   NULL, 0, NULL, NULL);
+                                   NULL, 0, timeProc, NULL);
     if (pmError != pmNoError) {
       logPortMidiError("Pm_OpenInput", pmError);
       goto err;
@@ -110,7 +116,8 @@ void PortMidiStreamer::start(const QString &inputDeviceName,
     qDebug("Trying Pm_OpenOutput() with outputDeviceId %d for \"%s\"",
            outputDeviceId, outputDeviceName.toLatin1().constData());
     PmError pmError = Pm_OpenOutput(&outputStream, outputDeviceId,
-                                    NULL, BUFFER_SIZE, NULL, NULL, 0);
+                                    NULL, BUFFER_SIZE, timeProc, NULL,
+                                    latencyMilliseconds);
     if (pmError != pmNoError) {
       logPortMidiError("Pm_OpenOutput", pmError);
       goto err;

@@ -31,7 +31,8 @@ class PortMidiStreamer : public QObject
 public:
   PortMidiStreamer(QObject *parent = 0);
   void start(const QString &inputDeviceName,
-             const QString &outputDeviceName);
+             const QString &outputDeviceName,
+             int latencyMilliseconds);
   void stop();
 
   ConcurrentQueue<PmEvent> *getOutputQueue()
