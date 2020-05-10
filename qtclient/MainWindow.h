@@ -137,8 +137,6 @@ private:
   void setupPortAudioSettingsPage();
   void setupPortMidiSettingsPage();
   void setupUISettingsPage();
-  bool setupWorkDir();
-  void cleanupWorkDir(const QString &path);
   bool tryReconnect();
   void resetReconnect();
   void updateChatFontSize(int size);

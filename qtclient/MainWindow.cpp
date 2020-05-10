@@ -21,10 +21,7 @@
 #include <QVBoxLayout>
 #include <QMenu>
 #include <QStatusBar>
-#include <QDateTime>
-#include <QDir>
 #include <QDesktopServices>
-#include <QStandardPaths>
 #include <QUrl>
 #include <QInputDialog>
 #include <QRegExp>
@@ -79,7 +76,6 @@ MainWindow::MainWindow(QWidget *parent)
   }
   mainWindow = this;
 
-  client.config_savelocalaudio = -1;
   client.LicenseAgreementCallback = LicenseCallbackTrampoline;
   client.ChatMessage_Callback = ChatMessageCallbackTrampoline;
   client.SetLocalChannelInfo(0, "channel0", true, 0, false, 0, true, true);
@@ -424,11 +420,6 @@ void MainWindow::AudioStoppedUnexpectedly()
 
 void MainWindow::Connect(const QString &host, const QString &user, const QString &pass)
 {
-  if (!setupWorkDir()) {
-    chatOutput->addInfoMessage(tr("Unable to create work directory."));
-    return;
-  }
-
   QString midiInputDevice = settings->value("midi/inputDevice").toString();
   QString midiOutputDevice = settings->value("midi/outputDevice").toString();
   client.SetSendMidiBeatClock(settings->value("midi/sendMidiBeatClock").toBool());
@@ -496,16 +487,7 @@ void MainWindow::Disconnect()
   effectProcessor->detach();
   portMidiStreamer.stop();
 
-  QString workDirPath = QString::fromUtf8(client.GetWorkDir());
-  bool keepWorkDir = client.config_savelocalaudio != -1;
-  client.SetWorkDir(NULL);
-
-  if (!workDirPath.isEmpty()) {
-    if (!keepWorkDir) {
-      cleanupWorkDir(workDirPath);
-    }
-    chatOutput->addInfoMessage(tr("Disconnected"));
-  }
+  chatOutput->addInfoMessage(tr("Disconnected"));
 
   screenAllowSleep();
   setWindowTitle(tr(APPNAME));
@@ -537,56 +519,6 @@ void MainWindow::resetReconnect()
   reconnectTimer->stop();
   reconnectTries = 5;
   reconnectMilliseconds = 3000;
-}
-
-bool MainWindow::setupWorkDir()
-{
-  QDir basedir(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
-
-  /* The app data directory might not exist, so create it */
-  if (!basedir.mkpath(basedir.absolutePath())) {
-    return false;
-  }
-
-  /* Filename generation uses date/time plus a unique number, if necessary */
-  int i;
-  for (i = 0; i < 16; i++) {
-    QString filename(QDateTime::currentDateTime().toString("yyyyMMdd_hhmm"));
-    if (i > 0) {
-      filename += QString("_%1").arg(i);
-    }
-    filename += ".wahjam";
-
-    if (basedir.mkdir(filename)) {
-      client.SetWorkDir(basedir.filePath(filename).toUtf8().data());
-      if (client.config_savelocalaudio != -1) {
-        QDir workdir(basedir.filePath(filename));
-        client.SetLogFile(workdir.filePath("clipsort.log").toUtf8().data());
-      }
-      return true;
-    }
-  }
-  return false;
-}
-
-void MainWindow::cleanupWorkDir(const QString &path)
-{
-  QDir workDir(path);
-
-  foreach (const QFileInfo &subdirInfo,
-           workDir.entryInfoList(QDir::NoDotAndDotDot | QDir::Dirs)) {
-    QDir subdir(subdirInfo.absoluteDir());
-
-    foreach (const QString &file,
-             subdir.entryList(QDir::NoDotAndDotDot | QDir::Files)) {
-      subdir.remove(file);
-    }
-    workDir.rmdir(subdirInfo.fileName());
-  }
-
-  QString name(workDir.dirName());
-  workDir.cdUp();
-  workDir.rmdir(name);
 }
 
 static QString keychainGetPassword()

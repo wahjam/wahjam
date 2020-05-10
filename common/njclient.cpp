@@ -36,7 +36,6 @@
 #include "mpb.h"
 #include "njmisc.h"
 #include "../WDL/pcmfmtcvt.h"
-#include "../WDL/wavwrite.h"
 
 enum {
   MIDI_START = Pm_Message(0xfa, 0, 0),
@@ -128,29 +127,34 @@ class DecodeState
 {
   public:
     DecodeState(DecodeBuffer *decodeBuffer_)
-      : decode_peak_vol(0.0), decode_fp(0), decode_codec(0),
+      : decode_peak_vol(0.0), decode_codec(0),
         decode_samplesout(0), dump_samples(0), resample_state(0.0),
         decodeBuffer(decodeBuffer_)
     {
-      if (decodeBuffer) {
-        decodeBuffer->ref();
+      if (!decodeBuffer) {
+        return;
       }
-      memset(guid,0,sizeof(guid));
+
+      decodeBuffer->ref();
+
+      decode_codec = new I_NJDecoder;
+
+      // run some decoding
+      while (decode_codec->m_samples_used <= 0)
+      {
+        if (!fillDecodeBuffer(128)) {
+          break;
+        }
+      }
     }
     ~DecodeState()
     {
       delete decode_codec;
       decode_codec=0;
-      if (decode_fp) fclose(decode_fp);
-      decode_fp=0;
 
       if (decodeBuffer) {
         decodeBuffer->unref();
         decodeBuffer = 0;
-      }
-
-      if (!delete_on_delete.fileName().isEmpty()) {
-        delete_on_delete.remove();
       }
     }
 
@@ -161,14 +165,9 @@ class DecodeState
       int l = 0;
       if (decodeBuffer) {
         l = decodeBuffer->read(buffer, nbytes);
-      } else if (decode_fp) {
-        l = fread(buffer, 1, nbytes, decode_fp);
       }
       if (!l)
       {
-        if (decode_fp) {
-          clearerr(decode_fp);
-        }
         return false;
       }
 
@@ -176,12 +175,8 @@ class DecodeState
       return true;
     }
 
-    unsigned char guid[16];
     double decode_peak_vol;
 
-    QFile delete_on_delete;
-
-    FILE *decode_fp;
     I_NJDecoder *decode_codec;
     int decode_samplesout;
     int dump_samples;
@@ -245,7 +240,6 @@ public:
 private:
   unsigned int m_fourcc;
   NJClient *m_parent;
-  FILE *fp;
   DecodeBuffer *decodeBuffer;
 };
 
@@ -329,8 +323,8 @@ public:
 #endif
   
   WDL_String name;
-  RemoteDownload m_curwritefile;
-  WaveWriter *m_wavewritefile;
+
+  unsigned char guid[16]; // current interval GUID
 
   //DecodeState too, eventually
 };
@@ -362,69 +356,12 @@ static char *guidtostr_tmp(unsigned char *guid)
   return tmp;
 }
 
-
-static int is_type_char_valid(int c)
-{
-  c&=0xff;
-  return (c >= 'a' && c <= 'z') ||
-         (c >= 'A' && c <= 'Z') ||
-         (c >= '0' && c <= '9') ||
-         c == ' ' || c == '-' || 
-         c == '.' || c == '_';
-}
-
-static int is_type_valid(unsigned int t)
-{
-  return (t&0xff) != ' ' &&
-          is_type_char_valid(t>>24) &&
-          is_type_char_valid(t>>16) &&
-          is_type_char_valid(t>>8) &&
-          is_type_char_valid(t);
-}
-
-
-static void type_to_string(unsigned int t, char *out)
-{
-  if (is_type_valid(t))
-  {
-    out[0]=(t)&0xff;
-    out[1]=(t>>8)&0xff;
-    out[2]=(t>>16)&0xff;
-    out[3]=' ';//(t>>24)&0xff;
-    out[4]=0;
-    int x=3;
-    while (out[x]==' ' && x > 0) out[x--]=0;
-  }
-  else *out=0;
-}
-
-void NJClient::makeFilenameFromGuid(WDL_String *s, unsigned char *guid)
-{
-  char buf[256];
-  guidtostr(guid,buf);
-
-  s->Set(m_workdir.Get());
-#ifdef _WIN32
-  char tmp[3]={buf[0],'\\',0};
-#else
-  char tmp[3]={buf[0],'/',0};
-#endif
-  s->Append(tmp);
-  s->Append(buf);
-}
-
-
-
-
 NJClient::NJClient(QObject *parent)
   : QObject(parent)
 {
-  m_wavebq=new BufferQueue;
-  m_loopcnt=0;
   m_srate=48000;
 
   config_autosubscribe=1;
-  config_savelocalaudio=0;
   config_metronome=0.5f;
   config_metronome_pan=0.0f;
   config_metronome_mute=false;
@@ -433,7 +370,6 @@ NJClient::NJClient(QObject *parent)
   config_masterpan=0.0f;
   config_mastermute=false;
   config_play_prebuffer=8192;
-  config_use_file_io = false;
 
   protocol = JAM_PROTO_NINJAM;
 
@@ -441,13 +377,6 @@ NJClient::NJClient(QObject *parent)
   LicenseAgreementCallback=0;
   ChatMessage_Callback=0;
   ChatMessage_User32=0;
-
-  waveWrite=0;
-#ifndef NJCLIENT_NO_XMIT_SUPPORT
-  m_oggWrite=0;
-  m_oggComp=0;
-#endif
-  m_logFile=0;
 
   m_issoloactive=0;
   m_netcon=0;
@@ -504,59 +433,10 @@ void NJClient::_reinit()
 
 }
 
-
-void NJClient::writeLog(char *fmt, ...)
-{
-  if (m_logFile)
-  {
-    va_list ap;
-    va_start(ap,fmt);
-
-    m_log_cs.Enter();
-    if (m_logFile) vfprintf(m_logFile,fmt,ap);
-    m_log_cs.Leave();
-
-    va_end(ap);
-
-  }
-
-
-}
-
-void NJClient::SetLogFile(char *name)
-{
-  m_log_cs.Enter();
-  if (m_logFile) fclose(m_logFile);
-  m_logFile=0;
-  if (name && *name)
-  {
-    if (!strstr(name,"\\") && !strstr(name,"/") && !strstr(name,":"))
-    {
-      WDL_String s(m_workdir.Get());
-      s.Append(name);
-      m_logFile = utf8_fopen(s.Get(), "a+t");
-    }
-    else
-      m_logFile = utf8_fopen(name, "a+t");
-  }
-  m_log_cs.Leave();
-}
-
-
 NJClient::~NJClient()
 {
   delete m_netcon;
   m_netcon=0;
-
-  delete waveWrite;
-  SetOggOutFile(NULL,0,0);
-
-  if (m_logFile)
-  {
-    writeLog("end\n");
-    fclose(m_logFile);
-    m_logFile=0;
-  }
 
   int x;
   for (x = 0; x < m_remoteusers.GetSize(); x ++) delete m_remoteusers.Get(x);
@@ -565,8 +445,6 @@ NJClient::~NJClient()
   m_downloads.Empty();
   for (x = 0; x < m_locchannels.GetSize(); x ++) delete m_locchannels.Get(x);
   m_locchannels.Empty();
-
-  delete m_wavebq;
 }
 
 
@@ -690,9 +568,6 @@ void NJClient::Disconnect()
   for (x = 0; x < m_locchannels.GetSize(); x ++) 
   {
     Local_Channel *c=m_locchannels.Get(x);
-    delete c->m_wavewritefile;
-    c->m_wavewritefile=0;
-    c->m_curwritefile.Close();
 
 #ifndef NJCLIENT_NO_XMIT_SUPPORT
     delete c->m_enc;
@@ -703,8 +578,6 @@ void NJClient::Disconnect()
 
     c->m_bq.Clear();
   }
-
-  m_wavebq->Clear();
 
   _reinit();
 
@@ -1013,7 +886,7 @@ void NJClient::processMessage(Net_Message *msg)
             }
             else
             {
-              DecodeState *tmp=start_decode(dib.guid, 0, 0);
+              DecodeState *tmp = new DecodeState(0);
               m_users_cs.Enter();
               int useidx=!!theuser->channels[dib.chidx].next_ds[0];
               DecodeState *t2=theuser->channels[dib.chidx].next_ds[useidx];
@@ -1021,7 +894,6 @@ void NJClient::processMessage(Net_Message *msg)
               m_users_cs.Leave();
               delete t2;
             }
-
           }
         }
       }
@@ -1111,34 +983,6 @@ void NJClient::netconMessagesReady()
 
 int NJClient::Run() // nonzero if sleep ok
 {
-  WDL_HeapBuf *p=0;
-  while (!m_wavebq->GetBlock(&p))
-  {
-    if (p)
-    {
-      float *f=(float*)p->Get();
-      int hl=p->GetSize()/(2*sizeof(float));
-      float *outbuf[2]={f,f+hl};
-#ifndef NJCLIENT_NO_XMIT_SUPPORT
-      if (m_oggWrite&&m_oggComp)
-      {
-        m_oggComp->Encode(f,hl,1,hl);
-        if (m_oggComp->outqueue.Available())
-        {
-          fwrite((char *)m_oggComp->outqueue.Get(),1,m_oggComp->outqueue.Available(),m_oggWrite);
-          m_oggComp->outqueue.Advance(m_oggComp->outqueue.Available());
-          m_oggComp->outqueue.Compact();
-        }
-      }
-#endif
-      if (waveWrite)
-      {
-        waveWrite->WriteFloatsNI(outbuf,0,hl);
-      }
-      m_wavebq->DisposeBlock(p);
-    }
-  }
-//    
   int wantsleep=1;
 
 #ifndef NJCLIENT_NO_XMIT_SUPPORT
@@ -1163,7 +1007,7 @@ int NJClient::Run() // nonzero if sleep ok
         mpb_client_upload_interval_begin cuib;
         cuib.chidx=lc->channel_idx;
         memset(cuib.guid,0,sizeof(cuib.guid));
-        memset(lc->m_curwritefile.guid,0,sizeof(lc->m_curwritefile.guid));
+        memset(lc->guid,0,sizeof(lc->guid));
         cuib.fourcc=0;
         cuib.estsize=0;
         m_netcon->Send(cuib.build());
@@ -1182,36 +1026,11 @@ int NJClient::Run() // nonzero if sleep ok
           lc->m_need_header=false;
           {
             QUuid guid = QUuid::createUuid();
-            memcpy(lc->m_curwritefile.guid, guid.toRfc4122().constData(), sizeof(lc->m_curwritefile.guid));
-            char guidstr[64];
-            guidtostr(lc->m_curwritefile.guid,guidstr);
-            writeLog("local %s %d\n",guidstr,lc->channel_idx);
-            if (config_savelocalaudio>0) 
-            {
-              lc->m_curwritefile.Open(this,NJ_ENCODER_FMT_TYPE);
-              if (lc->m_wavewritefile) delete lc->m_wavewritefile;
-              lc->m_wavewritefile=0;
-              if (config_savelocalaudio>1)
-              {
-                WDL_String fn;
-
-                fn.Set(m_workdir.Get());
-              #ifdef _WIN32
-                char tmp[3]={guidstr[0],'\\',0};
-              #else
-                char tmp[3]={guidstr[0],'/',0};
-              #endif
-                fn.Append(tmp);
-                fn.Append(guidstr);
-                fn.Append(".wav");
-
-                lc->m_wavewritefile=new WaveWriter(fn.Get(),24,1,m_srate);
-              }
-            }
+            memcpy(lc->guid, guid.toRfc4122().constData(), sizeof(lc->guid));
 
             mpb_client_upload_interval_begin cuib;
             cuib.chidx=lc->channel_idx;
-            memcpy(cuib.guid,lc->m_curwritefile.guid,sizeof(cuib.guid));
+            memcpy(cuib.guid, lc->guid, sizeof(cuib.guid));
             cuib.fourcc=NJ_ENCODER_FMT_TYPE;
             cuib.estsize=0;
             delete lc->m_enc_header_needsend;
@@ -1221,10 +1040,6 @@ int NJClient::Run() // nonzero if sleep ok
 
         if (lc->m_enc)
         {
-          if (lc->m_wavewritefile)
-          {
-            lc->m_wavewritefile->WriteFloats((float*)p->Get(),p->GetSize()/sizeof(float));
-          }
           lc->m_enc->Encode((float*)p->Get(),p->GetSize()/sizeof(float));
 
           int s;
@@ -1234,11 +1049,10 @@ int NJClient::Run() // nonzero if sleep ok
 
             {
               mpb_client_upload_interval_write wh;
-              memcpy(wh.guid,lc->m_curwritefile.guid,sizeof(lc->m_curwritefile.guid));
+              memcpy(wh.guid, lc->guid, sizeof(lc->guid));
               wh.flags=0;
               wh.audio_data=lc->m_enc->outqueue.Get();
               wh.audio_data_len=s;
-              lc->m_curwritefile.Write(wh.audio_data,wh.audio_data_len);
 
               if (lc->m_enc_header_needsend)
               {
@@ -1279,11 +1093,9 @@ int NJClient::Run() // nonzero if sleep ok
             int l=lc->m_enc->outqueue.Available();
             if (l>MAX_ENC_BLOCKSIZE) l=MAX_ENC_BLOCKSIZE;
 
-            memcpy(wh.guid,lc->m_curwritefile.guid,sizeof(wh.guid));
+            memcpy(wh.guid, lc->guid, sizeof(wh.guid));
             wh.audio_data=lc->m_enc->outqueue.Get();
             wh.audio_data_len=l;
-
-            lc->m_curwritefile.Write(wh.audio_data,wh.audio_data_len);
 
             lc->m_enc->outqueue.Advance(l);
             wh.flags=lc->m_enc->outqueue.GetSize()>0 ? 0 : 1;
@@ -1353,58 +1165,6 @@ void NJClient::tick()
       emit currentBeatChanged(currentBeat);
     }
   }
-}
-
-
-DecodeState *NJClient::start_decode(unsigned char *guid, unsigned int fourcc,
-                                    DecodeBuffer *decodeBuffer)
-{
-  Q_UNUSED(fourcc);
-
-  DecodeState *newstate = new DecodeState(decodeBuffer);
-  memcpy(newstate->guid,guid,sizeof(newstate->guid));
-
-  if (!decodeBuffer) {
-    WDL_String s;
-
-    makeFilenameFromGuid(&s,guid);
-
-    // todo: make plug-in system to allow encoders to add types allowed
-    // todo: with a preference for 'fourcc' if specified
-    unsigned int types[]={MAKE_NJ_FOURCC('O','G','G','v')}; // only types we understand
-
-    int oldl=strlen(s.Get())+1;
-    s.Append(".XXXXXXXXX");
-    unsigned int x;
-    for (x = 0; !newstate->decode_fp && x < sizeof(types)/sizeof(types[0]); x ++)
-    {
-      type_to_string(types[x],s.Get()+oldl);
-      newstate->decode_fp = utf8_fopen(s.Get(), "rb");
-    }
-
-    if (newstate->decode_fp)
-    {
-      if (config_savelocalaudio<0)
-      {
-        newstate->delete_on_delete.setFileName(s.Get());
-      }
-    }
-  }
-
-  if (decodeBuffer || newstate->decode_fp)
-  {
-    newstate->decode_codec= new I_NJDecoder;
-    // run some decoding
-
-    while (newstate->decode_codec->m_samples_used <= 0)
-    {
-      if (!newstate->fillDecodeBuffer(128)) {
-        break;
-      }
-    }
-  }
-
-  return newstate;
 }
 
 float NJClient::GetOutputPeak()
@@ -1557,18 +1317,6 @@ void NJClient::process_samples(float **inbuf, int innch, float **outbuf, int out
       }
     }
     m_users_cs.Leave();
-
-
-    // write out wave if necessary
-
-    if (waveWrite
-#ifndef NJCLIENT_NO_XMIT_SUPPORT
-      ||(m_oggWrite&&m_oggComp)
-#endif
-      )
-    {
-      m_wavebq->AddBlock(outbuf[0]+offset,len,outbuf[outnch>1]+offset);
-    }
   }
 
   // apply master volume, then
@@ -1675,7 +1423,7 @@ void NJClient::process_samples(float **inbuf, int innch, float **outbuf, int out
 
 void NJClient::mixInChannel(bool muted, float vol, float pan, DecodeState *chan, float **outbuf, int len, int srate, int outnch, int offs, double vudecay)
 {
-  if (!chan->decode_codec || (!chan->decode_fp && !chan->decodeBuffer)) return;
+  if (!chan->decode_codec || !chan->decodeBuffer) return;
 
   int needed;
   while (chan->decode_codec->m_samples_used <= 
@@ -1731,9 +1479,6 @@ void NJClient::mixInChannel(bool muted, float vol, float pan, DecodeState *chan,
 
 void NJClient::on_new_interval()
 {
-  m_loopcnt++;
-  writeLog("interval %d %.2f %d\n",m_loopcnt,GetActualBPM(),m_active_bpi);
-
   m_metronome_pos=0.0;
 
   int u;
@@ -1775,13 +1520,6 @@ void NJClient::on_new_interval()
       else delete chan->next_ds[0];
       chan->next_ds[0]=chan->next_ds[1]; // advance queue
       chan->next_ds[1]=0;
-      ;
-      if (chan->ds)
-      {
-        char guidstr[64];
-        guidtostr(chan->ds->guid,guidstr);
-        writeLog("user %s \"%s\" %d \"%s\"\n",guidstr,user->name.Get(),ch,chan->name.Get());
-      }
     }
   }
   m_users_cs.Leave();
@@ -2072,32 +1810,6 @@ void NJClient::NotifyServerOfChannelChange()
   }
 }
 
-void NJClient::SetWorkDir(char *path)
-{
-  m_workdir.Set(path?path:"");
-
-  if (!path || !*path) return;
-
-
-  if (path[0] && path[strlen(path)-1] != '/' && path[strlen(path)-1] != '\\') 
-#ifdef _WIN32
-	m_workdir.Append("\\");
-#else
-	m_workdir.Append("/");
-#endif
-
-  // create subdirectories for ogg files
-  QDir workdir(m_workdir.Get());
-  int a;
-  for (a = 0; a < 16; a ++)
-  {
-    char buf[5];
-    sprintf(buf, "%x", a);
-    workdir.mkdir(buf);
-  }
-}
-
-
 RemoteUser_Channel::RemoteUser_Channel() : volume(1.0f), pan(0.0f), ds(NULL)
 {
   memset(next_ds,0,sizeof(next_ds));
@@ -2114,7 +1826,7 @@ RemoteUser_Channel::~RemoteUser_Channel()
 
 
 RemoteDownload::RemoteDownload()
-  : chidx(-1), playtime(0), m_parent(0), fp(0), decodeBuffer(0)
+  : chidx(-1), playtime(0), m_parent(0), decodeBuffer(0)
 {
   memset(&guid,0,sizeof(guid));
   time(&last_time);
@@ -2127,8 +1839,6 @@ RemoteDownload::~RemoteDownload()
 
 void RemoteDownload::Close()
 {
-  if (fp) fclose(fp);
-  fp=0;
   startPlaying(true);
 }
 
@@ -2139,20 +1849,7 @@ void RemoteDownload::Open(NJClient *parent, unsigned int fourcc)
 
   m_fourcc=fourcc;
 
-  if (parent->config_use_file_io) {
-    WDL_String s;
-    parent->makeFilenameFromGuid(&s,guid);
-
-    // append extension from fourcc
-    char buf[8];
-    type_to_string(fourcc, buf);
-    s.Append(".");
-    s.Append(buf);
-
-    fp = utf8_fopen(s.Get(), "wb");
-  } else {
-    decodeBuffer = DecodeBuffer::createAndRef();
-  }
+  decodeBuffer = DecodeBuffer::createAndRef();
 }
 
 void RemoteDownload::startPlaying(bool closing)
@@ -2161,16 +1858,12 @@ void RemoteDownload::startPlaying(bool closing)
   int x;
   RemoteUser *theuser;
 
-  if (!m_parent || chidx < 0) {
+  if (!m_parent || chidx < 0 || !decodeBuffer) {
     goto out;
   }
 
   // wait until we have config_play_prebuffer of data to start playing, or if config_play_prebuffer is 0, we are closingd to play (download finished)
-  if (fp) {
-    nbytes = ftell(fp);
-  } else if (decodeBuffer) {
-    nbytes = decodeBuffer->size();
-  }
+  nbytes = decodeBuffer->size();
   if (!closing && playtime && nbytes < playtime) {
     goto out;
   }
@@ -2178,7 +1871,7 @@ void RemoteDownload::startPlaying(bool closing)
   for (x = 0; x < m_parent->m_remoteusers.GetSize() && strcmp((theuser=m_parent->m_remoteusers.Get(x))->name.Get(),username.Get()); x ++);
   if (x < m_parent->m_remoteusers.GetSize() && chidx >= 0 && chidx < MAX_USER_CHANNELS)
   {
-    DecodeState *tmp = m_parent->start_decode(guid, m_fourcc, decodeBuffer);
+    DecodeState *tmp = new DecodeState(decodeBuffer);
 
     DecodeState *tmp2;
     m_parent->m_users_cs.Enter();
@@ -2199,11 +1892,7 @@ out:
 
 void RemoteDownload::Write(void *buf, int len)
 {
-  if (fp)
-  {
-    fwrite(buf,1,len,fp);
-    fflush(fp);
-  } else if (decodeBuffer) {
+  if (decodeBuffer) {
     decodeBuffer->write(buf, len);
   }
 
@@ -2218,9 +1907,8 @@ Local_Channel::Local_Channel() : channel_idx(0), src_channel(0), bitrate(64),
 #ifndef NJCLIENT_NO_XMIT_SUPPORT
                 m_enc(NULL), 
                 m_enc_bitrate_used(0), 
-                m_enc_header_needsend(NULL),
+                m_enc_header_needsend(NULL)
 #endif
-                m_wavewritefile(NULL)
 {
 }
 
@@ -2296,36 +1984,6 @@ Local_Channel::~Local_Channel()
   m_enc=0;
   delete m_enc_header_needsend;
   m_enc_header_needsend=0;
-#endif
-
-  delete m_wavewritefile;
-  m_wavewritefile=0;
-
-}
-
-void NJClient::SetOggOutFile(FILE *fp, int srate, int nch, int bitrate)
-{
-#ifndef NJCLIENT_NO_XMIT_SUPPORT
-  if (m_oggWrite)
-  {
-    if (m_oggComp)
-    {
-      m_oggComp->Encode(NULL,0);
-      if (m_oggComp->outqueue.Available())
-        fwrite((char *)m_oggComp->outqueue.Get(),1,m_oggComp->outqueue.Available(),m_oggWrite);
-    }
-    fclose(m_oggWrite);
-    m_oggWrite=0;
-  }
-  delete m_oggComp;
-  m_oggComp=0;
-
-  if (fp)
-  {
-    //fucko
-    m_oggComp=new I_NJEncoder(srate,nch,bitrate,0);
-    m_oggWrite=fp;
-  }
 #endif
 }
 

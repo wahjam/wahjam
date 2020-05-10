@@ -59,8 +59,6 @@
 #include "../WDL/ptrlist.h"
 #include "../WDL/mutex.h"
 
-#include "../WDL/wavwrite.h"
-
 #include "ConcurrentQueue.h"
 #include "netmsg.h"
 #include "mpb.h"
@@ -75,7 +73,6 @@ class DecodeState;
 class BufferQueue;
 
 // #define NJCLIENT_NO_XMIT_SUPPORT // might want to do this for njcast :)
-//  it also removes mixed ogg writing support
 
 class NJClient : public QObject
 {
@@ -98,9 +95,6 @@ public:
 
   // basic configuration
   int   config_autosubscribe;
-  int   config_savelocalaudio; // set 1 to save compressed files, set to 2 to save .wav files as well. 
-                                // -1 makes it try to delete the remote .oggs as soon as possible
-
   float config_metronome,config_metronome_pan; // volume of metronome
   bool  config_metronome_mute;
   float config_mastervolume,config_masterpan; // master volume
@@ -108,7 +102,6 @@ public:
   int   config_debug_level; 
   int   config_play_prebuffer; // -1 means play instantly, 0 means play when full file is there, otherwise refers to how many
                                // bytes of compressed source to have before play. the default value is 4096.
-  bool  config_use_file_io;    // store compressed audio data in temporary files
 
   float GetOutputPeak();
 
@@ -124,9 +117,6 @@ public:
   };
   int GetStatus();
 
-  void SetWorkDir(char *path);
-  char *GetWorkDir() { return m_workdir.Get(); }
-
   void SetProtocol(JamProtocol proto) { protocol = proto; }
 
   char *GetUserName() { return m_user.Get(); }
@@ -135,7 +125,6 @@ public:
   float GetActualBPM() { return (float) m_active_bpm; }
   int GetBPI() { return m_active_bpi; }
   void GetPosition(int *pos, int *length);  // positions in samples
-  int GetLoopCount() { return m_loopcnt; }  
   int GetSampleRate() { return m_srate; }
 
   int GetNumUsers() { return m_remoteusers.GetSize(); }
@@ -170,12 +159,6 @@ public:
     sendMidiBeatClock = enable;
   }
 
-  void SetLogFile(char *name=NULL);
-
-  void SetOggOutFile(FILE *fp, int srate, int nch, int bitrate=128);
-  WaveWriter *waveWrite;
-
-
   int LicenseAgreement_User32;
   int (*LicenseAgreementCallback)(int user32, char *licensetext); // return TRUE if user accepts
 
@@ -207,26 +190,16 @@ protected:
 
   void _reinit();
 
-  void makeFilenameFromGuid(WDL_String *s, unsigned char *guid);
-
   void updateBPMinfo(int bpm, int bpi);
   void process_samples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate, int offset, int justmonitor=0);
   void on_new_interval();
   void updateInterval(int nsamples);
 
-  void writeLog(char *fmt, ...);
-
   WDL_String m_errstr;
 
-  WDL_String m_workdir;
   int m_status;
   int m_max_localch;
   int m_connection_keepalive;
-  FILE *m_logFile;
-#ifndef NJCLIENT_NO_XMIT_SUPPORT
-  FILE *m_oggWrite;
-  I_NJEncoder *m_oggComp;
-#endif
 
   WDL_String m_user, m_pass, m_host;
 
@@ -239,7 +212,6 @@ protected:
   int m_srate;
   int m_issoloactive;
 
-  int m_loopcnt;
   int m_active_bpm, m_active_bpi;
   int m_interval_length;
   int m_interval_pos, m_metronome_state, m_metronome_tmp,m_metronome_interval;
@@ -253,10 +225,6 @@ protected:
   int lastBpm;
   int lastBpi;
   int lastBeat;
-
-  DecodeState *start_decode(unsigned char *guid, unsigned int fourcc, DecodeBuffer *decodeBuffer);
-
-  BufferQueue *m_wavebq;
 
   WDL_PtrList<Local_Channel> m_locchannels;
 
