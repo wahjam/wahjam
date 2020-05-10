@@ -41,7 +41,7 @@
 #include "EffectProcessor.h"
 #include "EffectSettingsPage.h"
 #include "UISettingsPage.h"
-#include "audiostream_pa.h"
+#include "PortAudioStreamer.h"
 #include "screensleep.h"
 #include "common/njmisc.h"
 #include "common/UserPrivs.h"
@@ -67,7 +67,7 @@ void MainWindow::ChatMessageCallbackTrampoline(int user32, NJClient *inst, char 
 }
 
 MainWindow::MainWindow(QWidget *parent)
-  : QMainWindow(parent), audio(NULL),
+  : QMainWindow(parent), portAudioStreamer(OnSamplesTrampoline),
     vstMidiInputQueue(128), globalMenuBar(NULL)
 {
   /* Since the ninjam callbacks do not pass a void* opaque argument we rely on
@@ -420,16 +420,14 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
   QList<QVariant> outputChannels = settings->value("audio/outputChannels").toList();
   double sampleRate = settings->value("audio/sampleRate").toDouble();
   double latency = settings->value("audio/latency").toDouble();
-  audio = create_audioStreamer_PortAudio(hostAPI.toUtf8().data(),
-                                         inputDevice.toUtf8().data(),
-                                         inputChannels,
-                                         outputDevice.toUtf8().data(),
-                                         outputChannels,
-                                         sampleRate, latency,
-                                         OnSamplesTrampoline);
-  if (!audio)
-  {
-    qCritical("create_audioStreamer_PortAudio() failed");
+
+  if (!portAudioStreamer.Start(hostAPI.toUtf8().data(),
+                               inputDevice.toUtf8().data(),
+                               inputChannels,
+                               outputDevice.toUtf8().data(),
+                               outputChannels,
+                               sampleRate, latency)) {
+    qCritical("Failed to start PortAudio");
 
     portMidiStreamer.stop();
 
@@ -471,9 +469,7 @@ void MainWindow::Disconnect()
 {
   resetReconnect();
 
-  delete audio;
-  audio = NULL;
-
+  portAudioStreamer.Stop();
   client.Disconnect();
   effectProcessor->detach();
   portMidiStreamer.stop();

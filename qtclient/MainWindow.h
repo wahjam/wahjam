@@ -39,9 +39,9 @@
 #include "ChatOutput.h"
 #include "SettingsDialog.h"
 #include "common/njclient.h"
-#include "common/audiostream.h"
 #include "EffectProcessor.h"
 #include "PortAudioSettingsPage.h"
+#include "PortAudioStreamer.h"
 #include "PortMidiSettingsPage.h"
 #include "PortMidiStreamer.h"
 #include "UISettingsPage.h"
@@ -94,7 +94,7 @@ private:
   NJClient client;
   QUrl jammrApiUrl;
   QString jammrAuthToken;
-  audioStreamer *audio;
+  PortAudioStreamer portAudioStreamer;
   PortMidiStreamer portMidiStreamer;
   ConcurrentQueue<PmEvent> vstMidiInputQueue;
   EffectProcessor *effectProcessor;

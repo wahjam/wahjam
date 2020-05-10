@@ -11,8 +11,7 @@ SOURCES = mpb.cpp \
           njclient.cpp \
           njmisc.cpp \
           UserPrivs.cpp
-HEADERS = audiostream.h \
-          mpb.h \
+HEADERS = mpb.h \
           netmsg.h \
           njclient.h \
           njmisc.h \
