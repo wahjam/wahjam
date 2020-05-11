@@ -220,13 +220,13 @@ MainWindow::MainWindow(QWidget *parent)
   }
   connectingState->assignProperty(connectAction, "enabled", false);
   connectingState->assignProperty(disconnectAction, "enabled", true);
-  connectingState->assignProperty(portAudioSettingsPage, "enabled", false);
-  connectingState->assignProperty(portMidiSettingsPage, "enabled", false);
+  connectingState->assignProperty(portAudioSettingsPage, "locked", true);
+  connectingState->assignProperty(portMidiSettingsPage, "locked", true);
   disconnectedState->assignProperty(voteMenu, "enabled", false);
   disconnectedState->assignProperty(connectAction, "enabled", true);
   disconnectedState->assignProperty(disconnectAction, "enabled", false);
-  disconnectedState->assignProperty(portAudioSettingsPage, "enabled", true);
-  disconnectedState->assignProperty(portMidiSettingsPage, "enabled", true);
+  disconnectedState->assignProperty(portAudioSettingsPage, "locked", false);
+  disconnectedState->assignProperty(portMidiSettingsPage, "locked", false);
   disconnectedState->assignProperty(adminMenu, "enabled", false);
   disconnectedState->assignProperty(adminTopicAction, "enabled", false);
   disconnectedState->assignProperty(adminBPMAction, "enabled", false);
@@ -339,6 +339,9 @@ void MainWindow::setupStatusBar()
 void MainWindow::setupPortAudioSettingsPage()
 {
   portAudioSettingsPage = new PortAudioSettingsPage;
+  connect(portAudioSettingsPage, SIGNAL(unlockRequest()),
+          this, SLOT(Disconnect()));
+
   portAudioSettingsPage->setHostAPI(settings->value("audio/hostAPI").toString());
   portAudioSettingsPage->setInputDevice(settings->value("audio/inputDevice").toString());
   portAudioSettingsPage->setUnmuteLocalChannels(settings->value("audio/unmuteLocalChannels", true).toBool());
@@ -362,6 +365,9 @@ void MainWindow::setupPortAudioSettingsPage()
 void MainWindow::setupPortMidiSettingsPage()
 {
   portMidiSettingsPage = new PortMidiSettingsPage;
+  connect(portMidiSettingsPage, SIGNAL(unlockRequest()),
+          this, SLOT(Disconnect()));
+
   portMidiSettingsPage->setInputDevice(settings->value("midi/inputDevice").toString());
   portMidiSettingsPage->setOutputDevice(settings->value("midi/outputDevice").toString());
   portMidiSettingsPage->setSendMidiBeatClock(settings->value("midi/sendMidiBeatClock", false).toBool());

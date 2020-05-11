@@ -18,17 +18,15 @@
 
 #include <math.h>
 #include <portaudio.h>
-#include <QIcon>
 #include <QFormLayout>
 #include <QGroupBox>
-#include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QToolButton>
 #include <QLabel>
 #include "PortAudioSettingsPage.h"
 
 PortAudioSettingsPage::PortAudioSettingsPage(QWidget *parent)
-  : QWidget(parent)
+  : LockableSettingsPage(tr("Disconnect from jam and unlock settings"), parent)
 {
   QLabel *inputDeviceLabel = new QLabel(tr("&Input device:"));
 
@@ -124,7 +122,6 @@ PortAudioSettingsPage::PortAudioSettingsPage(QWidget *parent)
   formLayout->addRow(troubleshooting);
   advancedGroupBox->setLayout(formLayout);
 
-  QVBoxLayout *vlayout = new QVBoxLayout;
   formLayout = new QFormLayout;
   formLayout->setSpacing(5);
   formLayout->setContentsMargins(2, 2, 2, 2);
@@ -135,8 +132,7 @@ PortAudioSettingsPage::PortAudioSettingsPage(QWidget *parent)
   formLayout->addRow(outputChannelsLabel, outputChannelsList);
   formLayout->addRow(new QLabel); /* just a spacer */
   formLayout->addRow(advancedGroupBox);
-  vlayout->addLayout(formLayout);
-  setLayout(vlayout);
+  contentsWidget->setLayout(formLayout);
 
   populateHostAPIList();
   autoselectHostAPI();

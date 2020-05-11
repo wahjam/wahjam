@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2012 Stefan Hajnoczi <stefanha@gmail.com>
+    Copyright (C) 2012-2020 Stefan Hajnoczi <stefanha@gmail.com>
 
     Wahjam is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,12 +19,12 @@
 #ifndef _PORTAUDIOSETTINGSPAGE_H_
 #define _PORTAUDIOSETTINGSPAGE_H_
 
-#include <QWidget>
 #include <QComboBox>
 #include <QCheckBox>
 #include <QListWidget>
+#include "LockableSettingsPage.h"
 
-class PortAudioSettingsPage : public QWidget
+class PortAudioSettingsPage : public LockableSettingsPage
 {
   Q_OBJECT
   Q_PROPERTY(QString hostAPI READ hostAPI WRITE setHostAPI)

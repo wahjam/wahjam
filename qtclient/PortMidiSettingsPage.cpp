@@ -22,7 +22,7 @@
 #include "PortMidiSettingsPage.h"
 
 PortMidiSettingsPage::PortMidiSettingsPage(QWidget *parent)
-  : QWidget(parent)
+  : LockableSettingsPage(tr("Disconnect from jam and unlock settings"), parent)
 {
   inputDeviceList = new QComboBox;
   inputDeviceList->setEditable(false);
@@ -41,7 +41,7 @@ PortMidiSettingsPage::PortMidiSettingsPage(QWidget *parent)
   formLayout->addRow(tr("&Input device:"), inputDeviceList);
   formLayout->addRow(tr("&Output device:"), outputDeviceList);
   formLayout->addRow(new QLabel, sendMidiBeatClockBox);
-  setLayout(formLayout);
+  contentsWidget->setLayout(formLayout);
 
   populateDeviceLists();
 }
