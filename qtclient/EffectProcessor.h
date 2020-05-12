@@ -24,7 +24,7 @@
 #include <QMutex>
 #include <portmidi.h>
 #include "common/ConcurrentQueue.h"
-#include "common/njclient.h"
+#include "NJClient.h"
 #include "EffectPlugin.h"
 
 class EffectProcessor : public QObject

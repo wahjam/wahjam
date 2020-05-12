@@ -1,5 +1,6 @@
 /*
     Copyright (C) 2005 Cockos Incorporated
+    Copyright (C) 2020 Stefan Hajnoczi <stefanha@jammr.net>
 
     Wahjam is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,7 +19,7 @@
 
 /*
 
-  For a full description of everything here, see njclient.h
+  For a full description of everything here, see NJClient.h
 */
 
 
@@ -32,10 +33,11 @@
 #include <QCryptographicHash>
 #include <QFile>
 #include <QDir>
-#include "njclient.h"
-#include "mpb.h"
-#include "njmisc.h"
+#include <QMutex>
 #include "../WDL/pcmfmtcvt.h"
+#include "common/mpb.h"
+#include "common/njmisc.h"
+#include "NJClient.h"
 
 enum {
   MIDI_START = Pm_Message(0xfa, 0, 0),

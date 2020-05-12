@@ -1,5 +1,6 @@
 /*
     Copyright (C) 2005 Cockos Incorporated
+    Copyright (C) 2020 Stefan Hajnoczi <stefanha@jammr.net>
 
     Wahjam is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -59,10 +60,9 @@
 #include "../WDL/ptrlist.h"
 #include "../WDL/mutex.h"
 
-#include "ConcurrentQueue.h"
-#include "netmsg.h"
-#include "mpb.h"
-
+#include "common/ConcurrentQueue.h"
+#include "common/netmsg.h"
+#include "common/mpb.h"
 
 class I_NJEncoder;
 class RemoteDownload;
