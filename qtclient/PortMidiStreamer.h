@@ -16,8 +16,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _PORTMIDICONTROLLER_H_
-#define _PORTMIDICONTROLLER_H_
+#ifndef _PORTMIDISTREAMER_H_
+#define _PORTMIDISTREAMER_H_
 
 #include <portmidi.h>
 #include <porttime.h>
@@ -59,4 +59,4 @@ private:
 
 bool portMidiInit();
 
-#endif /* _PORTMIDICONTROLLER_H_ */
+#endif /* _PORTMIDISTREAMER_H_ */
