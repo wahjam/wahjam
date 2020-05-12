@@ -10,3 +10,4 @@ win32 {
 
 LIBS += -L$${common_path} -lcommon
 PRE_TARGETDEPS += $${common_path}/libcommon.a
+QMAKE_CXXFLAGS += -Wno-write-strings

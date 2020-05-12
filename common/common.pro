@@ -3,7 +3,6 @@ CONFIG += staticlib
 QT += network
 QT -= gui
 
-QMAKE_CXXFLAGS += -Wno-write-strings
 SOURCES = mpb.cpp \
           netmsg.cpp \
           njmisc.cpp \
