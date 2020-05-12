@@ -811,9 +811,6 @@ User_Group::User_Group(CreateUserLookupFn *CreateUserLookup_, QObject *parent)
     m_voting_timeout(120), m_allow_hidden_users(0), m_logfp(0),
     protocol(JAM_PROTO_NINJAM), m_loopcnt(0)
 {
-  connect(&signalMapper, SIGNAL(mapped(QObject*)),
-          this, SLOT(userConDisconnected(QObject*)));
-
   connect(&intervalTimer, SIGNAL(timeout()),
           this, SLOT(intervalExpired()));
 }
@@ -917,10 +914,8 @@ void User_Group::Broadcast(Net_Message *msg, User_Connection *nosend)
   }
 }
 
-void User_Group::userConDisconnected(QObject *userObj)
+void User_Group::userConDisconnected(User_Connection* p)
 {
-  User_Connection *p = (User_Connection*)userObj;
-
   Q_ASSERT(p);
 
   // broadcast to other users that this user is no longer present
@@ -984,8 +979,7 @@ void User_Group::AddConnection(QTcpSocket *sock, int isres)
     p->m_reserved = 1;
   }
   m_users.Add(p);
-  signalMapper.setMapping(p, p);
-  connect(p, SIGNAL(disconnected()), &signalMapper, SLOT(map()));
+  connect(p, &User_Connection::disconnected, [=] { userConDisconnected(p); });
   connect(p, SIGNAL(authenticated()), this, SIGNAL(userAuthenticated()));
 }
 

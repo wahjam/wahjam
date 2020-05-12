@@ -32,7 +32,6 @@
 #define _USERCON_H_
 
 #include <time.h>
-#include <QSignalMapper>
 #include <QTimer>
 #include <QStringList>
 #include "../common/netmsg.h"
@@ -132,11 +131,10 @@ class User_Group : public QObject
     FILE *m_logfp;
 
   private slots:
-    void userConDisconnected(QObject *userObj);
+    void userConDisconnected(User_Connection *p);
     void intervalExpired();
 
   private:
-    QSignalMapper signalMapper;
     JamProtocol protocol;
     QTimer intervalTimer;
     int m_loopcnt; /* interval number */
