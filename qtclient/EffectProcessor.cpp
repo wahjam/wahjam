@@ -138,7 +138,7 @@ void EffectProcessor::moveUp(int idx)
     return;
   }
 
-  plugins.swap(idx, idx - 1);
+  plugins.swapItemsAt(idx, idx - 1);
 }
 
 void EffectProcessor::moveDown(int idx)
@@ -149,7 +149,7 @@ void EffectProcessor::moveDown(int idx)
     return;
   }
 
-  plugins.swap(idx, idx + 1);
+  plugins.swapItemsAt(idx, idx + 1);
 }
 
 int EffectProcessor::numPlugins()
