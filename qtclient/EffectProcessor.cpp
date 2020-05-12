@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2012 Stefan Hajnoczi <stefanha@gmail.com>
+    Copyright (C) 2012-2020 Stefan Hajnoczi <stefanha@gmail.com>
 
     Wahjam is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -24,13 +24,10 @@ void vstProcessorCallback(float *buf, int ns, void *inst)
   this_->process(buf, ns);
 }
 
-EffectProcessor::EffectProcessor(ConcurrentQueue<PmEvent> *midiInput_,
-                                 ConcurrentQueue<PmEvent> *midiOutput_,
+EffectProcessor::EffectProcessor(PortMidiStreamer *midiStreamer_,
                                  QObject *parent)
   : QObject(parent), client(NULL), localChannel(-1), blockSize(512),
-    scratchBufs(NULL), maxInputsOutputs(0),
-    midiInput(midiInput_),
-    midiOutput(midiOutput_)
+    scratchBufs(NULL), maxInputsOutputs(0), midiStreamer(midiStreamer_)
 {
   connect(&idleTimer, SIGNAL(timeout()),
           this, SLOT(idleTimerTick()));
@@ -91,7 +88,6 @@ bool EffectProcessor::insertPlugin(int idx, EffectPlugin *plugin)
   // TODO check compatible with inputs/outputs of other plugins
 
   plugin->setParent(this);
-  plugin->setMidiOutput(midiOutput);
   plugins.insert(idx, plugin);
 
   /* We may need to grow scratch buffers */
@@ -212,17 +208,16 @@ bool EffectProcessor::attached()
 
 void EffectProcessor::fillVstEvents()
 {
-  QQueue<PmEvent> &queue = midiInput->getReadQueue();
   int sampleRate = client->GetSampleRate();
+  PmEvent pmEvent;
   PmTimestamp firstTimestamp;
-  bool firstEvent = true;
   size_t i;
 
-  for (i = 0; !queue.isEmpty() &&
-       i < sizeof(vstEventBuffer) / sizeof(vstEventBuffer[0]);
+  for (i = 0;
+       i < sizeof(vstEventBuffer) / sizeof(vstEventBuffer[0]) &&
+       midiStreamer->read(&pmEvent);
        i++) {
     VstMidiEvent *vstEvent = (VstMidiEvent*)&vstEventBuffer[i];
-    PmEvent pmEvent = queue.dequeue();
 
     vstEvent->type = kVstMidiType;
     vstEvent->byteSize = sizeof(*vstEvent);
@@ -231,9 +226,8 @@ void EffectProcessor::fillVstEvents()
     vstEvent->midiData[2] = Pm_MessageData2(pmEvent.message);
     /* TODO SysEx uses all 4 bytes? */
 
-    if (firstEvent) {
+    if (i == 0) {
       firstTimestamp = pmEvent.timestamp;
-      firstEvent = false;
     }
     vstEvent->deltaFrames = (pmEvent.timestamp - firstTimestamp) *
                             sampleRate / 1000;
@@ -286,6 +280,10 @@ void EffectProcessor::process(float *buf, int ns)
       plugin->processEvents(vstEvents);
     }
     plugin->process(a, b, ns);
+
+    plugin->processOutputEvents([=](const PmEvent *event) {
+        midiStreamer->write(event);
+    });
 
     float dry = qMin(2 * (1.0f - plugin->getWetDryMix()), 1.0f);
     float wet = qMin(2 * plugin->getWetDryMix(), 1.0f);

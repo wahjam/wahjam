@@ -65,7 +65,7 @@ void MainWindow::ChatMessageCallbackTrampoline(int user32, NJClient *inst, char 
 
 MainWindow::MainWindow(QWidget *parent)
   : QMainWindow(parent), portAudioStreamer(OnSamplesTrampoline),
-    vstMidiInputQueue(128), globalMenuBar(NULL)
+    globalMenuBar(NULL)
 {
   /* Since the ninjam callbacks do not pass a void* opaque argument we rely on
    * a global variable.
@@ -80,7 +80,7 @@ MainWindow::MainWindow(QWidget *parent)
   client.ChatMessage_Callback = ChatMessageCallbackTrampoline;
   client.SetLocalChannelInfo(0, "channel0", true, 0, false, 0, true, true);
   client.SetLocalChannelMonitoring(0, false, 0.0f, false, 0.0f, false, false, false, false);
-  client.SetMidiOutput(portMidiStreamer.getOutputQueue());
+  client.SetMidiStreamer(&portMidiStreamer);
 
   /* Certificate verification can be disabled for local testing */
   if (!settings->value("ssl/verify", true).toBool()) {
@@ -265,10 +265,7 @@ MainWindow::MainWindow(QWidget *parent)
   connect(&portAudioStreamer, SIGNAL(StoppedUnexpectedly()),
           this, SLOT(AudioStoppedUnexpectedly()));
 
-  portMidiStreamer.addInputQueue(&vstMidiInputQueue);
-  effectProcessor = new EffectProcessor(&vstMidiInputQueue,
-                                        portMidiStreamer.getOutputQueue(),
-                                        this);
+  effectProcessor = new EffectProcessor(&portMidiStreamer, this);
   settingsDialog->addPage(tr("Effect plugins"),
                           new EffectSettingsPage(effectProcessor));
   setupUISettingsPage();

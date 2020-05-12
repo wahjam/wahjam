@@ -96,7 +96,7 @@ QString VSTScanner::tag() const
 
 VSTPlugin::VSTPlugin(const QString &filename)
   : library(filename), plugin(NULL), editorDialog(NULL), inProcess(false),
-    receiveVstMidiEvents(false), midiOutput(NULL)
+    receiveVstMidiEvents(false)
 {
   /* audioMasterCallback may be invoked from any thread.  Use signal/slot to
    * dispatch in the GUI thread.
@@ -493,30 +493,27 @@ void VSTPlugin::queueIdle()
   emit onIdle();
 }
 
-void VSTPlugin::setMidiOutput(ConcurrentQueue<PmEvent> *midiOutput_)
-{
-  midiOutput = midiOutput_;
-}
-
 /* May be invoked from non-GUI thread */
 void VSTPlugin::outputEvents(VstEvents *vstEvents)
 {
-  if (!midiOutput) {
-    return;
-  }
+  QMutexLocker locker(&outputEventsLock);
 
   for (int i = 0; i < vstEvents->numEvents; i++) {
+    /* Drop events if we run out of space */
+    if (numOutputEvents >= sizeof(outputEventsBuf) / sizeof(outputEventsBuf[0])) {
+      break;
+    }
+
     VstMidiEvent *vstEvent = (VstMidiEvent*)vstEvents->events[i];
     if (vstEvent->type != kVstMidiType) {
       continue;
     }
 
-    PmEvent event = {0};
-    event.message = Pm_Message(vstEvent->midiData[0],
-                               vstEvent->midiData[1],
-                               vstEvent->midiData[2]);
-    event.timestamp = 0; /* we ignore output latency */
-
-    midiOutput->write(&event, 1);
+    outputEventsBuf[numOutputEvents++] = (PmEvent){
+      .message = Pm_Message(vstEvent->midiData[0],
+                            vstEvent->midiData[1],
+                            vstEvent->midiData[2]),
+      .timestamp = 0, /* we ignore output latency */
+    };
   }
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013 Stefan Hajnoczi <stefanha@gmail.com>
+    Copyright (C) 2013-2020 Stefan Hajnoczi <stefanha@gmail.com>
 
     Wahjam is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <porttime.h>
 #include "PortMidiStreamer.h"
 
 enum {
@@ -54,17 +55,9 @@ static void closeStream(PortMidiStream **stream)
   }
 }
 
-static void processMidiTrampoline(PtTimestamp timestamp, void *opaque)
-{
-  PortMidiStreamer *self = (PortMidiStreamer *)opaque;
-  self->process(timestamp);
-}
-
 PortMidiStreamer::PortMidiStreamer(QObject *parent)
-  : QObject(parent), inputStream(NULL), outputStream(NULL),
-    outputQueue(BUFFER_SIZE)
+  : QObject(parent), inputStream(NULL), outputStream(NULL)
 {
-  outputQueue.setDiscardWrites(true);
 }
 
 static PmTimestamp timeProc(void*)
@@ -80,12 +73,6 @@ void PortMidiStreamer::start(const QString &inputDeviceName,
     return;
   }
   if (inputDeviceName.isEmpty() && outputDeviceName.isEmpty()) {
-    return;
-  }
-
-  PtError ptError = Pt_Start(1, processMidiTrampoline, this);
-  if (ptError != ptNoError) {
-    qCritical("Pt_Start failed (%d)", ptError);
     return;
   }
 
@@ -122,14 +109,11 @@ void PortMidiStreamer::start(const QString &inputDeviceName,
       logPortMidiError("Pm_OpenOutput", pmError);
       goto err;
     }
-
-    outputQueue.setDiscardWrites(false);
   }
 
   return;
 
 err:
-  Pt_Stop();
   closeStream(&inputStream);
 }
 
@@ -139,68 +123,24 @@ void PortMidiStreamer::stop()
     return;
   }
 
-  outputQueue.setDiscardWrites(true);
-  Pt_Stop();
   closeStream(&inputStream);
   closeStream(&outputStream);
 }
 
-void PortMidiStreamer::addInputQueue(ConcurrentQueue<PmEvent> *queue)
-{
-  if (inputStream) {
-    qCritical("Cannot add MIDI read queue while started");
-    return;
-  }
-  if (inputQueues.contains(queue)) {
-    qCritical("Cannot add same MIDI read queue multiple times");
-    return;
-  }
-
-  inputQueues.append(queue);
-}
-
-void PortMidiStreamer::removeInputQueue(ConcurrentQueue<PmEvent> *queue)
-{
-  inputQueues.removeOne(queue);
-}
-
-void PortMidiStreamer::processInput()
+bool PortMidiStreamer::read(PmEvent *event)
 {
   if (!inputStream) {
-    return;
+    return false;
   }
 
-  while (Pm_Poll(inputStream) == pmGotData) {
-    PmEvent event;
-    int n = Pm_Read(inputStream, &event, 1);
-    if (n != 1) {
-      continue;
-    }
-
-    ConcurrentQueue<PmEvent> *inputQueue;
-    foreach (inputQueue, inputQueues) {
-      inputQueue->write(&event, 1);
-    }
-  }
+  return Pm_Read(inputStream, event, 1) == 1;
 }
 
-void PortMidiStreamer::processOutput()
+void PortMidiStreamer::write(const PmEvent *event)
 {
-  QQueue<PmEvent> &queue = outputQueue.getReadQueue();
-
-  while (!queue.isEmpty()) {
-    PmEvent event = queue.dequeue();
-    if (outputStream) {
-      Pm_Write(outputStream, &event, 1);
-    }
+  if (outputStream) {
+    Pm_WriteShort(outputStream, event->timestamp, event->message);
   }
-}
-
-void PortMidiStreamer::process(PtTimestamp timestamp)
-{
-  Q_UNUSED(timestamp);
-  processInput();
-  processOutput();
 }
 
 static void logPortMidiInfo()

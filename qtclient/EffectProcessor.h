@@ -22,8 +22,7 @@
 #include <QList>
 #include <QTimer>
 #include <QMutex>
-#include <portmidi.h>
-#include "common/ConcurrentQueue.h"
+#include "PortMidiStreamer.h"
 #include "NJClient.h"
 #include "EffectPlugin.h"
 
@@ -32,8 +31,7 @@ class EffectProcessor : public QObject
   Q_OBJECT
 
 public:
-  EffectProcessor(ConcurrentQueue<PmEvent> *midiInput,
-                  ConcurrentQueue<PmEvent> *midiOutput,
+  EffectProcessor(PortMidiStreamer *midiStreamer,
                   QObject *parent = NULL);
   ~EffectProcessor();
 
@@ -76,8 +74,7 @@ private:
   float **scratchBufs;
   int maxInputsOutputs;
 
-  ConcurrentQueue<PmEvent> *midiInput;
-  ConcurrentQueue<PmEvent> *midiOutput;
+  PortMidiStreamer *midiStreamer;
   VstEvent vstEventBuffer[128];
   VstEvents *vstEvents;
 

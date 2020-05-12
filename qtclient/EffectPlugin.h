@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013 Stefan Hajnoczi <stefanha@gmail.com>
+    Copyright (C) 2013-2020 Stefan Hajnoczi <stefanha@gmail.com>
 
     Wahjam is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,10 +19,16 @@
 #ifndef _EFFECTPLUGIN_H_
 #define _EFFECTPLUGIN_H_
 
-#include <portmidi.h>
+#include <functional>
 #include <QWidget>
+#include <QMutex>
 #include "../vestige/aeffectx.h"
-#include "common/ConcurrentQueue.h"
+#include "PortMidiStreamer.h"
+
+enum {
+  /* Output buffer size for MIDI messages */
+  EFFECT_PLUGIN_OUTPUT_EVENTS = 128,
+};
 
 /*
  * Base class for effect plugins (VST, AudioUnit, etc)
@@ -78,11 +84,13 @@ public:
   virtual void queueIdle() = 0;
   virtual void outputEvents(VstEvents *vstEvents) = 0;
 
+  /* Invoke fn() for each MIDI output event */
+  void processOutputEvents(std::function<void (const PmEvent *event)> fn);
+
   virtual int numInputs() const = 0;
   virtual int numOutputs() const = 0;
   virtual void setSampleRate(int rate) = 0;
   virtual void setTempo(int tempo) = 0;
-  virtual void setMidiOutput(ConcurrentQueue<PmEvent> *midiOutput) = 0;
   virtual void changeMains(bool enable) = 0;
   virtual void processEvents(VstEvents *vstEvents) = 0;
   virtual void process(float **inbuf, float **outbuf, int ns) = 0;
@@ -97,6 +105,14 @@ public slots:
 private:
   float wetDryMix;
   bool receiveMidi;
+
+protected:
+  /* MIDI output events are stored in a buffer until they are written out by
+   * the EffectProcessor. This allows the plugin to add events from any thread.
+   */
+  QMutex outputEventsLock;
+  PmEvent outputEventsBuf[EFFECT_PLUGIN_OUTPUT_EVENTS];
+  size_t numOutputEvents;
 };
 
 #endif /* _EFFECTPLUGIN_H_ */

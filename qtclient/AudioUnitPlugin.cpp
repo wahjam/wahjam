@@ -446,11 +446,6 @@ void AudioUnitPlugin::setTempo(int tempo_)
   tempo = tempo_;
 }
 
-void AudioUnitPlugin::setMidiOutput(ConcurrentQueue<PmEvent> *midiOutput_)
-{
-  midiOutput = midiOutput_;
-}
-
 void AudioUnitPlugin::changeMains(bool enable)
 {
   if (enable) {
@@ -607,17 +602,17 @@ OSStatus AudioUnitPlugin::midiOutputCallback(
   Q_UNUSED(timestamp);
   Q_UNUSED(midiOutNum); /* forward MIDI from all outputs */
 
-  if (!midiOutput) {
-    return noErr; /* drop packets */
-  }
+  QMutexLocker locker(&outputEventsLock);
 
   for (UInt32 i = 0; i < pktlist->numPackets; i++) {
-    PmEvent event;
-
     eventParser.feed(packet->data, packet->length);
 
-    while (eventParser.next(&event)) {
-      midiOutput->write(&event, 1);
+    while (numOutputEvents < sizeof(outputEventsBuf) / sizeof(outputEventsBuf[0])) {
+      if (eventParser.next(&outputEventsBuf[numOutputEvents])) {
+        numOutputEvents++;
+      } else {
+        break;
+      }
     }
 
     packet = MIDIPacketNext(packet);

@@ -53,16 +53,15 @@
 #endif
 #include <stdio.h>
 #include <time.h>
-#include <portmidi.h>
 #include <QObject>
 
 #include "../WDL/string.h"
 #include "../WDL/ptrlist.h"
 #include "../WDL/mutex.h"
 
-#include "common/ConcurrentQueue.h"
 #include "common/netmsg.h"
 #include "common/mpb.h"
+#include "PortMidiStreamer.h"
 
 class I_NJEncoder;
 class RemoteDownload;
@@ -150,9 +149,9 @@ public:
 
   int IsASoloActive() { return m_issoloactive; }
 
-  void SetMidiOutput(ConcurrentQueue<PmEvent> *midiOutput_)
+  void SetMidiStreamer(PortMidiStreamer *midiStreamer_)
   {
-    midiOutput = midiOutput_;
+    midiStreamer = midiStreamer_;
   }
   void SetSendMidiBeatClock(bool enable)
   {
@@ -223,7 +222,7 @@ protected:
 
   bool sendMidiBeatClock;
   bool midiBeatClockStarted;
-  ConcurrentQueue<PmEvent> *midiOutput;
+  PortMidiStreamer *midiStreamer;
 
   // Values that we watch for changes
   int lastBpm;

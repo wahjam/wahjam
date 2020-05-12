@@ -57,7 +57,6 @@ public:
   int numOutputs() const;
   void setSampleRate(int rate);
   void setTempo(int tempo);
-  void setMidiOutput(ConcurrentQueue<PmEvent> *midiOutput);
   void changeMains(bool enable);
   void processEvents(VstEvents *vstEvents);
   void process(float **inbuf, float **outbuf, int ns);
@@ -88,7 +87,6 @@ private:
   int numInputChannels;
   int numOutputChannels;
   bool hasMidiInput;
-  ConcurrentQueue<PmEvent> *midiOutput;
   PmEventParser eventParser;
 
   /* State stashed away for host callbacks during process() */

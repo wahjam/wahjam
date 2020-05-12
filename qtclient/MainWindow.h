@@ -97,7 +97,6 @@ private:
   QString jammrAuthToken;
   PortAudioStreamer portAudioStreamer;
   PortMidiStreamer portMidiStreamer;
-  ConcurrentQueue<PmEvent> vstMidiInputQueue;
   EffectProcessor *effectProcessor;
   SettingsDialog *settingsDialog;
   PortAudioSettingsPage *portAudioSettingsPage;

@@ -56,7 +56,6 @@ public:
   int numOutputs() const;
   void setSampleRate(int rate);
   void setTempo(int tempo);
-  void setMidiOutput(ConcurrentQueue<PmEvent> *midiOutput);
   void changeMains(bool enable);
   void processEvents(VstEvents *vstEvents);
   void process(float **inbuf, float **outbuf, int ns);
@@ -77,7 +76,6 @@ private:
   VstTimeInfo timeInfo;
   bool inProcess;
   bool receiveVstMidiEvents;
-  ConcurrentQueue<PmEvent> *midiOutput;
 
   static intptr_t vstAudioMasterCallback(AEffect *plugin, int32_t op,
       int32_t intarg, intptr_t intptrarg, void *ptrarg, float floatarg);

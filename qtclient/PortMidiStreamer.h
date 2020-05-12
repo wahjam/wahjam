@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013 Stefan Hajnoczi <stefanha@gmail.com>
+    Copyright (C) 2013-2020 Stefan Hajnoczi <stefanha@gmail.com>
 
     Wahjam is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,9 +20,7 @@
 #define _PORTMIDISTREAMER_H_
 
 #include <portmidi.h>
-#include <porttime.h>
 #include <QObject>
-#include "common/ConcurrentQueue.h"
 
 class PortMidiStreamer : public QObject
 {
@@ -35,27 +33,13 @@ public:
              int latencyMilliseconds);
   void stop();
 
-  ConcurrentQueue<PmEvent> *getOutputQueue()
-  {
-    return &outputQueue;
-  }
-
-  /* Must be called while stopped */
-  void addInputQueue(ConcurrentQueue<PmEvent> *queue);
-  void removeInputQueue(ConcurrentQueue<PmEvent> *queue);
-
-  /* Called internally by trampoline function */
-  void process(PtTimestamp timestamp);
+  /* Called from audio processing thread */
+  bool read(PmEvent *event);
+  void write(const PmEvent *event);
 
 private:
   PortMidiStream *inputStream;
   PortMidiStream *outputStream;
-
-  ConcurrentQueue<PmEvent> outputQueue;
-  QList<ConcurrentQueue<PmEvent> *> inputQueues;
-
-  void processInput();
-  void processOutput();
 };
 
 bool portMidiInit();

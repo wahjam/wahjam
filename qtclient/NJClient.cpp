@@ -384,7 +384,7 @@ NJClient::NJClient(QObject *parent)
   m_issoloactive=0;
   m_netcon=0;
 
-  midiOutput = NULL;
+  midiStreamer = NULL;
 
   _reinit();
 
@@ -2024,11 +2024,11 @@ Local_Channel::~Local_Channel()
 
 void NJClient::sendMidiMessage(PmMessage msg, PmTimestamp timestamp)
 {
-  if (midiOutput) {
+  if (midiStreamer) {
     PmEvent pmEvent = {
       .message = msg,
       .timestamp = timestamp,
     };
-    midiOutput->write(&pmEvent, 1);
+    midiStreamer->write(&pmEvent);
   }
 }

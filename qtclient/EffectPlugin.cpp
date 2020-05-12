@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014 Stefan Hajnoczi <stefanha@gmail.com>
+    Copyright (C) 2014-2020 Stefan Hajnoczi <stefanha@gmail.com>
 
     Wahjam is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 #include "EffectPlugin.h"
 
 EffectPlugin::EffectPlugin()
-  : wetDryMix(1), receiveMidi(true)
+  : wetDryMix(1), receiveMidi(true), numOutputEvents(0)
 {
 }
 
@@ -41,4 +41,23 @@ bool EffectPlugin::getReceiveMidi() const
 void EffectPlugin::setReceiveMidi(bool receive)
 {
   receiveMidi = receive;
+}
+
+void EffectPlugin::processOutputEvents(std::function<void (const PmEvent *event)> fn)
+{
+  if (numOutputEvents == 0) {
+    return;
+  }
+
+  /* Take a local copy so fn() can be invoked outside the lock */
+  outputEventsLock.lock();
+  size_t nevents = numOutputEvents;
+  PmEvent events[nevents];
+  memcpy(events, outputEventsBuf, sizeof(events[0]) * nevents);
+  numOutputEvents = 0;
+  outputEventsLock.unlock();
+
+  for (size_t i = 0; i < nevents; i++) {
+    fn(&events[i]);
+  }
 }

@@ -10,5 +10,4 @@ SOURCES = mpb.cpp \
 HEADERS = mpb.h \
           netmsg.h \
           njmisc.h \
-          UserPrivs.h \
-          ConcurrentQueue.h
+          UserPrivs.h
