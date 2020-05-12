@@ -113,7 +113,7 @@ class WDL_HeapBuf
 
         if (newalloc != m_alloc || !m_buf)
         {
-        void *nbuf=realloc(m_buf,newalloc);
+        void *nbuf=realloc(m_buf, (unsigned)newalloc);
           if (!nbuf) 
           {
             if (!newalloc) return m_buf;
