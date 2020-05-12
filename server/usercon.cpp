@@ -402,23 +402,17 @@ void User_Connection::processMessage(Net_Message *msg)
   if (!m_auth_state)
   {
     mpb_client_auth_user authrep;
-    int ver_min, ver_max;
+    int ver_min = PROTO_NINJAM_VER_MIN;
+    int ver_max = PROTO_NINJAM_VER_MAX;;
+
+    if (group->GetProtocol() == JAM_PROTO_JAMMR) {
+      ver_min = PROTO_JAMMR_VER_MIN;
+      ver_max = PROTO_JAMMR_VER_MAX;
+    }
 
     // Keepalives are allowed, do not process this message further
     if (msg->get_type() == MESSAGE_KEEPALIVE) {
       return;
-    }
-
-    switch (group->GetProtocol()) {
-    case JAM_PROTO_NINJAM:
-      ver_min = PROTO_NINJAM_VER_MIN;
-      ver_max = PROTO_NINJAM_VER_MAX;
-      break;
-
-    case JAM_PROTO_JAMMR:
-      ver_min = PROTO_JAMMR_VER_MIN;
-      ver_max = PROTO_JAMMR_VER_MAX;
-      break;
     }
 
     // verify everything
