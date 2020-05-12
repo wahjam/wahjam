@@ -184,16 +184,7 @@ void PortAudioStreamer::Stop()
     stream = NULL;
   }
 
-  if (numInputChannels > 0) {
-    numInputChannels = 0;
-    delete [] inputChannels;
-    inputChannels = NULL;
-  }
-  if (numOutputChannels > 0) {
-    numOutputChannels = 0;
-    delete [] outputChannels;
-    outputChannels = NULL;
-  }
+  cleanupChannels();
 }
 
 static const PaHostApiInfo *findHostAPIInfo(const char *hostAPI, PaHostApiIndex *index)
@@ -270,6 +261,53 @@ static const PaDeviceInfo *findDeviceInfo(PaHostApiIndex hostAPI, const char *na
   return deviceInfo;
 }
 
+void PortAudioStreamer::initChannels(const QList<QVariant> &inputChannels_,
+                                     const QList<QVariant> &outputChannels_)
+{
+  numInputChannels = inputChannels_.count();
+  inputChannels = new int[numInputChannels];
+  int i = 0;
+  for (const QVariant &channel : inputChannels_) {
+    inputChannels[i++] = channel.toInt();
+  }
+  qsort(inputChannels, numInputChannels, sizeof(inputChannels[0]),
+        compare_int);
+  QStringList inputChannelsStr;
+  for (size_t chidx = 0; chidx < numInputChannels; chidx++) {
+    inputChannelsStr.append(QString::number(inputChannels[chidx]));
+  }
+  qDebug("Input channels: %s", inputChannelsStr.join(' ').toLatin1().constData());
+
+  numOutputChannels = outputChannels_.count();
+  outputChannels = new int[numOutputChannels];
+  i = 0;
+  for (const QVariant &channel : outputChannels_) {
+    outputChannels[i++] = channel.toInt();
+  }
+  qsort(outputChannels, numOutputChannels, sizeof(outputChannels[0]),
+        compare_int);
+  QStringList outputChannelsStr;
+  for (size_t chidx = 0; chidx < numOutputChannels; chidx++) {
+    outputChannelsStr.append(QString::number(outputChannels[chidx]));
+  }
+  qDebug("Output channels: %s", outputChannelsStr.join(' ').toLatin1().constData());
+}
+
+void PortAudioStreamer::cleanupChannels()
+{
+  if (inputChannels) {
+    delete [] inputChannels;
+    inputChannels = nullptr;
+    numInputChannels = 0;
+  }
+
+  if (outputChannels) {
+    delete [] outputChannels;
+    outputChannels = nullptr;
+    numOutputChannels = 0;
+  }
+}
+
 static bool setupParameters(const char *hostAPI, const char *inputDevice,
     const char *outputDevice, PaStreamParameters *inputParams,
     PaStreamParameters *outputParams, double latency)
@@ -311,10 +349,13 @@ static bool setupParameters(const char *hostAPI, const char *inputDevice,
   return true;
 }
 
-bool PortAudioStreamer::Start(const char *hostAPI,
-    const char *inputDevice, const QList<QVariant> &inputChannels_,
-    const char *outputDevice, const QList<QVariant> &outputChannels_,
-    double sampleRate, double latency)
+bool PortAudioStreamer::TryToStart(const char *hostAPI,
+                                   const char *inputDevice,
+                                   const QList<QVariant> &inputChannels_,
+                                   const char *outputDevice,
+                                   const QList<QVariant> &outputChannels_,
+                                   double sampleRate,
+                                   double latency)
 {
   PaStreamParameters inputParams, outputParams;
   PaError error;
@@ -344,36 +385,10 @@ bool PortAudioStreamer::Start(const char *hostAPI,
            hostApiInfo ? hostApiInfo->name : "<invalid host api>");
   }
 
-  numInputChannels = inputChannels_.count();
-  inputChannels = new int[numInputChannels];
-  int i = 0;
-  for (const QVariant &channel : inputChannels_) {
-    inputChannels[i++] = channel.toInt();
-  }
-  qsort(inputChannels, numInputChannels, sizeof(inputChannels[0]),
-        compare_int);
-  QStringList inputChannelsStr;
-  for (size_t chidx = 0; chidx < numInputChannels; chidx++) {
-    inputChannelsStr.append(QString::number(inputChannels[chidx]));
-  }
-  qDebug("Input channels: %s", inputChannelsStr.join(' ').toLatin1().constData());
-
-  numOutputChannels = outputChannels_.count();
-  outputChannels = new int[numOutputChannels];
-  i = 0;
-  for (const QVariant &channel : outputChannels_) {
-    outputChannels[i++] = channel.toInt();
-  }
-  qsort(outputChannels, numOutputChannels, sizeof(outputChannels[0]),
-        compare_int);
-  QStringList outputChannelsStr;
-  for (size_t chidx = 0; chidx < numOutputChannels; chidx++) {
-    outputChannelsStr.append(QString::number(outputChannels[chidx]));
-  }
-  qDebug("Output channels: %s", outputChannelsStr.join(' ').toLatin1().constData());
+  initChannels(inputChannels_, outputChannels_);
 
   error = Pa_OpenStream(&stream, &inputParams, &outputParams,
-                        sampleRate, paFramesPerBufferUnspecified,
+                        sampleRate, latency * sampleRate + 0.5,
                         paPrimeOutputBuffersUsingStreamCallback,
                         streamCallbackTrampoline, this);
   if (error != paNoError) {
@@ -399,9 +414,70 @@ bool PortAudioStreamer::Start(const char *hostAPI,
     return false;
   }
 
+  return true;
+}
+
+bool PortAudioStreamer::Start(const char *hostAPI,
+    const char *inputDevice, const QList<QVariant> &inputChannels_,
+    const char *outputDevice, const QList<QVariant> &outputChannels_,
+    double sampleRate, double latency)
+{
+  if (!TryToStart(hostAPI, inputDevice, inputChannels_,
+                  outputDevice, outputChannels_,
+                  sampleRate, latency)) {
+    return false;
+  }
+
   const PaStreamInfo *streamInfo = Pa_GetStreamInfo(stream);
   if (streamInfo) {
     qDebug("Stream started with sampleRate %g inputLatency %g outputLatency %g",
+           streamInfo->sampleRate,
+           streamInfo->inputLatency,
+           streamInfo->outputLatency);
+  }
+  if (streamInfo->inputLatency == latency &&
+      streamInfo->outputLatency == latency) {
+    return true;
+  }
+
+  /* Try again with the latency that PortAudio got */
+  double newLatency = streamInfo->inputLatency;
+  if (streamInfo->outputLatency > newLatency) {
+    newLatency = streamInfo->outputLatency;
+  }
+
+  Stop(); /* streamInfo is freed by PortAudio after this */
+
+  if (!TryToStart(hostAPI, inputDevice, inputChannels_,
+                  outputDevice, outputChannels_,
+                  sampleRate, newLatency)) {
+    return false;
+  }
+
+  streamInfo = Pa_GetStreamInfo(stream);
+  if (streamInfo) {
+    qDebug("Stream started on second try with sampleRate %g inputLatency %g outputLatency %g",
+           streamInfo->sampleRate,
+           streamInfo->inputLatency,
+           streamInfo->outputLatency);
+  }
+  if (streamInfo->inputLatency <= newLatency &&
+      streamInfo->outputLatency <= newLatency) {
+    return true;
+  }
+
+  Stop(); /* streamInfo is freed by PortAudio after this */
+
+  /* Fall back to first value if latency got worse */
+  if (!TryToStart(hostAPI, inputDevice, inputChannels_,
+                  outputDevice, outputChannels_,
+                  sampleRate, latency)) {
+    return false;
+  }
+
+  streamInfo = Pa_GetStreamInfo(stream);
+  if (streamInfo) {
+    qDebug("Stream started on third try with sampleRate %g inputLatency %g outputLatency %g",
            streamInfo->sampleRate,
            streamInfo->inputLatency,
            streamInfo->outputLatency);

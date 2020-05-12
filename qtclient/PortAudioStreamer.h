@@ -78,6 +78,16 @@ private:
   int *inputChannels;
   size_t numOutputChannels;
   int *outputChannels;
+
+  void initChannels(const QList<QVariant> &inputChannels,
+                    const QList<QVariant> &outputChannels);
+  void cleanupChannels();
+  bool TryToStart(const char *hostAPI,
+                  const char *inputDevice,
+                  const QList<QVariant> &inputChannels,
+                  const char *outputDevice,
+                  const QList<QVariant> &outputChannels,
+                  double sampleRate, double latency);
 };
 
 bool portAudioInit();
