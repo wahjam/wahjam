@@ -522,9 +522,15 @@ void NJClient::AudioProc(float **inbuf, int innch, float **outbuf, int outnch, i
   int x;
   for (x = 0; x < outnch; x ++) memset(outbuf[x],0,sizeof(float)*len);
 
+  /* Process input in a single operation so that effect plugins receive
+   * fixed-size buffers. Some do not tolerate variable-sized buffers well so we
+   * can't split processing at interval boundaries.
+   */
+  processInputChannels(inbuf, innch, outbuf, outnch, len, !m_audio_enable);
+
   if (!m_audio_enable)
   {
-    process_samples(inbuf,innch,outbuf,outnch,len,srate,0,1);
+    process_samples(outbuf, outnch, len, srate, 0, 1);
     return;
   }
 
@@ -539,7 +545,7 @@ void NJClient::AudioProc(float **inbuf, int innch, float **outbuf, int outnch, i
       x = len;
     }
 
-    process_samples(inbuf,innch,outbuf,outnch,x,srate,offs);
+    process_samples(outbuf, outnch, x, srate, offs, 0);
 
     updateInterval(x);
     offs += x;
@@ -1191,8 +1197,7 @@ void NJClient::ChatMessage_Send(char *parm1, char *parm2, char *parm3, char *par
 // encode my audio and send to server, if enabled
 void NJClient::processInputChannels(float **inbuf, int innch,
                                     float **outbuf, int outnch,
-                                    int len, int offset,
-                                    bool justmonitor)
+                                    int len, bool justmonitor)
 {
                      // -36dB/sec
   double decay = pow(.25*0.25*0.25, len / (double)m_srate);
@@ -1204,7 +1209,7 @@ void NJClient::processInputChannels(float **inbuf, int innch,
     Local_Channel *lc=m_locchannels.Get(u);
     int sc=lc->src_channel;
     float *src=NULL;
-    if (sc >= 0 && sc < innch) src=inbuf[sc]+offset;
+    if (sc >= 0 && sc < innch) src=inbuf[sc];
 
     if (lc->cbf || !src)
     {
@@ -1223,24 +1228,59 @@ void NJClient::processInputChannels(float **inbuf, int innch,
       }
     }
 
-    if (!justmonitor && lc->bcast_active) 
+    if (!justmonitor)
     {
-#ifndef NJCLIENT_NO_XMIT_SUPPORT
-      lc->m_bq.AddBlock(src,len);
-#endif
-    }
+      // Samples to broadcast this interval
+      int thisLen = m_interval_length - m_interval_pos;
+      if (len < thisLen) {
+        thisLen = len;
+      }
 
+      if (lc->bcast_active)
+      {
+#ifndef NJCLIENT_NO_XMIT_SUPPORT
+        lc->m_bq.AddBlock(src, thisLen);
+#endif
+      }
+
+      // Samples to broadcast next interval
+      int nextLen = len - thisLen;
+
+      // Handle crossing into the next interval
+      if (nextLen > 0)
+      {
+        if (lc->bcast_active)
+        {
+          // End this interval
+          lc->m_bq.AddBlock(NULL,0);
+
+          // Silence next interval
+          if (!lc->broadcasting)
+          {
+            lc->m_bq.AddBlock(NULL,-1);
+          }
+        }
+
+        lc->bcast_active = lc->broadcasting;
+
+        if (lc->bcast_active) {
+#ifndef NJCLIENT_NO_XMIT_SUPPORT
+          lc->m_bq.AddBlock(src + thisLen, nextLen);
+#endif
+        }
+      }
+    }
 
     // monitor this channel
     if ((!m_issoloactive && !lc->muted) || lc->solo)
     {
-      float *out1=outbuf[0]+offset;
+      float *out1=outbuf[0];
 
       float vol1=lc->volume;
       if (outnch > 1)
       {
         float vol2=vol1;
-        float *out2=outbuf[1]+offset;
+        float *out2=outbuf[1];
         if (lc->pan > 0.0f) vol1 *= 1.0f-lc->pan;
         else if (lc->pan < 0.0f) vol2 *= 1.0f+lc->pan;
 
@@ -1296,16 +1336,13 @@ void NJClient::processInputChannels(float **inbuf, int innch,
   m_locchan_cs.Leave();
 }
 
-void NJClient::process_samples(float **inbuf, int innch,
-                               float **outbuf, int outnch,
+void NJClient::process_samples(float **outbuf, int outnch,
                                int len, int srate, int offset,
                                int justmonitor)
 
 {
                    // -36dB/sec
   double decay=pow(.25*0.25*0.25,len/(double)srate);
-
-  processInputChannels(inbuf, innch, outbuf, outnch, len, offset, justmonitor);
 
   if (!justmonitor)
   {
@@ -1498,32 +1535,8 @@ void NJClient::on_new_interval()
 {
   m_metronome_pos=0.0;
 
-  int u;
-  m_locchan_cs.Enter();
-  for (u = 0; u < m_locchannels.GetSize() && u < m_max_localch; u ++)
-  {
-    Local_Channel *lc=m_locchannels.Get(u);
-
-
-    if (lc->bcast_active) 
-    {
-      lc->m_bq.AddBlock(NULL,0);
-    }
-
-    int wasact=lc->bcast_active;
-
-    lc->bcast_active = lc->broadcasting;
-
-    if (wasact && !lc->bcast_active)
-    {
-      lc->m_bq.AddBlock(NULL,-1);
-    }
-
-  }
-  m_locchan_cs.Leave();
-
   m_users_cs.Enter();
-  for (u = 0; u < m_remoteusers.GetSize(); u ++)
+  for (int u = 0; u < m_remoteusers.GetSize(); u ++)
   {
     RemoteUser *user=m_remoteusers.Get(u);
     int ch;

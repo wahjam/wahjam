@@ -193,10 +193,9 @@ protected:
   void updateBPMinfo(int bpm, int bpi);
   void processInputChannels(float **inbuf, int innch,
                             float **outbuf, int outnch,
-                            int len, int offset,
-                            bool justmonitor);
-  void process_samples(float **inbuf, int innch, float **outbuf, int outnch,
-                       int len, int srate, int offset, int justmonitor=0);
+                            int len, bool justmonitor);
+  void process_samples(float **outbuf, int outnch, int len, int srate,
+                       int offset, int justmonitor);
   void on_new_interval();
   void updateInterval(int nsamples);
 
