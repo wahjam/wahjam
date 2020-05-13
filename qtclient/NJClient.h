@@ -191,7 +191,12 @@ protected:
   void _reinit();
 
   void updateBPMinfo(int bpm, int bpi);
-  void process_samples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate, int offset, int justmonitor=0);
+  void processInputChannels(float **inbuf, int innch,
+                            float **outbuf, int outnch,
+                            int len, int offset,
+                            bool justmonitor);
+  void process_samples(float **inbuf, int innch, float **outbuf, int outnch,
+                       int len, int srate, int offset, int justmonitor=0);
   void on_new_interval();
   void updateInterval(int nsamples);
 

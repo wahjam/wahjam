@@ -1188,12 +1188,16 @@ void NJClient::ChatMessage_Send(char *parm1, char *parm2, char *parm3, char *par
   }
 }
 
-void NJClient::process_samples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate, int offset, int justmonitor)
+// encode my audio and send to server, if enabled
+void NJClient::processInputChannels(float **inbuf, int innch,
+                                    float **outbuf, int outnch,
+                                    int len, int offset,
+                                    bool justmonitor)
 {
-                   // -36dB/sec
-  double decay=pow(.25*0.25*0.25,len/(double)srate);
-  // encode my audio and send to server, if enabled
+                     // -36dB/sec
+  double decay = pow(.25*0.25*0.25, len / (double)m_srate);
   int u;
+
   m_locchan_cs.Enter();
   for (u = 0; u < m_locchannels.GetSize() && u < m_max_localch; u ++)
   {
@@ -1290,13 +1294,24 @@ void NJClient::process_samples(float **inbuf, int innch, float **outbuf, int out
   }
 
   m_locchan_cs.Leave();
+}
 
+void NJClient::process_samples(float **inbuf, int innch,
+                               float **outbuf, int outnch,
+                               int len, int srate, int offset,
+                               int justmonitor)
+
+{
+                   // -36dB/sec
+  double decay=pow(.25*0.25*0.25,len/(double)srate);
+
+  processInputChannels(inbuf, innch, outbuf, outnch, len, offset, justmonitor);
 
   if (!justmonitor)
   {
     // mix in all active (subscribed) channels
     m_users_cs.Enter();
-    for (u = 0; u < m_remoteusers.GetSize(); u ++)
+    for (int u = 0; u < m_remoteusers.GetSize(); u ++)
     {
       RemoteUser *user=m_remoteusers.Get(u);
       int ch;
