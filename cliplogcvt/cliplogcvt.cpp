@@ -522,7 +522,8 @@ static bool parseCliplog(FILE *logfile, UserChannelList localrecs[32],
       p->guidstr = fields[1];
       localrecs[atoi(fields[2].c_str()) & 31].items.push_back(p);
     } else if (fields[0] == "user") {
-      if (fields.size() != 5)
+      /* Quickfix, if the channel name contains a space then size > 5 */
+      if (fields.size() < 5)
       {
         printf("user line has wrong number of tokens\n");
         return false;
@@ -573,7 +574,7 @@ static bool parseCliplog(FILE *logfile, UserChannelList localrecs[32],
       }
       curintrecs[x]->items.push_back(ucvr);
       // add this record to it
-    } else if (fields[0] == "end") {
+    } else if (fields[0] == "end" or fields[0] == "chat")  {
       /* Do nothing */
     } else {
       printf("unknown token %s\n", fields[0].c_str());
