@@ -90,7 +90,7 @@ public:
 
   int IsAudioRunning() { return m_audio_enable; }
   // call AudioProc, (and only AudioProc) from your audio thread
-  void AudioProc(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate); // len is number of sample pairs or samples
+  void AudioProc(float **inbuf, int innch, float **outbuf, int outnch, int len); // len is number of sample pairs or samples
 
   // basic configuration
   int   config_autosubscribe;
@@ -125,6 +125,7 @@ public:
   int GetBPI() { return m_active_bpi; }
   void GetPosition(int *pos, int *length);  // positions in samples
   int GetSampleRate() { return m_srate; }
+  void SetSampleRate(int srate);
 
   int GetNumUsers() { return m_remoteusers.GetSize(); }
   char *GetUserState(int idx, float *vol=0, float *pan=0, bool *mute=0);
@@ -193,8 +194,8 @@ protected:
   void processInputChannels(float **inbuf, int innch,
                             float **outbuf, int outnch,
                             int len, bool justmonitor);
-  void process_samples(float **outbuf, int outnch, int len, int srate,
-                       int offset, int justmonitor);
+  void process_samples(float **outbuf, int outnch, int len, int offset,
+                       int justmonitor);
   void on_new_interval();
   void updateInterval(int nsamples);
 
@@ -231,7 +232,7 @@ protected:
 
   WDL_PtrList<Local_Channel> m_locchannels;
 
-  void mixInChannel(bool muted, float vol, float pan, DecodeState *chan, float **outbuf, int len, int srate, int outnch, int offs, double vudecay);
+  void mixInChannel(bool muted, float vol, float pan, DecodeState *chan, float **outbuf, int len, int outnch, int offs, double vudecay);
 
   WDL_Mutex m_users_cs, m_locchan_cs, m_log_cs, m_misc_cs;
   Net_Connection *m_netcon;

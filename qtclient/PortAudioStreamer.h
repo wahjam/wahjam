@@ -25,7 +25,7 @@
 #include <QVariant>
 #include <QList>
 
-typedef void (*SPLPROC)(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate);
+typedef void (*SPLPROC)(float **inbuf, int innch, float **outbuf, int outnch, int len);
 
 class PortAudioStreamer : public QObject
 {

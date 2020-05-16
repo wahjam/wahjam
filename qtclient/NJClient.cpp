@@ -450,6 +450,10 @@ NJClient::~NJClient()
   m_locchannels.Empty();
 }
 
+void NJClient::SetSampleRate(int srate)
+{
+  m_srate = srate;
+}
 
 void NJClient::updateBPMinfo(int bpm, int bpi)
 {
@@ -517,9 +521,8 @@ void NJClient::updateInterval(int nsamples)
 }
 
 void NJClient::AudioProc(float **inbuf, int innch, float **outbuf, int outnch,
-                         int len, int srate)
+                         int len)
 {
-  m_srate=srate;
   // zero output
   int x;
   for (x = 0; x < outnch; x ++) memset(outbuf[x],0,sizeof(float)*len);
@@ -532,7 +535,7 @@ void NJClient::AudioProc(float **inbuf, int innch, float **outbuf, int outnch,
 
   if (!m_audio_enable)
   {
-    process_samples(outbuf, outnch, len, srate, 0, 1);
+    process_samples(outbuf, outnch, len, 0, 1);
     return;
   }
 
@@ -547,7 +550,7 @@ void NJClient::AudioProc(float **inbuf, int innch, float **outbuf, int outnch,
       x = len;
     }
 
-    process_samples(outbuf, outnch, x, srate, offs, 0);
+    process_samples(outbuf, outnch, x, offs, 0);
 
     updateInterval(x);
     offs += x;
@@ -1339,12 +1342,11 @@ void NJClient::processInputChannels(float **inbuf, int innch,
 }
 
 void NJClient::process_samples(float **outbuf, int outnch,
-                               int len, int srate, int offset,
-                               int justmonitor)
+                               int len, int offset, int justmonitor)
 
 {
                    // -36dB/sec
-  double decay=pow(.25*0.25*0.25,len/(double)srate);
+  double decay = pow(.25*0.25*0.25, len / (double)m_srate);
 
   if (!justmonitor)
   {
@@ -1367,9 +1369,9 @@ void NJClient::process_samples(float **outbuf, int outnch,
         else muteflag=(user->mutedmask & (1<<ch)) || user->muted;
 
         if (user->channels[ch].ds)
-          mixInChannel(muteflag,
-            user->volume*user->channels[ch].volume,lpan,
-              user->channels[ch].ds,outbuf,len,srate,outnch,offset,decay);
+          mixInChannel(muteflag, user->volume * user->channels[ch].volume,
+                       lpan, user->channels[ch].ds, outbuf, len, outnch,
+                       offset, decay);
       }
     }
     m_users_cs.Leave();
@@ -1416,8 +1418,8 @@ void NJClient::process_samples(float **outbuf, int outnch,
   // mix in (super shitty) metronome (fucko!!!!)
   if (!justmonitor)
   {
-    int metrolen=srate / 100;
-    double sc=6000.0/(double)srate;
+    int metrolen = m_srate / 100;
+    double sc = 6000.0 / (double)m_srate;
     int x;
     int um=config_metronome>0.0001f;
     double vol1=config_metronome_mute?0.0:config_metronome,vol2=vol1;
@@ -1470,7 +1472,7 @@ void NJClient::process_samples(float **outbuf, int outnch,
           midiBeatClockStarted = true;
         }
 
-        PmTimestamp timestampMS = Pt_Time() + ((offset + x) * 1000.0) / srate + 0.5;
+        PmTimestamp timestampMS = Pt_Time() + ((offset + x) * 1000.0) / m_srate + 0.5;
         sendMidiMessage(MIDI_CLOCK, timestampMS);
       }
     } else if (midiBeatClockStarted) {
@@ -1480,13 +1482,15 @@ void NJClient::process_samples(float **outbuf, int outnch,
   }
 }
 
-void NJClient::mixInChannel(bool muted, float vol, float pan, DecodeState *chan, float **outbuf, int len, int srate, int outnch, int offs, double vudecay)
+void NJClient::mixInChannel(bool muted, float vol, float pan, DecodeState *chan, float **outbuf, int len, int outnch, int offs, double vudecay)
 {
   if (!chan->decode_codec || !chan->decodeBuffer) return;
 
   int needed;
-  while (chan->decode_codec->m_samples_used <= 
-        (needed=resampleLengthNeeded(chan->decode_codec->GetSampleRate(),srate,len,&chan->resample_state)*chan->decode_codec->GetNumChannels()))
+  while (chan->decode_codec->m_samples_used <=
+        (needed = resampleLengthNeeded(chan->decode_codec->GetSampleRate(), m_srate,
+                                       len, &chan->resample_state) *
+         chan->decode_codec->GetNumChannels()))
   {
     if (!chan->fillDecodeBuffer(128)) {
       break;
@@ -1516,10 +1520,10 @@ void NJClient::mixInChannel(bool muted, float vol, float pan, DecodeState *chan,
               chan->decode_codec->GetSampleRate(),
               chan->decode_codec->GetNumChannels(),
               tmpbuf,
-              srate,outnch>1?2:1,len,
-              vol,pan,&chan->resample_state);
+              m_srate, outnch > 1 ? 2 : 1, len,
+              vol, pan, &chan->resample_state);
     }
-    else 
+    else
       chan->decode_peak_vol=0.0;
 
     // advance the queue

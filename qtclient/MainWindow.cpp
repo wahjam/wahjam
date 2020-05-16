@@ -45,9 +45,9 @@
 
 static MainWindow *mainWindow;
 
-void MainWindow::OnSamplesTrampoline(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate)
+void MainWindow::OnSamplesTrampoline(float **inbuf, int innch, float **outbuf, int outnch, int len)
 {
-  mainWindow->OnSamples(inbuf, innch, outbuf, outnch, len, srate);
+  mainWindow->OnSamples(inbuf, innch, outbuf, outnch, len);
 }
 
 int MainWindow::LicenseCallbackTrampoline(int user32, char *licensetext)
@@ -436,6 +436,8 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
   double sampleRate = settings->value("audio/sampleRate").toDouble();
   double latency = settings->value("audio/latency").toDouble();
 
+  client.SetSampleRate(sampleRate);
+
   portMidiStreamer.start(midiInputDevice, midiOutputDevice, latency * 1000);
 
   if (!portAudioStreamer.Start(hostAPI.toUtf8().data(),
@@ -710,9 +712,9 @@ void MainWindow::UserInfoChanged()
   }
 }
 
-void MainWindow::OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, int srate)
+void MainWindow::OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len)
 {
-  client.AudioProc(inbuf, innch, outbuf, outnch, len, srate);
+  client.AudioProc(inbuf, innch, outbuf, outnch, len);
 }
 
 bool MainWindow::LicenseCallback(const char *licensetext)

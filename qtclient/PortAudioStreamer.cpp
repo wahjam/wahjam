@@ -55,7 +55,6 @@ int PortAudioStreamer::streamCallback(const void *input, void *output,
 
   float **inbuf = (float**)input; // const-cast due to SPLPROC prototype
   float **outbuf = static_cast<float**>(output);
-  const PaStreamInfo *info = Pa_GetStreamInfo(stream);
 
   /* Mix down to mono */
   if (numHWInputChannels > 1) {
@@ -91,7 +90,7 @@ int PortAudioStreamer::streamCallback(const void *input, void *output,
     inbuf = &inputMonoBuf;
   }
 
-  splproc(inbuf, 1, outbuf, 1, frameCount, info->sampleRate);
+  splproc(inbuf, 1, outbuf, 1, frameCount);
 
   /* Mix up to multi-channel audio */
   size_t chidx = 0;
