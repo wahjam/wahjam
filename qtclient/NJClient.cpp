@@ -521,7 +521,7 @@ void NJClient::updateInterval(int nsamples)
 }
 
 void NJClient::AudioProc(float **inbuf, int innch, float **outbuf, int outnch,
-                         int len)
+                         int len, const PaStreamCallbackTimeInfo *timeInfo)
 {
   // zero output
   int x;
@@ -535,7 +535,7 @@ void NJClient::AudioProc(float **inbuf, int innch, float **outbuf, int outnch,
 
   if (!m_audio_enable)
   {
-    process_samples(outbuf, outnch, len, 0, 1);
+    process_samples(outbuf, outnch, len, 0, 1, timeInfo->outputBufferDacTime);
     return;
   }
 
@@ -550,7 +550,7 @@ void NJClient::AudioProc(float **inbuf, int innch, float **outbuf, int outnch,
       x = len;
     }
 
-    process_samples(outbuf, outnch, x, offs, 0);
+    process_samples(outbuf, outnch, x, offs, 0, timeInfo->outputBufferDacTime);
 
     updateInterval(x);
     offs += x;
@@ -1342,7 +1342,8 @@ void NJClient::processInputChannels(float **inbuf, int innch,
 }
 
 void NJClient::process_samples(float **outbuf, int outnch,
-                               int len, int offset, int justmonitor)
+                               int len, int offset, int justmonitor,
+                               double outputBufferDacTime)
 
 {
                    // -36dB/sec
@@ -1472,7 +1473,7 @@ void NJClient::process_samples(float **outbuf, int outnch,
           midiBeatClockStarted = true;
         }
 
-        PmTimestamp timestampMS = Pt_Time() + ((offset + x) * 1000.0) / m_srate + 0.5;
+        PmTimestamp timestampMS = (outputBufferDacTime + (double)(offset + x) / m_srate) * 1000.0 + 0.5;
         sendMidiMessage(MIDI_CLOCK, timestampMS);
       }
     } else if (midiBeatClockStarted) {

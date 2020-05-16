@@ -30,7 +30,9 @@ public:
   PortMidiStreamer(QObject *parent = 0);
   void start(const QString &inputDeviceName,
              const QString &outputDeviceName,
-             int latencyMilliseconds);
+             int latencyMilliseconds,
+             PmTimeProcPtr timeProc,
+             void *timeProcArg);
   void stop();
 
   /* Called from audio processing thread */

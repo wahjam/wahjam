@@ -142,14 +142,14 @@ private:
   void closeEvent(QCloseEvent *event);
   void ShowNINJAMConnectDialog();
   void ShowJammrConnectDialog();
-  void OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len);
+  void OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len, const PaStreamCallbackTimeInfo *timeInfo);
   void chatAddLine(const QString &prefix, const QString &content,
                    const QString &href = "", const QString &linktext = "");
   void chatAddMessage(const QString &src, const QString &msg,
                       const QString &href = "", const QString &linktext = "");
   bool LicenseCallback(const char *licensetext);
   void ChatMessageCallback(char **parms, int nparms);
-  static void OnSamplesTrampoline(float **inbuf, int innch, float **outbuf, int outnch, int len);
+  static void OnSamplesTrampoline(float **inbuf, int innch, float **outbuf, int outnch, int len, const PaStreamCallbackTimeInfo *timeInfo);
   static int LicenseCallbackTrampoline(int user32, char *licensetext);
   static void ChatMessageCallbackTrampoline(int user32, NJClient *inst, char **parms, int nparms);
 };

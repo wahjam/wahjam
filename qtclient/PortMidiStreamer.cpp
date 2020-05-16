@@ -16,7 +16,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include <porttime.h>
 #include "PortMidiStreamer.h"
 
 enum {
@@ -60,14 +59,11 @@ PortMidiStreamer::PortMidiStreamer(QObject *parent)
 {
 }
 
-static PmTimestamp timeProc(void*)
-{
-  return Pt_Time();
-}
-
 void PortMidiStreamer::start(const QString &inputDeviceName,
                              const QString &outputDeviceName,
-                             int latencyMilliseconds)
+                             int latencyMilliseconds,
+                             PmTimeProcPtr timeProc,
+                             void *timeProcArg)
 {
   if (inputStream || outputStream) {
     return;
@@ -86,7 +82,7 @@ void PortMidiStreamer::start(const QString &inputDeviceName,
     qDebug("Trying Pm_OpenInput() with inputDeviceId %d for \"%s\"",
            inputDeviceId, inputDeviceName.toLatin1().constData());
     PmError pmError = Pm_OpenInput(&inputStream, inputDeviceId,
-                                   NULL, 0, timeProc, NULL);
+                                   NULL, 0, timeProc, timeProcArg);
     if (pmError != pmNoError) {
       logPortMidiError("Pm_OpenInput", pmError);
       goto err;
@@ -103,7 +99,7 @@ void PortMidiStreamer::start(const QString &inputDeviceName,
     qDebug("Trying Pm_OpenOutput() with outputDeviceId %d for \"%s\"",
            outputDeviceId, outputDeviceName.toLatin1().constData());
     PmError pmError = Pm_OpenOutput(&outputStream, outputDeviceId,
-                                    NULL, BUFFER_SIZE, timeProc, NULL,
+                                    NULL, BUFFER_SIZE, timeProc, timeProcArg,
                                     latencyMilliseconds);
     if (pmError != pmNoError) {
       logPortMidiError("Pm_OpenOutput", pmError);

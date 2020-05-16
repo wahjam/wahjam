@@ -53,6 +53,7 @@
 #endif
 #include <stdio.h>
 #include <time.h>
+#include <portaudio.h>
 #include <QObject>
 
 #include "../WDL/string.h"
@@ -90,7 +91,7 @@ public:
 
   int IsAudioRunning() { return m_audio_enable; }
   // call AudioProc, (and only AudioProc) from your audio thread
-  void AudioProc(float **inbuf, int innch, float **outbuf, int outnch, int len); // len is number of sample pairs or samples
+  void AudioProc(float **inbuf, int innch, float **outbuf, int outnch, int len, const PaStreamCallbackTimeInfo *timeInfo); // len is number of sample pairs or samples
 
   // basic configuration
   int   config_autosubscribe;
@@ -195,7 +196,7 @@ protected:
                             float **outbuf, int outnch,
                             int len, bool justmonitor);
   void process_samples(float **outbuf, int outnch, int len, int offset,
-                       int justmonitor);
+                       int justmonitor, double outputBufferDacTime);
   void on_new_interval();
   void updateInterval(int nsamples);
 

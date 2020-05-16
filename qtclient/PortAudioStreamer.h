@@ -25,7 +25,12 @@
 #include <QVariant>
 #include <QList>
 
-typedef void (*SPLPROC)(float **inbuf, int innch, float **outbuf, int outnch, int len);
+/* Audio processing callback function. Audio samples are non-interleaved. There
+ * are len samples in the input and output buffers.
+ */
+typedef void (*SPLPROC)(float **inbuf, int innch,
+                        float **outbuf, int outnch,
+                        int len, const PaStreamCallbackTimeInfo *timeInfo);
 
 class PortAudioStreamer : public QObject
 {
@@ -57,6 +62,8 @@ public:
       PaStreamCallbackFlags statusFlags, void *userData);
 
   static void streamFinishedCallbackTrampoline(void *userData);
+
+  PaTime GetStreamTime();
 
 signals:
   /* Emitted when the stream fails after starting. Note this signal can be

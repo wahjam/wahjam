@@ -45,9 +45,12 @@
 
 static MainWindow *mainWindow;
 
-void MainWindow::OnSamplesTrampoline(float **inbuf, int innch, float **outbuf, int outnch, int len)
+void MainWindow::OnSamplesTrampoline(float **inbuf, int innch,
+                                     float **outbuf, int outnch,
+                                     int len,
+                                     const PaStreamCallbackTimeInfo *timeInfo)
 {
-  mainWindow->OnSamples(inbuf, innch, outbuf, outnch, len);
+  mainWindow->OnSamples(inbuf, innch, outbuf, outnch, len, timeInfo);
 }
 
 int MainWindow::LicenseCallbackTrampoline(int user32, char *licensetext)
@@ -421,6 +424,14 @@ void MainWindow::AudioStoppedUnexpectedly()
   settingsDialog->exec();
 }
 
+/* Called during MIDI processing to synchronize to audio stream time */
+static PmTimestamp midiTimeProc(void *arg)
+{
+  PortAudioStreamer *portAudioStreamer = static_cast<PortAudioStreamer *>(arg);
+
+  return portAudioStreamer->GetStreamTime() * 1000.0 + 0.5;
+}
+
 void MainWindow::Connect(const QString &host, const QString &user, const QString &pass)
 {
   QString midiInputDevice = settings->value("midi/inputDevice").toString();
@@ -438,7 +449,8 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
 
   client.SetSampleRate(sampleRate);
 
-  portMidiStreamer.start(midiInputDevice, midiOutputDevice, latency * 1000);
+  portMidiStreamer.start(midiInputDevice, midiOutputDevice, latency * 1000,
+                         midiTimeProc, &portAudioStreamer);
 
   if (!portAudioStreamer.Start(hostAPI.toUtf8().data(),
                                inputDevice.toUtf8().data(),
@@ -712,9 +724,12 @@ void MainWindow::UserInfoChanged()
   }
 }
 
-void MainWindow::OnSamples(float **inbuf, int innch, float **outbuf, int outnch, int len)
+void MainWindow::OnSamples(float **inbuf, int innch,
+                           float **outbuf, int outnch,
+                           int len,
+                           const PaStreamCallbackTimeInfo *timeInfo)
 {
-  client.AudioProc(inbuf, innch, outbuf, outnch, len);
+  client.AudioProc(inbuf, innch, outbuf, outnch, len, timeInfo);
 }
 
 bool MainWindow::LicenseCallback(const char *licensetext)

@@ -46,11 +46,19 @@ const char *PortAudioStreamer::GetChannelName(int idx)
   return name;
 }
 
+PaTime PortAudioStreamer::GetStreamTime()
+{
+  if (!stream) {
+    return 0;
+  }
+
+  return Pa_GetStreamTime(stream);
+}
+
 int PortAudioStreamer::streamCallback(const void *input, void *output,
     unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo,
     PaStreamCallbackFlags statusFlags)
 {
-  Q_UNUSED(timeInfo);
   Q_UNUSED(statusFlags);
 
   float **inbuf = (float**)input; // const-cast due to SPLPROC prototype
@@ -90,7 +98,7 @@ int PortAudioStreamer::streamCallback(const void *input, void *output,
     inbuf = &inputMonoBuf;
   }
 
-  splproc(inbuf, 1, outbuf, 1, frameCount);
+  splproc(inbuf, 1, outbuf, 1, frameCount, timeInfo);
 
   /* Mix up to multi-channel audio */
   size_t chidx = 0;
