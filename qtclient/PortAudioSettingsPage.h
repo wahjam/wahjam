@@ -35,6 +35,7 @@ class PortAudioSettingsPage : public LockableSettingsPage
   Q_PROPERTY(QList<QVariant> outputChannels READ outputChannels WRITE setOutputChannels)
   Q_PROPERTY(double sampleRate READ sampleRate WRITE setSampleRate)
   Q_PROPERTY(double latency READ latency WRITE setLatency)
+  Q_PROPERTY(bool detectLoudNoises READ detectLoudNoises WRITE setDetectLoudNoises)
 
 public:
   PortAudioSettingsPage(QWidget *parent = 0);
@@ -54,6 +55,8 @@ public:
   void setSampleRate(double sampleRate);
   double latency() const;
   void setLatency(double latency);
+  bool detectLoudNoises() const;
+  void setDetectLoudNoises(bool enable);
 
 private slots:
   void inputDeviceIndexChanged(int index);
@@ -70,6 +73,7 @@ private:
   QListWidget *outputChannelsList;
   QComboBox *sampleRateList;
   QComboBox *latencyList;
+  QCheckBox *detectLoudNoisesBox;
 
   QList<QVariant> getChannelsList(QListWidget *list) const;
   void setChannelsList(QListWidget *list, const QList<QVariant> &channels);

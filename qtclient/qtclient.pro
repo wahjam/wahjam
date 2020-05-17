@@ -143,6 +143,7 @@ mac {
 HEADERS += MainWindow.h
 HEADERS += ConnectDialog.h
 HEADERS += JammrConnectDialog.h
+HEADERS += LoudNoiseDetector.h
 HEADERS += ChannelTreeWidget.h
 HEADERS += SettingsDialog.h
 HEADERS += PortAudioSettingsPage.h

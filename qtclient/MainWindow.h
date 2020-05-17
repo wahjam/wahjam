@@ -39,6 +39,7 @@
 #include "ChatOutput.h"
 #include "SettingsDialog.h"
 #include "EffectProcessor.h"
+#include "LoudNoiseDetector.h"
 #include "NJClient.h"
 #include "PortAudioSettingsPage.h"
 #include "PortAudioStreamer.h"
@@ -74,6 +75,7 @@ private slots:
   void ClientStatusChanged(int newStatus);
   void BeatsPerIntervalChanged(int bpm);
   void BeatsPerMinuteChanged(int bpi);
+  void LoudNoiseDetected();
   void RemoteChannelMuteChanged(int useridx, int channelidx, bool mute);
   void ShowLog();
   void ShowAboutDialog();
@@ -93,6 +95,7 @@ private slots:
 
 private:
   NJClient client;
+  LoudNoiseDetector loudNoiseDetector;
   QUrl jammrApiUrl;
   QString jammrAuthToken;
   PortAudioStreamer portAudioStreamer;
@@ -130,6 +133,8 @@ private:
   int reconnectTries;
   int reconnectMilliseconds;
   int defaultChatInputFontSize;
+  bool detectLoudNoises;
+  bool loudNoiseDetected;
 
   void setupChannelTree();
   void setupStatusBar();

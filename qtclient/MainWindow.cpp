@@ -68,7 +68,7 @@ void MainWindow::ChatMessageCallbackTrampoline(int user32, NJClient *inst, char 
 
 MainWindow::MainWindow(QWidget *parent)
   : QMainWindow(parent), portAudioStreamer(OnSamplesTrampoline),
-    globalMenuBar(NULL)
+    globalMenuBar(NULL), detectLoudNoises(true), loudNoiseDetected(false)
 {
   /* Since the ninjam callbacks do not pass a void* opaque argument we rely on
    * a global variable.
@@ -358,6 +358,7 @@ void MainWindow::setupPortAudioSettingsPage()
   }
   portAudioSettingsPage->setSampleRate(settings->value("audio/sampleRate").toDouble());
   portAudioSettingsPage->setLatency(settings->value("audio/latency").toDouble());
+  portAudioSettingsPage->setDetectLoudNoises(settings->value("audio/detectLoudNoises", true).toBool());
 
   settingsDialog->addPage(tr("Audio"), portAudioSettingsPage);
 }
@@ -403,6 +404,26 @@ void MainWindow::Startup()
   }
 
   ShowConnectDialog();
+}
+
+void MainWindow::LoudNoiseDetected()
+{
+  qDebug("Loud noise detected, disconnecting...");
+  Disconnect();
+
+  QMessageBox::critical(this, tr("Loud noise detected"),
+      tr("<p>A loud noise that might disrupt the jam session was "
+         "detected from the input audio device. Hints:</p>"
+         "<ul><li>Wear headphones to prevent feedback when recording through "
+         "a microphone.</li>"
+         "<li>Check that the correct input device is selected.</li>"
+         "<li>Reduce the input device's volume control to prevent clipping "
+         "(often indicated by a red light).</li></ul>"
+         "<p>If you are sure the input audio is fine you can disable "
+         "\"Input noise protection\".</p>"));
+
+  settingsDialog->setPage(0);
+  settingsDialog->exec();
 }
 
 void MainWindow::AudioStoppedUnexpectedly()
@@ -501,6 +522,7 @@ void MainWindow::Disconnect()
   resetReconnect();
 
   portAudioStreamer.Stop();
+  loudNoiseDetected = false;
   client.Disconnect();
   effectProcessor->detach();
   portMidiStreamer.stop();
@@ -729,6 +751,22 @@ void MainWindow::OnSamples(float **inbuf, int innch,
                            int len,
                            const PaStreamCallbackTimeInfo *timeInfo)
 {
+  if (detectLoudNoises && innch > 0 &&
+      loudNoiseDetector.process(inbuf[0], len, client.GetSampleRate())) {
+    loudNoiseDetected = true;
+
+    /* Schedule an asynchronous slot invocation in the GUI thread */
+    QMetaObject::invokeMethod(this, "LoudNoiseDetected", Qt::QueuedConnection);
+  }
+
+  /* Zero output buffers while we're waiting to stop after a loud noise */
+  if (loudNoiseDetected) {
+    for (int i = 0; i < outnch; i++) {
+      memset(outbuf[i], 0, sizeof(outbuf[0]) * len);
+    }
+    return;
+  }
+
   client.AudioProc(inbuf, innch, outbuf, outnch, len, timeInfo);
 }
 
@@ -1066,6 +1104,7 @@ void MainWindow::SettingsDialogClosed()
   settings->setValue("audio/outputChannels", portAudioSettingsPage->outputChannels());
   settings->setValue("audio/sampleRate", portAudioSettingsPage->sampleRate());
   settings->setValue("audio/latency", portAudioSettingsPage->latency());
+  settings->setValue("audio/detectLoudNoises", portAudioSettingsPage->detectLoudNoises());
 
   /* Save MIDI settings */
   settings->setValue("midi/inputDevice", portMidiSettingsPage->inputDevice());

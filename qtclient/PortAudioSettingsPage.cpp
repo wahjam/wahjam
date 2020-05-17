@@ -108,6 +108,9 @@ PortAudioSettingsPage::PortAudioSettingsPage(QWidget *parent)
   connect(hostAPIList, SIGNAL(currentIndexChanged(int)),
           this, SLOT(hostAPIIndexChanged(int)));
 
+  detectLoudNoisesBox = new QCheckBox(tr("Input noise protection"));
+  detectLoudNoisesBox->setToolTip(tr("Automatically disconnect if input feedback or loud noise is detected"));
+
   QLabel *troubleshooting = new QLabel(tr("<b>Troubleshooting</b>: See the <a href=\"https://forum.jammr.net/topic/1987/\">Audio Setup Guide</a> for help."));
   troubleshooting->setOpenExternalLinks(true);
 
@@ -118,6 +121,7 @@ PortAudioSettingsPage::PortAudioSettingsPage(QWidget *parent)
   formLayout->addRow(tr("Sample &rate (Hz):"), sampleRateList);
   formLayout->addRow(tr("&Latency (ms):"), latencyList);
   formLayout->addRow(tr("Audio &system:"), hostAPIList);
+  formLayout->addRow(detectLoudNoisesBox);
   formLayout->addRow(new QLabel); /* just a spacer */
   formLayout->addRow(troubleshooting);
   advancedGroupBox->setLayout(formLayout);
@@ -545,4 +549,14 @@ void PortAudioSettingsPage::setLatency(double latency)
   if (i >= 0) {
     latencyList->setCurrentIndex(i);
   }
+}
+
+bool PortAudioSettingsPage::detectLoudNoises() const
+{
+  return detectLoudNoisesBox->isChecked();
+}
+
+void PortAudioSettingsPage::setDetectLoudNoises(bool enable)
+{
+  detectLoudNoisesBox->setChecked(enable);
 }
