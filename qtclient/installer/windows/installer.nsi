@@ -26,6 +26,10 @@
 !ifndef EXECUTABLE64
   !define EXECUTABLE64 "${PROGRAM_NAME}64.exe"
 !endif
+!ifdef VERSION
+  VIProductVersion "${VERSION}"
+  Caption "${PROGRAM_NAME} ${VERSION} Setup"
+!endif
 
 !define REG_UNINSTALL "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PROGRAM_NAME}"
 
