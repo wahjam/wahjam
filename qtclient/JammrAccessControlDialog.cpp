@@ -38,8 +38,8 @@ JammrAccessControlDialog::JammrAccessControlDialog(QNetworkAccessManager
   vBoxLayout->addWidget(blockRadio);
 
   QGridLayout *gridLayout = new QGridLayout;
-  gridLayout->addWidget(new QLabel(tr("Usernames:")), 0, 0);
-  gridLayout->addWidget(new QLabel(tr("New username:")), 0, 2);
+  gridLayout->addWidget(new QLabel(tr("New username:")), 0, 0);
+  gridLayout->addWidget(new QLabel(tr("Usernames:")), 0, 2);
 
   usernameEdit = new QLineEdit;
   gridLayout->addWidget(usernameEdit, 1, 0);
