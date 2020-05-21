@@ -921,6 +921,11 @@ void MainWindow::ChatMessageCallback(char **charparms, int nparms)
     adminAccessControlAction->setEnabled(!jammrApiUrl.isEmpty() &&
                                          (privs & PRIV_KICK));
     kickMenu->setEnabled(privs & PRIV_KICK);
+
+    /* Open "Access control..." dialog if it's an empty jam we own */
+    if (adminAccessControlAction->isEnabled() && client.GetNumUsers() == 0) {
+      QTimer::singleShot(0, [=] { AdminAccessControlDialog(); });
+    }
   } else {
     chatOutput->addInfoMessage(tr("Unrecognized command:"));
     for (i = 0; i < nparms; i++) {
