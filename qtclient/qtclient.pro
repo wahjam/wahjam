@@ -139,6 +139,8 @@ mac {
 	}
 }
 
+RESOURCES = qtclient.qrc
+
 # Input
 HEADERS += MainWindow.h
 HEADERS += ConnectDialog.h

@@ -32,6 +32,7 @@
 class JammrAccessControlDialog : public QDialog
 {
   Q_OBJECT
+  Q_PROPERTY(QStringList recentSearches READ recentSearches WRITE setRecentSearches)
 
 public:
   JammrAccessControlDialog(QNetworkAccessManager *netManager_,
@@ -39,32 +40,42 @@ public:
                            const QString &server_,
                            QWidget *parent = 0);
 
+  QStringList recentSearches() const;
+  void setRecentSearches(const QStringList &usernames);
+
 public slots:
   void refresh();
-  void addUsername();
-  void removeUsername();
   void applyChanges();
 
 private slots:
+  void addUsername(QListWidgetItem *item);
+  void removeUsername(QListWidgetItem *item);
   void completeFetchAcl();
   void completeStoreAcl();
+  void usernameEditChanged(const QString &text);
+  void usernameEditTimeout();
+  void completeUsernameSearch();
 
 private:
   QNetworkAccessManager *netManager;
   QUrl apiUrl;
   QString server;
   QNetworkReply *reply;
+  QNetworkReply *usernamesReply;
+  QListWidget *searchList;
   QListWidget *usernamesList;
-  QPushButton *addButton;
-  QPushButton *removeButton;
   QLineEdit *usernameEdit;
+  QTimer *usernameEditTimer;
   QRadioButton *allowRadio;
   QRadioButton *blockRadio;
   QPushButton *applyButton;
   QPushButton *cancelButton;
   QDialogButtonBox *dialogButtonBox;
+  QStringList recentSearches_;
 
   void setWidgetsEnabled(bool enable);
+  void showRecentSearches();
+  void keyPressEvent(QKeyEvent *event) override;
 };
 
 #endif /* _JAMMRACCESSCONTROLDIALOG_H_ */

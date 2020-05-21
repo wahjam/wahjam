@@ -1073,7 +1073,9 @@ void MainWindow::AdminAccessControlDialog()
 {
   JammrAccessControlDialog accessControlDialog(netManager,
       jammrApiUrl, client.GetHostName(), this);
+  accessControlDialog.setRecentSearches(settings->value("acl/recentSearches").toStringList());
   accessControlDialog.exec();
+  settings->setValue("acl/recentSearches", accessControlDialog.recentSearches());
 }
 
 void MainWindow::KickMenuAboutToShow()

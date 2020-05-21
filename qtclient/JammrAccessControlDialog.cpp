@@ -24,42 +24,67 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QKeyEvent>
+#include <QTimer>
+#include <QUrlQuery>
 
 #include "JammrAccessControlDialog.h"
 
+enum {
+  USERNAME_EDIT_MIN_CHARS = 3,
+};
+
 JammrAccessControlDialog::JammrAccessControlDialog(QNetworkAccessManager
     *netManager_, const QUrl &apiUrl_, const QString &server_, QWidget *parent)
-  : QDialog(parent), netManager(netManager_), apiUrl(apiUrl_), server(server_)
+  : QDialog(parent), netManager(netManager_), apiUrl(apiUrl_), server(server_),
+    reply(nullptr), usernamesReply(nullptr), usernameEditTimer(nullptr)
 {
   QVBoxLayout *vBoxLayout = new QVBoxLayout;
+
+  vBoxLayout->addWidget(new QLabel(tr("<p>Control who can join this jam session:</p>"
+          "<ol><li>Search for users</li>"
+          "<li>Double-click on their usernames to add/remove them</li></ol>")));
+  vBoxLayout->addSpacing(5);
+
+  QGridLayout *gridLayout = new QGridLayout;
+
+  QRegExpValidator *validator = new QRegExpValidator(QRegExp("[a-zA-Z0-9@\\.+\\-_]{0,30}"), this);
+  usernameEdit = new QLineEdit;
+  usernameEdit->setPlaceholderText(tr("Username search"));
+  usernameEdit->setValidator(validator);
+  connect(usernameEdit, &QLineEdit::textChanged,
+          this, &JammrAccessControlDialog::usernameEditChanged);
+  gridLayout->addWidget(usernameEdit, 0, 0);
+
+  gridLayout->addWidget(new QLabel(tr("User list:")), 0, 1);
+
+  searchList = new QListWidget;
+  searchList->setSelectionMode(QAbstractItemView::NoSelection);
+  connect(searchList, &QListWidget::itemActivated,
+          this, &JammrAccessControlDialog::addUsername);
+  gridLayout->addWidget(searchList, 1, 0, 2, 1);
+
+  usernamesList = new QListWidget;
+  usernamesList->setSelectionMode(QAbstractItemView::NoSelection);
+  usernamesList->setSortingEnabled(true);
+  connect(usernamesList, &QListWidget::itemActivated,
+          this, &JammrAccessControlDialog::removeUsername);
+  gridLayout->addWidget(usernamesList, 1, 1, 2, 1);
+
+  vBoxLayout->addLayout(gridLayout);
+
   allowRadio = new QRadioButton(tr("Only open to these users"));
   blockRadio = new QRadioButton(tr("Open to everyone except these users"));
   vBoxLayout->addWidget(allowRadio);
   vBoxLayout->addWidget(blockRadio);
 
-  QGridLayout *gridLayout = new QGridLayout;
-  gridLayout->addWidget(new QLabel(tr("New username:")), 0, 0);
-  gridLayout->addWidget(new QLabel(tr("Usernames:")), 0, 2);
-
-  usernameEdit = new QLineEdit;
-  gridLayout->addWidget(usernameEdit, 1, 0);
-  addButton = new QPushButton(tr("->"));
-  connect(addButton, SIGNAL(clicked()), this, SLOT(addUsername()));
-  gridLayout->addWidget(addButton, 1, 1);
-  usernamesList = new QListWidget;
-  usernamesList->setSelectionMode(QAbstractItemView::ExtendedSelection);
-  gridLayout->addWidget(usernamesList, 1, 2, 3, 1);
-
-  removeButton = new QPushButton(tr("<-"));
-  connect(removeButton, SIGNAL(clicked()), this, SLOT(removeUsername()));
-  gridLayout->addWidget(removeButton, 3, 1);
-  vBoxLayout->addLayout(gridLayout);
-
   dialogButtonBox = new QDialogButtonBox(QDialogButtonBox::Apply |
                                          QDialogButtonBox::Cancel);
   QPushButton *applyButton = dialogButtonBox->button(QDialogButtonBox::Apply);
-  connect(applyButton, SIGNAL(clicked()), this, SLOT(applyChanges()));
-  connect(dialogButtonBox, SIGNAL(rejected()), this, SLOT(reject()));
+  connect(applyButton, &QPushButton::clicked,
+          this, &JammrAccessControlDialog::applyChanges);
+  connect(dialogButtonBox, &QDialogButtonBox::rejected,
+          this, &JammrAccessControlDialog::reject);
   vBoxLayout->addWidget(dialogButtonBox);
 
   setLayout(vBoxLayout);
@@ -72,8 +97,8 @@ void JammrAccessControlDialog::setWidgetsEnabled(bool enable)
 {
   allowRadio->setEnabled(enable);
   blockRadio->setEnabled(enable);
-  addButton->setEnabled(enable);
-  removeButton->setEnabled(enable);
+  searchList->setEnabled(enable);
+  usernamesList->setEnabled(enable);
   dialogButtonBox->button(QDialogButtonBox::Apply)->setEnabled(enable);
 }
 
@@ -89,7 +114,8 @@ void JammrAccessControlDialog::refresh()
          aclUrl.toString(QUrl::RemoveUserInfo).toLatin1().constData());
 
   reply = netManager->get(request);
-  connect(reply, SIGNAL(finished()), this, SLOT(completeFetchAcl()));
+  connect(reply, &QNetworkReply::finished,
+          this, &JammrAccessControlDialog::completeFetchAcl);
 
   QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
   setWidgetsEnabled(false);
@@ -147,55 +173,45 @@ void JammrAccessControlDialog::completeFetchAcl()
   foreach (QJsonValue elem, obj.value("usernames").toArray()) {
     QString username = elem.toString();
     if (!username.isEmpty()) {
-      usernamesList->addItem(username);
+      usernamesList->addItem(new QListWidgetItem(QIcon(":/icons/remove.svg"), username));
     }
   }
-  usernamesList->sortItems();
 
   setWidgetsEnabled(true);
 }
 
-static bool isUsernameValid(const QString &s)
+void JammrAccessControlDialog::addUsername(QListWidgetItem *item)
 {
-  if (s.isEmpty() || s.size() > 30) {
-    return false;
-  }
-  return !s.contains(QRegExp("[^a-zA-Z0-9@\\.+\\-_]"));
-}
+  QString username = item->text();
 
-void JammrAccessControlDialog::addUsername()
-{
-  QString username = usernameEdit->text();
-  if (!isUsernameValid(username)) {
-    QMessageBox::critical(this, tr("Invalid username"),
-        tr("Usernames must be be 30 characters or less, consisting of "
-           "alphanumeric characters or @, +, ., -, _."));
+  if (item->text() == tr("More results omitted...")) {
     return;
   }
 
   if (!usernamesList->findItems(username, Qt::MatchFixedString).empty()) {
+    recentSearches_.removeAll(username);
+    delete item;
     return;
   }
 
-  usernamesList->addItem(username);
-  usernamesList->sortItems();
-  usernameEdit->clear();
-  usernameEdit->setFocus();
+  if (!recentSearches_.contains(username)) {
+    recentSearches_.append(username);
+  }
+
+  usernamesList->addItem(new QListWidgetItem(QIcon(":/icons/remove.svg"), username));
 }
 
-void JammrAccessControlDialog::removeUsername()
+void JammrAccessControlDialog::removeUsername(QListWidgetItem *item)
 {
-  QList<QListWidgetItem *> items = usernamesList->selectedItems();
-
-  foreach (QListWidgetItem *item, items) {
-    int row = usernamesList->row(item);
-    usernamesList->takeItem(row);
-    delete item;
-  }
+  delete item;
 }
 
 void JammrAccessControlDialog::applyChanges()
 {
+  if (usernamesReply) {
+    usernamesReply->abort();
+  }
+
   QUrl aclUrl(apiUrl);
   aclUrl.setPath(apiUrl.path() + QString("acls/%2/").arg(server));
 
@@ -215,7 +231,8 @@ void JammrAccessControlDialog::applyChanges()
          aclUrl.toString(QUrl::RemoveUserInfo).toLatin1().constData());
 
   reply = netManager->post(request, formData);
-  connect(reply, SIGNAL(finished()), this, SLOT(completeStoreAcl()));
+  connect(reply, &QNetworkReply::finished,
+          this, &JammrAccessControlDialog::completeStoreAcl);
 
   QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
   setWidgetsEnabled(false);
@@ -223,12 +240,13 @@ void JammrAccessControlDialog::applyChanges()
 
 void JammrAccessControlDialog::completeStoreAcl()
 {
+  QNetworkReply::NetworkError err = reply->error();
   reply->deleteLater();
+  reply = nullptr;
 
   QApplication::restoreOverrideCursor();
   setWidgetsEnabled(true);
 
-  QNetworkReply::NetworkError err = reply->error();
   if (err != QNetworkReply::NoError) {
     qCritical("Storing access control list network reply failed (error=%d)", err);
     QMessageBox::critical(this, tr("Failed to store access control list"),
@@ -240,4 +258,129 @@ void JammrAccessControlDialog::completeStoreAcl()
 
   qDebug("Finished storing access control list");
   accept();
+}
+
+QStringList JammrAccessControlDialog::recentSearches() const
+{
+  return recentSearches_;
+}
+
+void JammrAccessControlDialog::showRecentSearches()
+{
+  searchList->clear();
+
+  for (const QString &username : recentSearches_) {
+    searchList->addItem(new QListWidgetItem(QIcon(":/icons/add.svg"), username));
+  }
+}
+void JammrAccessControlDialog::setRecentSearches(const QStringList &usernames)
+{
+  recentSearches_ = usernames;
+
+  if (usernameEdit->text().size() < USERNAME_EDIT_MIN_CHARS) {
+    showRecentSearches();
+  }
+}
+
+void JammrAccessControlDialog::usernameEditChanged(const QString &text)
+{
+  if (usernamesReply) {
+    usernamesReply->abort();
+  }
+  if (usernameEditTimer) {
+    usernameEditTimer->stop();
+  }
+
+  if (text.size() < USERNAME_EDIT_MIN_CHARS) {
+    showRecentSearches();
+    return;
+  }
+
+  if (!usernameEditTimer) {
+    usernameEditTimer = new QTimer(this);
+    usernameEditTimer->setSingleShot(true);
+    connect(usernameEditTimer, &QTimer::timeout,
+            this, &JammrAccessControlDialog::usernameEditTimeout);
+  }
+  usernameEditTimer->start(150 /* ms */);
+}
+
+void JammrAccessControlDialog::usernameEditTimeout()
+{
+  usernameEditTimer->deleteLater();
+  usernameEditTimer = nullptr;
+
+  QUrlQuery query;
+  query.addQueryItem("q", usernameEdit->text());
+
+  QUrl usernamesUrl(apiUrl);
+  usernamesUrl.setPath(apiUrl.path() + QString("usernames/"));
+  usernamesUrl.setQuery(query);
+
+  QNetworkRequest request(usernamesUrl);
+  request.setRawHeader("Referer", usernamesUrl.toString(QUrl::RemoveUserInfo).toLatin1().data());
+
+  qDebug("Fetching usernames at %s",
+         usernamesUrl.toString(QUrl::RemoveUserInfo).toLatin1().constData());
+
+  usernamesReply = netManager->get(request);
+  connect(usernamesReply, &QNetworkReply::finished,
+          this, &JammrAccessControlDialog::completeUsernameSearch);
+}
+
+void JammrAccessControlDialog::completeUsernameSearch()
+{
+  QNetworkReply *theReply = usernamesReply;
+  usernamesReply->deleteLater();
+  usernamesReply = nullptr;
+
+  QNetworkReply::NetworkError err = theReply->error();
+  if (err == QNetworkReply::OperationCanceledError) {
+    return;
+  } else if (err != QNetworkReply::NoError) {
+    qCritical("Fetching usernames network reply failed (error=%d)", err);
+    return;
+  }
+
+  QJsonParseError jsonErr;
+  QJsonDocument doc(QJsonDocument::fromJson(theReply->readAll(), &jsonErr));
+  if (doc.isNull()) {
+    qCritical("Fetching usernames JSON parse error: %s",
+              jsonErr.errorString().toLatin1().constData());
+    return;
+  }
+
+  QStringList usernames = doc.object().value("usernames").toVariant().toStringList();
+  qDebug("Got usernames: %s (has_more=%d)",
+         usernames.join(",").toLatin1().constData(),
+         doc.object().value("has_more").toBool());
+
+  searchList->clear();
+  for (const QString &username : usernames) {
+    searchList->addItem(new QListWidgetItem(QIcon(":/icons/add.svg"), username));
+  }
+  searchList->sortItems();
+
+  if (doc.object().value("has_more").toBool()) {
+    QListWidgetItem *item = new QListWidgetItem(tr("More results omitted..."));
+    QFont font = item->font();
+    font.setItalic(true);
+    item->setFont(font);
+    searchList->addItem(item);
+  }
+}
+
+/* By default the OK button is activated when the user presses Enter in the
+ * username text box. Suppress this.
+ */
+void JammrAccessControlDialog::keyPressEvent(QKeyEvent *event)
+{
+  int key = event->key();
+
+  if (QApplication::focusWidget() == usernameEdit &&
+      (key == Qt::Key_Return || key == Qt::Key_Enter)) {
+    event->ignore();
+  } else {
+    QDialog::keyPressEvent(event);
+  }
 }
