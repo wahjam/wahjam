@@ -66,8 +66,36 @@ DEFINES += "JAMMR_UPGRADE_URL=\'\"$$JAMMR_UPGRADE_URL\"\'"
 DEFINES += "JAMMR_UPDATE_URL=\'\"$$JAMMR_UPDATE_URL\"\'"
 DEFINES += "JAMMR_DOWNLOAD_URL=\'\"$$JAMMR_DOWNLOAD_URL\"\'"
 
-target.path = /bin
-INSTALLS += target
+unix {
+	# Build reverse domain name application ID (org.wahjam.Wahjam)
+	APP_ID = $$split(ORGDOMAIN, .)
+	APP_ID = $$reverse(APP_ID)
+	APP_ID = $$join(APP_ID, .).$$APPNAME
+
+	exists($${APP_ID}.svg) {
+		icon_svg.path = /share/icons/hicolor/scalable/apps
+		icon_svg.files = $${APP_ID}.svg
+		INSTALLS += icon_svg
+	}
+	exists($${APP_ID}.png) {
+		icon_png.path = /share/icons/hicolor/48x48/apps
+		icon_png.files = $${APP_ID}.png
+		INSTALLS += icon_png
+	}
+	exists($${APP_ID}.metainfo.xml) {
+		metainfo.path = /share/metainfo
+		metainfo.files = $${APP_ID}.metainfo.xml
+		INSTALLS += metainfo
+	}
+	exists($${APP_ID}.desktop) {
+		desktop.path = /share/applications
+		desktop.files = $${APP_ID}.desktop
+		INSTALLS += desktop
+	}
+
+	target.path = /bin
+	INSTALLS += target
+}
 
 TEMPLATE = app
 DEPENDPATH += ..
