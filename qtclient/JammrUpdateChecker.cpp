@@ -24,8 +24,15 @@
 #include "JammrUpdateChecker.h"
 
 JammrUpdateChecker::JammrUpdateChecker(QWidget *parent_, QNetworkAccessManager *netManager_)
-  : parent(parent_), netManager(netManager_), reply(NULL)
+  : QObject(parent_), parent(parent_), netManager(netManager_), reply(nullptr)
 {
+}
+
+JammrUpdateChecker::~JammrUpdateChecker()
+{
+  if (reply) {
+    reply->abort();
+  }
 }
 
 void JammrUpdateChecker::setUpdateUrl(const QUrl &updateUrl_)
@@ -53,21 +60,25 @@ void JammrUpdateChecker::start()
 
 void JammrUpdateChecker::requestFinished()
 {
+  QNetworkReply *theReply = reply;
   reply->deleteLater();
+  reply = nullptr;
 
-  QNetworkReply::NetworkError err = reply->error();
-  if (err != QNetworkReply::NoError) {
+  QNetworkReply::NetworkError err = theReply->error();
+  if (err == QNetworkReply::OperationCanceledError) {
+    return;
+  } else if (err != QNetworkReply::NoError) {
     qCritical("Update checker network reply failed (error=%d)", err);
     return;
   }
 
-  int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+  int statusCode = theReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
   if (statusCode != 200 /* HTTP SUCCESS */) {
     qCritical("Update checker HTTP reply failed (status=%d)", statusCode);
     return;
   }
 
-  QString latestVersion = QString::fromUtf8(reply->readAll()).trimmed();
+  QString latestVersion = QString::fromUtf8(theReply->readAll()).trimmed();
   qDebug("Update checker finished, current \"%s\" latest \"%s\"",
          VERSION, latestVersion.toLatin1().data());
   if (latestVersion.isEmpty() || latestVersion == VERSION) {

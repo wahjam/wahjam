@@ -30,6 +30,7 @@ class JammrUpdateChecker : public QObject
 
 public:
   JammrUpdateChecker(QWidget *parent_, QNetworkAccessManager *netManager_);
+  ~JammrUpdateChecker();
   void setUpdateUrl(const QUrl &updateUrl_);
   void setDownloadUrl(const QUrl &downloadUrl_);
   void start();
