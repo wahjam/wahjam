@@ -19,6 +19,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <QtGlobal>
+#ifdef Q_OS_LINUX
+#include <pa_jack.h>
+#endif
 #include "PortAudioStreamer.h"
 
 static void logPortAudioError(const char *msg, PaError error)
@@ -541,6 +544,11 @@ static void portAudioCleanup()
 /* Initialize PortAudio once for the whole application */
 bool portAudioInit()
 {
+#ifdef Q_OS_LINUX
+  /* Set the name for JACK ports */
+  PaJack_SetClientName(APPNAME);
+#endif
+
   PaError error = Pa_Initialize();
   if (error != paNoError) {
     logPortAudioError("Pa_Initialize() failed", error);
