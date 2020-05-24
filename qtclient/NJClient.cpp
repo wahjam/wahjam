@@ -385,6 +385,7 @@ NJClient::NJClient(QObject *parent)
   m_netcon=0;
 
   midiStreamer = NULL;
+  midiBeatClockStarted = false;
 
   _reinit();
 
