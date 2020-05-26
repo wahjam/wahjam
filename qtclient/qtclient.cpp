@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
   if (settings->contains("app/logFile")) {
     logFilePath = settings->value("app/logFile").toString();
   } else {
-    QDir basedir(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
+    QDir basedir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation));
 
     /* The app data directory might not exist, so create it */
     if (!basedir.mkpath(basedir.absolutePath())) {
