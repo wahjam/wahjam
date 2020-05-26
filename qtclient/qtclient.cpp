@@ -59,7 +59,10 @@ int main(int argc, char *argv[])
 
     /* The app data directory might not exist, so create it */
     if (!basedir.mkpath(basedir.absolutePath())) {
-      return false;
+      QMessageBox::critical(NULL, QObject::tr("Unable to create data directory"),
+          QObject::tr("The data directory could not be created. "
+                      "This should always succeed, please report this bug."));
+      return 1;
     }
 
     logFilePath = basedir.filePath("log.txt");
