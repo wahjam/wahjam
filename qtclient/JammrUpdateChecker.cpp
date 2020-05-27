@@ -58,6 +58,48 @@ void JammrUpdateChecker::start()
   qDebug("Checking for updates from %s", updateUrl.toString().toLatin1().data());
 }
 
+/* Parse a major.minor.version string into numbers */
+static void parseVersionString(const QString &str,
+                               unsigned *major,
+                               unsigned *minor,
+                               unsigned *patch)
+{
+  QStringList fields = str.split('.');
+
+  if (fields.size() != 3) {
+    *major = 0;
+    *minor = 0;
+    *patch = 0;
+    return;
+  }
+
+  *major = fields.at(0).toUInt();
+  *minor = fields.at(1).toUInt();
+  *patch = fields.at(2).toUInt();
+}
+
+static bool isUpToDate(const QString &ourVersion, const QString &latestVersion)
+{
+  unsigned ourMajor, ourMinor, ourPatch;
+  parseVersionString(ourVersion, &ourMajor, &ourMinor, &ourPatch);
+
+  unsigned latestMajor, latestMinor, latestPatch;
+  parseVersionString(latestVersion, &latestMajor, &latestMinor, &latestPatch);
+
+  if (ourMajor > latestMajor) {
+    return true;
+  }
+  if (ourMajor == latestMajor) {
+    if (ourMinor > latestMinor) {
+      return true;
+    }
+    if (ourMinor == latestMinor) {
+      return ourPatch >= latestPatch;
+    }
+  }
+  return false;
+}
+
 void JammrUpdateChecker::requestFinished()
 {
   QNetworkReply *theReply = reply;
@@ -81,7 +123,8 @@ void JammrUpdateChecker::requestFinished()
   QString latestVersion = QString::fromUtf8(theReply->readAll()).trimmed();
   qDebug("Update checker finished, current \"%s\" latest \"%s\"",
          VERSION, latestVersion.toLatin1().data());
-  if (latestVersion.isEmpty() || latestVersion == VERSION) {
+
+  if (isUpToDate(VERSION, latestVersion)) {
     return;
   }
 
