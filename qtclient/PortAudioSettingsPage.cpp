@@ -348,11 +348,17 @@ void PortAudioSettingsPage::populateChannelsList(QComboBox *deviceList,
       channelsList->setCurrentItem(channelsList->item(1), QItemSelectionModel::Select);
     }
   } else {
-    /* Enable all output channels by default.  On mono and stereo devices this
-     * is obviously the right default.  It also makes sense on surround sound
-     * devices because all channels should receive audio.
+    /* Only enable the first two output channels if this is obviously a
+     * multi-output device because there are more than 8 channels. Anything up
+     * to 8 channels might simply be a surround-sound device like a 7.1 speaker
+     * system where we need to enable all channels.
      */
-    channelsList->selectAll();
+    if (channelsList->count() > 8) {
+      channelsList->setCurrentItem(channelsList->item(0), QItemSelectionModel::Select);
+      channelsList->setCurrentItem(channelsList->item(1), QItemSelectionModel::Select);
+    } else {
+      channelsList->selectAll();
+    }
   }
 }
 
