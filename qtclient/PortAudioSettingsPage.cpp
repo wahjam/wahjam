@@ -90,7 +90,7 @@ PortAudioSettingsPage::PortAudioSettingsPage(QWidget *parent)
           outputChannelsList, SLOT(setVisible(bool)));
 
   sampleRateList = new QComboBox;
-  sampleRateList->setToolTip(tr("Usually 441000 or 48000 Hz works best"));
+  sampleRateList->setToolTip(tr("Usually 44100 or 48000 Hz works best"));
   sampleRateList->setEditable(false);
   connect(sampleRateList, SIGNAL(currentIndexChanged(int)),
           this, SLOT(sampleRateIndexChanged(int)));
