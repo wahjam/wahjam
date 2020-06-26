@@ -983,6 +983,16 @@ void User_Group::AddConnection(QTcpSocket *sock, int isres)
   connect(p, SIGNAL(authenticated()), this, SIGNAL(userAuthenticated()));
 }
 
+static int numUsersFromVotingTreshold(int numUsers, int threshold)
+{
+  // Special case for treshold=1: vote passes if one other person seconds it
+  if (threshold == 1) {
+    return qMin(numUsers, 2);
+  }
+
+  return (numUsers * threshold + 50) / 100;
+}
+
 void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
 {
   if (!strcmp(msg->parms[0],"MSG")) // chat message
@@ -1045,9 +1055,12 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
               if (v > bpms[maxbpm]) maxbpm=p->m_vote_bpm-MIN_BPM;
           }
         }
+
+        int numUsersThreshold = numUsersFromVotingTreshold(vucnt, m_voting_threshold);
+
         if (bpms[maxbpm] > 0 && !strncmp(pn,"bpm",3))
         {
-          if (bpms[maxbpm] >= (vucnt * m_voting_threshold + 50)/100)
+          if (bpms[maxbpm] >= numUsersThreshold)
           {
             m_last_bpm=maxbpm+MIN_BPM;
             char buf[512];
@@ -1071,7 +1084,7 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
           else
           {
             char buf[512];
-            sprintf(buf,"[voting system] leading candidate: %d/%d votes for %d BPM [each vote expires in %ds]",bpms[maxbpm],(vucnt * m_voting_threshold + 50)/100,maxbpm+MIN_BPM,m_voting_timeout);
+            sprintf(buf,"[voting system] leading candidate: %d/%d votes for %d BPM [each vote expires in %ds]",bpms[maxbpm],numUsersThreshold,maxbpm+MIN_BPM,m_voting_timeout);
 
             mpb_chat_message newmsg;
             newmsg.parms[0]="MSG";
@@ -1082,7 +1095,7 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
         }
         if (bpis[maxbpi] > 0 && !strncmp(pn,"bpi",3))
         {
-          if (bpis[maxbpi] >= (vucnt * m_voting_threshold + 50)/100)
+          if (bpis[maxbpi] >= numUsersThreshold)
           {
             m_last_bpi=maxbpi+MIN_BPI;
             char buf[512];
@@ -1104,7 +1117,7 @@ void User_Group::onChatMessage(User_Connection *con, mpb_chat_message *msg)
           else
           {
             char buf[512];
-            sprintf(buf,"[voting system] leading candidate: %d/%d votes for %d BPI [each vote expires in %ds]",bpis[maxbpi],(vucnt * m_voting_threshold + 50)/100,maxbpi+MIN_BPI,m_voting_timeout);
+            sprintf(buf,"[voting system] leading candidate: %d/%d votes for %d BPI [each vote expires in %ds]",bpis[maxbpi],numUsersThreshold,maxbpi+MIN_BPI,m_voting_timeout);
 
             mpb_chat_message newmsg;
             newmsg.parms[0]="MSG";
