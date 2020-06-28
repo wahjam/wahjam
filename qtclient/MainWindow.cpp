@@ -468,6 +468,8 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
   double sampleRate = settings->value("audio/sampleRate").toDouble();
   double latency = settings->value("audio/latency").toDouble();
 
+  detectLoudNoises = settings->value("audio/detectLoudNoises", true).toBool();
+
   client.SetSampleRate(sampleRate);
 
   portMidiStreamer.start(midiInputDevice, midiOutputDevice, latency * 1000,
