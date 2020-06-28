@@ -1250,11 +1250,8 @@ void NJClient::processInputChannels(float **inbuf, int innch,
 #endif
       }
 
-      // Samples to broadcast next interval
-      int nextLen = len - thisLen;
-
-      // Handle crossing into the next interval
-      if (nextLen > 0)
+      // New interval
+      if (m_interval_pos + thisLen == m_interval_length)
       {
         if (lc->bcast_active)
         {
@@ -1269,12 +1266,15 @@ void NJClient::processInputChannels(float **inbuf, int innch,
         }
 
         lc->bcast_active = lc->broadcasting;
+      }
 
-        if (lc->bcast_active) {
+      // Samples to broadcast next interval
+      int nextLen = len - thisLen;
+
+      if (nextLen > 0 && lc->bcast_active) {
 #ifndef NJCLIENT_NO_XMIT_SUPPORT
-          lc->m_bq.AddBlock(src + thisLen, nextLen);
+        lc->m_bq.AddBlock(src + thisLen, nextLen);
 #endif
-        }
       }
     }
 
