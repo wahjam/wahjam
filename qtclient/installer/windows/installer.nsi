@@ -23,9 +23,6 @@
 !ifndef EXECUTABLE
   !define EXECUTABLE "${PROGRAM_NAME}.exe"
 !endif
-!ifndef EXECUTABLE64
-  !define EXECUTABLE64 "${PROGRAM_NAME}64.exe"
-!endif
 !ifdef VERSION
   VIProductVersion "${VERSION}"
   Caption "${PROGRAM_NAME} ${VERSION} Setup"
@@ -63,35 +60,70 @@ Section "-Install"
   WriteRegDWORD HKCU "${REG_UNINSTALL}" "NoRepair" 1
 SectionEnd
 
-SectionGroup /e "32-bit" SEC_32BIT
-Section /o "${PROGRAM_NAME} 32-bit"
-  File "${EXECUTABLE}"
-  CreateShortCut "$SMPROGRAMS\${PROGRAM_NAME}.lnk" "$INSTDIR\${PROGRAM_NAME}.exe"
+Section /o "${PROGRAM_NAME} 32-bit" SEC_32BIT
+  CreateDirectory "$INSTDIR\32"
+  SetOutPath "$INSTDIR\32"
+  File "32\${EXECUTABLE}"
+  File "32\*.dll"
+  CreateDirectory "$INSTDIR\32\plugins"
+  CreateDirectory "$INSTDIR\32\plugins\imageformats"
+  SetOutPath "$INSTDIR\32\plugins\imageformats"
+  File "32\plugins\imageformats\*.dll"
+  CreateDirectory "$INSTDIR\32\plugins\iconengines"
+  SetOutPath "$INSTDIR\32\plugins\iconengines"
+  File "32\plugins\iconengines\*.dll"
+  CreateDirectory "$INSTDIR\32\plugins\platforms"
+  SetOutPath "$INSTDIR\32\plugins\platforms"
+  File "32\plugins\platforms\*.dll"
+  CreateDirectory "$INSTDIR\32\plugins\platformthemes"
+  SetOutPath "$INSTDIR\32\plugins\platformthemes"
+  File "32\plugins\platformthemes\*.dll"
+  CreateDirectory "$INSTDIR\32\plugins\styles"
+  SetOutPath "$INSTDIR\32\plugins\styles"
+  File "32\plugins\styles\*.dll"
+  CreateShortCut "$SMPROGRAMS\${PROGRAM_NAME}.lnk" "$INSTDIR\32\${EXECUTABLE}"
 SectionEnd
 
-Section /o "Desktop shortcut"
-  CreateShortCut "$DESKTOP\${PROGRAM_NAME}.lnk" "$INSTDIR\${PROGRAM_NAME}.exe"
+Section /o "${PROGRAM_NAME} 64-bit" SEC_64BIT
+  CreateDirectory "$INSTDIR\64"
+  SetOutPath "$INSTDIR\64"
+  File "64\${EXECUTABLE}"
+  File "64\*.dll"
+  CreateDirectory "$INSTDIR\64\plugins"
+  CreateDirectory "$INSTDIR\64\plugins\imageformats"
+  SetOutPath "$INSTDIR\64\plugins\imageformats"
+  File "64\plugins\imageformats\*.dll"
+  CreateDirectory "$INSTDIR\64\plugins\iconengines"
+  SetOutPath "$INSTDIR\64\plugins\iconengines"
+  File "64\plugins\iconengines\*.dll"
+  CreateDirectory "$INSTDIR\64\plugins\platforms"
+  SetOutPath "$INSTDIR\64\plugins\platforms"
+  File "64\plugins\platforms\*.dll"
+  CreateDirectory "$INSTDIR\64\plugins\platformthemes"
+  SetOutPath "$INSTDIR\64\plugins\platformthemes"
+  File "64\plugins\platformthemes\*.dll"
+  CreateDirectory "$INSTDIR\64\plugins\styles"
+  SetOutPath "$INSTDIR\64\plugins\styles"
+  File "64\plugins\styles\*.dll"
+  CreateShortCut "$SMPROGRAMS\${PROGRAM_NAME} (64-bit).lnk" "$INSTDIR\64\${EXECUTABLE}"
 SectionEnd
 
-Section /o "Launch ${PROGRAM_NAME} on completion"
-  Exec '"$INSTDIR\${PROGRAM_NAME}.exe"'
-SectionEnd
-SectionGroupEnd
-
-SectionGroup /e "64-bit" SEC_64BIT
-Section /o "${PROGRAM_NAME} 64-bit"
-  File "${EXECUTABLE64}"
-  CreateShortCut "$SMPROGRAMS\${PROGRAM_NAME} (64-bit).lnk" "$INSTDIR\${PROGRAM_NAME}64.exe"
+Section "Desktop shortcut"
+  ${If} ${SectionIsSelected} ${SEC_32BIT}
+    CreateShortCut "$DESKTOP\${PROGRAM_NAME}.lnk" "$INSTDIR\32\${EXECUTABLE}"
+  ${EndIf}
+  ${If} ${SectionIsSelected} ${SEC_64BIT}
+    CreateShortCut "$DESKTOP\${PROGRAM_NAME} (64-bit).lnk" "$INSTDIR\64\${EXECUTABLE}"
+  ${EndIf}
 SectionEnd
 
-Section /o "Desktop shortcut"
-  CreateShortCut "$DESKTOP\${PROGRAM_NAME} (64-bit).lnk" "$INSTDIR\${PROGRAM_NAME}64.exe"
+Section "Launch ${PROGRAM_NAME} on completion"
+  ${If} ${SectionIsSelected} ${SEC_64BIT}
+    Exec '"$INSTDIR\64\${EXECUTABLE}"'
+  ${Else}
+    Exec '"$INSTDIR\32\${EXECUTABLE}"'
+  ${EndIf}
 SectionEnd
-
-Section /o "Launch ${PROGRAM_NAME} on completion"
-  Exec '"$INSTDIR\${PROGRAM_NAME}64.exe"'
-SectionEnd
-SectionGroupEnd
 
 Section Uninstall
   Delete "$DESKTOP\${PROGRAM_NAME}.lnk"
@@ -109,13 +141,39 @@ Section Uninstall
 
   SetOutPath $INSTDIR
   Delete license.txt
-  Delete ${PROGRAM_NAME}.exe
+  Delete "32\${EXECUTABLE}"
+  Delete "32\*.dll"
+  Delete "32\plugins\imageformats\*.dll"
+  RMDir "$INSTDIR\32\plugins\imageformats"
+  Delete "32\plugins\iconengines\*.dll"
+  RMDir "$INSTDIR\32\plugins\iconengines"
+  Delete "32\plugins\platforms\*.dll"
+  RMDir "$INSTDIR\32\plugins\platforms"
+  Delete "32\plugins\platformthemes\*.dll"
+  RMDir "$INSTDIR\32\plugins\platformthemes"
+  Delete "32\plugins\styles\*.dll"
+  RMDir "$INSTDIR\32\plugins\styles"
+  RMDir "$INSTDIR\32\plugins"
+  RMDir "$INSTDIR\32"
   ${If} ${RunningX64}
-  Delete ${PROGRAM_NAME}64.exe
+  Delete "64\${EXECUTABLE}"
+  Delete "64\*.dll"
+  Delete "64\plugins\imageformats\*.dll"
+  RMDir "$INSTDIR\64\plugins\imageformats"
+  Delete "64\plugins\iconengines\*.dll"
+  RMDir "$INSTDIR\64\plugins\iconengines"
+  Delete "64\plugins\platforms\*.dll"
+  RMDir "$INSTDIR\64\plugins\platforms"
+  Delete "64\plugins\platformthemes\*.dll"
+  RMDir "$INSTDIR\64\plugins\platformthemes"
+  Delete "64\plugins\styles\*.dll"
+  RMDir "$INSTDIR\64\plugins\styles"
+  RMDir "$INSTDIR\64\plugins"
+  RMDir "$INSTDIR\64"
   ${EndIf}
   Delete uninstall.exe
   Delete "${PROGRAM_NAME}\log.txt"
-  RMDir "${PROGRAM_NAME}"
+  RMDir "$INSTDIR\${PROGRAM_NAME}"
   SetOutPath $TEMP
   RMDir $INSTDIR
 SectionEnd
@@ -126,7 +184,6 @@ Function .onInit
   ${Else}
     !insertmacro SetSectionFlag ${SEC_64BIT} ${SF_RO}
     !insertmacro SetSectionFlag ${SEC_32BIT} ${SF_SELECTED}
-    !insertmacro ClearSectionFlag ${SEC_32BIT} ${SF_EXPAND}
   ${EndIf}
 
   ; Try to get focus in case we've been hidden behind another window
