@@ -85,6 +85,7 @@ EffectSettingsPage::EffectSettingsPage(EffectProcessor *processor_, QWidget *par
   connect(routeButton, SIGNAL(clicked()),
           this, SLOT(routeClicked()));
   buttonLayout->addWidget(routeButton);
+  buttonLayout->addStretch(1);
   hBoxLayout->addLayout(buttonLayout);
 
   vBoxLayout->addLayout(hBoxLayout);
