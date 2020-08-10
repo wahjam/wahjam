@@ -105,6 +105,7 @@ MainWindow::MainWindow(QWidget *parent)
   }
 
   settingsDialog = new SettingsDialog(this);
+  settingsDialog->setWindowModality(Qt::WindowModal);
   connect(settingsDialog, SIGNAL(rejected()),
           this, SLOT(SettingsDialogClosed()));
   setupPortAudioSettingsPage();
