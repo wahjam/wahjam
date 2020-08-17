@@ -225,7 +225,8 @@ bool VSTPlugin::load()
     mainfn = (VSTMainFn*)library.resolve("main");
   }
   if (!mainfn) {
-    qDebug("failed to resolve VST plugin main symbol");
+    qDebug("failed to resolve VST plugin main symbol: %s",
+           library.errorString().toLatin1().constData());
     library.unload();
     return false;
   }
