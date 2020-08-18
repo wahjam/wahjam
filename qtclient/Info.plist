@@ -18,5 +18,9 @@
 	<string>@EXECUTABLE@</string>
 	<key>CFBundleIdentifier</key>
 	<string>@BUNDLEIDENTIFIER@</string>
+	<key>CFBundleDisplayName</key>
+	<string>@EXECUTABLE@</string>
+	<key>CFBundleName</key>
+	<string>@EXECUTABLE@</string>
 </dict>
 </plist>
