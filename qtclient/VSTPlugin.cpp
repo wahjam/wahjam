@@ -330,15 +330,16 @@ void VSTPlugin::openEditor(QWidget *parent)
   } *rect = NULL;
   dispatch(effEditGetRect, 0, 0, &rect);
   if (!rect) {
-    qDebug("VST plugin returned NULL edit rect");
-    return;
+    qDebug("VST plugin returned NULL edit rect, editor dialog may not show");
   }
 
   QDialog *dialog = new QDialog(parent, Qt::Window);
   connect(dialog, SIGNAL(finished(int)),
           this, SLOT(editorDialogFinished(int)));
   dialog->setWindowTitle(name + " [VST Plugin]");
-  dialog->resize(rect->right - rect->left, rect->bottom - rect->top);
+  if (rect) {
+    dialog->resize(rect->right - rect->left, rect->bottom - rect->top);
+  }
   dialog->show(); /* must show before calling effectiveWinId() */
 
   dispatch(effEditOpen, 0, 0, (void*)dialog->effectiveWinId());
