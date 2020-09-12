@@ -40,7 +40,7 @@ static void hexDump(void *data, int len)
   for (int i = 0; i < len; i += 16) {
     int line_len = qMin(len - i, 16);
     QByteArray bytes = QByteArray::fromRawData((const char*)data + i, line_len);
-    qDebug(QString(bytes.toHex(' ')).toLatin1().constData());
+    qDebug("%s", QString(bytes.toHex(' ')).toLatin1().constData());
   }
 }
 
