@@ -1,0 +1,139 @@
+jammr-client (1.2.92) unstable; urgency=low
+
+  * Redesign “Access control” dialog and save recently added usernames for private jams
+  * Add “Input noise protection” audio setting for feedback detection (enabled by default)
+  * Add channel selection audio setting for multi-channel sound cards
+  * Refine automatic output channel selection to use all channels for mono, stereo, and surround-sound cards. Only use the first two output channels by default on multi-output cards with more than 8 channels.
+  * Add “Remember password” checkbox to login dialog
+  * Add reset password link to login dialog
+  * Add tooltips with audio configuration hints to sound settings page
+  * Add Audio Setup Guide link to sound settings page
+  * Add “unlock” button to audio and MIDI settings pages so it's clear that disconnecting from the jam is required to change these settings
+  * Improve MIDI Beat Clock timing
+  * Improve audio error reporting
+  * Reduce chance of audio buffer underruns/overruns
+  * Rename JACK port from “PortAudio” to “jammr” so it's easier to identify the application
+  * Fix keyboard navigation and automatically select the first jam with at least one user in the “Connect to server…” dialog. This solves screen reader accessibility problems.
+  * Fix lost login dialog focus under Wayland on Linux
+  * Compatibility with VST plugins that don't set editor rect early
+  * Make settings dialog modal
+  * Tidy up Settings | Effects button column spacing
+
+ -- Stefan Hajnoczi <stefanha@jammr.net>  Sat, 12 Sep 2020 7:00:00 +0000
+
+jammr-client (1.2.9) unstable; urgency=low
+
+  * Fix keyboard navigation in server browser
+  * Fix tab order in Connect dialog
+  * Automatically select a public jam that has a user (if possible)
+
+ -- Stefan Hajnoczi <stefanha@jammr.net>  Sun, 16 Jul 2017 15:00:00 +0000
+
+jammr-client (1.2.8) unstable; urgency=low
+
+  * Avoid confusion between username and email address upon failed login
+  * Update to Qt 5.7.1 on macOS text input bug fixes
+  * Restore macOS 10.8+ version compatibility
+
+ -- Stefan Hajnoczi <stefanha@jammr.net>  Mon, 23 Jan 2017 7:00:00 +0000
+
+jammr-client (1.2.7) unstable; urgency=low
+
+  * Add AudioUnit support on macOS
+  * Propagate tempo changes to effect plugins
+  * Add font size setting
+  * Save and restore window position/size
+  * Prevent screen sleep on Windows and macOS during a jam session
+  * Show getting started tips when connecting to a jam session
+
+ -- Stefan Hajnoczi <stefanha@jammr.net>  Sat, 10 Dec 2016 13:27:00 +0000
+
+jammr-client (1.2.6) unstable; urgency=low
+
+  * Allow digits in jammr usernames in access control list
+  * Only enable Connect button when jam is selected
+
+ -- Stefan Hajnoczi <stefanha@jammr.net>  Sun, 30 Aug 2015 15:51:00 +0000
+
+jammr-client (1.2.5) unstable; urgency=low
+
+  * Add support for surround sound playback devices
+  * Hide metronome bar when metronome is disabled
+  * Fix "Send" button on startup
+
+ -- Stefan Hajnoczi <stefanha@jammr.net>  Thu, 7 May 2015 08:07:00 +0000
+
+jammr-client (1.2.4) unstable; urgency=low
+
+  * Switch SSL for jammr REST API
+  * Add placeholder to chat textbox prompting user to enter chat message
+  * Use Mac native menu roles for Quit, About, etc
+  * Show full x.y.z version number in Mac Info.plist
+  * Fix sound device selection with Unicode device names
+
+ -- Stefan Hajnoczi <stefanha@jammr.net>  Sun, 18 Jan 2015 10:07:00 +0000
+
+jammr-client (1.2.3) unstable; urgency=low
+
+  * Open sound devices in stereo where possible
+  * Fix portmidi crash on older Macs due to unsupported CPU instructions
+  * Update Linux package dependencies for Ubuntu 14.04 LTS
+
+ -- Stefan Hajnoczi <stefanha@jammr.net>  Sat, 2 Aug 2014 10:04:00 +0000
+
+jammr-client (1.2.2) unstable; urgency=low
+
+  * Support Unicode paths on Windows
+  * Fix crash on Linux due to memcpy() instead of memmove()
+  * Work around QTextCodec::codecForLocale() returning NULL on Windows
+
+ -- Stefan Hajnoczi <stefanha@jammr.net>  Sat, 24 May 2014 10:04:00 +0000
+
+jammr-client (1.2.1) unstable; urgency=low
+
+  * Add effect plugin "Route..." dialog
+  * Add audio on/mix/bypass option to "Route..." dialog
+  * Add MIDI input on/off option to "Route..." dialog
+  * Fix VST plugin crashes due to incorrect buffer allocations
+  * Set focus on login dialog username text box if empty
+
+ -- Stefan Hajnoczi <stefanha@jammr.net>  Thu, 24 April 2014 17:38:00 +0000
+
+jammr-client (1.2.0) unstable; urgency=low
+
+  * Better defaults in sound settings
+  * Added Help | Show log... menu item for troubleshooting
+  * Updated to Qt5 and PortAudio 20140130 for latest bug fixes
+
+ -- Stefan Hajnoczi <stefanha@jammr.net>  Sun, 2 March 2014 15:35:00 +0000
+
+jammr-client (1.1.0) unstable; urgency=low
+
+  * Add MIDI support for VST/VSTi plugins
+  * Add MIDI Beat Clock to sync tempo with external apps and devices
+  * Keep list of VST plugins across restart
+  * Add Mac VST support
+  * Add option to launch after Windows installer
+  * Add option to create desktop shortcut in Windows installer
+  * Drop administrator privileges in Windows installer
+  * Consolidate configuration dialogs into a Settings dialog with pages
+
+ -- Stefan Hajnoczi <stefanha@jammr.net>  Sun, 18 June 2013 08:55:00 +0000
+
+jammr-client (1.0.2) unstable; urgency=low
+
+  * Add sample rate and latency controls to the audio configuration dialog
+
+ -- Stefan Hajnoczi <stefanha@jammr.net>  Sun, 9 June 2013 15:03:00 +0000
+
+jammr-client (1.0.1) unstable; urgency=low
+
+  * Auto-select sample rate (fixes sound when devices don't support 48 kHz)
+
+ -- Stefan Hajnoczi <stefanha@jammr.net>  Thur, 6 June 2013 20:21:00 +0000
+
+jammr-client (1.0) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Stefan Hajnoczi <stefanha@jammr.net>  Fri, 29 Mar 2013 17:27:08 +0000

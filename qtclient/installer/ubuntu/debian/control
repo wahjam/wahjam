@@ -1,0 +1,15 @@
+Source: jammr-client
+Section: sound
+Priority: extra
+Maintainer: Stefan Hajnoczi <stefanha@jammr.net>
+Build-Depends: debhelper (>= 12), qtbase5-dev, libogg-dev, libvorbis-dev, portaudio19-dev, libportmidi-dev, qt5keychain-dev
+Standards-Version: 3.9.3
+Homepage: https://jammr.net/
+
+Package: jammr-client
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Allows musicians to jam together online
+ The jammr client is an application that allows musicians to jam together
+ online.  It connects to the jammr.net online jamming platform and allows users
+ all over the world to play with each other.
