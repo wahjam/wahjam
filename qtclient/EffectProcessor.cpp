@@ -134,7 +134,11 @@ void EffectProcessor::moveUp(int idx)
     return;
   }
 
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 13, 0))
   plugins.swapItemsAt(idx, idx - 1);
+#else
+  plugins.swap(idx, idx - 1);
+#endif
 }
 
 void EffectProcessor::moveDown(int idx)
@@ -145,7 +149,11 @@ void EffectProcessor::moveDown(int idx)
     return;
   }
 
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 13, 0))
   plugins.swapItemsAt(idx, idx + 1);
+#else
+  plugins.swap(idx, idx + 1);
+#endif
 }
 
 int EffectProcessor::numPlugins()
