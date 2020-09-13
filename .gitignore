@@ -1,7 +1,13 @@
 tags
 Makefile
-*.o
 *.a
+*.Debug
+*.exe
+*.map
+*.o
+*.rc
+*.Release
 moc_*.cpp
 server/wahjamsrv
 qtclient/wahjam
+qtclient/installer/ubuntu/build/
