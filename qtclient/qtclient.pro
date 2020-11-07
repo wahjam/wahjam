@@ -4,7 +4,7 @@
 
 # Version number in <major>.<minor>.<patch> form
 isEmpty(VERSION) {
-        VERSION = 1.2.92
+        VERSION = 1.3.0
 }
 
 # Application name displayed to user
