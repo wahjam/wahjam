@@ -1,4 +1,4 @@
-jammr-client (1.2.92) unstable; urgency=low
+jammr-client (1.3.0) unstable; urgency=low
 
   * Redesign “Access control” dialog and save recently added usernames for private jams
   * Add “Input noise protection” audio setting for feedback detection (enabled by default)
@@ -19,7 +19,7 @@ jammr-client (1.2.92) unstable; urgency=low
   * Make settings dialog modal
   * Tidy up Settings | Effects button column spacing
 
- -- Stefan Hajnoczi <stefanha@jammr.net>  Sat, 12 Sep 2020 7:00:00 +0000
+ -- Stefan Hajnoczi <stefanha@jammr.net>  Sat, 5 Dec 2020 7:00:00 +0000
 
 jammr-client (1.2.9) unstable; urgency=low
 
