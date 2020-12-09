@@ -23,6 +23,9 @@
 #include <pa_jack.h>
 #endif
 #include "PortAudioStreamer.h"
+#ifdef Q_OS_MAC
+#import "requestmicpermission.h"
+#endif
 
 static void logPortAudioError(const char *msg, PaError error)
 {
@@ -547,6 +550,10 @@ bool portAudioInit()
 #ifdef Q_OS_LINUX
   /* Set the name for JACK ports */
   PaJack_SetClientName(APPNAME);
+#endif
+
+#ifdef Q_OS_MAC
+  RequestMicPermission::openMic();
 #endif
 
   PaError error = Pa_Initialize();

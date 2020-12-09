@@ -128,7 +128,7 @@ win32 {
 }
 
 mac {
-	LIBS += -framework Foundation -framework AudioUnit -framework AppKit
+	LIBS += -framework Foundation -framework AudioUnit -framework AppKit -framework AVFoundation
 	QMAKE_TARGET_BUNDLE_PREFIX = $$split(ORGDOMAIN, .)
 	QMAKE_TARGET_BUNDLE_PREFIX = $$reverse(QMAKE_TARGET_BUNDLE_PREFIX)
 	QMAKE_TARGET_BUNDLE_PREFIX = $$join(QMAKE_TARGET_BUNDLE_PREFIX, .)
@@ -169,7 +169,7 @@ HEADERS += EffectPlugin.h
 HEADERS += VSTPlugin.h
 mac:HEADERS += PmEventParser.h
 mac:HEADERS += AudioUnitPlugin.h
-mac:HEADERS += createuiwidget.h
+mac:HEADERS += createuiwidget.h requestmicpermission.h
 HEADERS += EffectProcessor.h
 HEADERS += PortMidiStreamer.h
 HEADERS += screensleep.h
@@ -202,7 +202,7 @@ SOURCES += EffectPlugin.cpp
 SOURCES += VSTPlugin.cpp
 mac:SOURCES += PmEventParser.cpp
 mac:SOURCES += AudioUnitPlugin.cpp
-mac:OBJECTIVE_SOURCES += createuiwidget.mm
+mac:OBJECTIVE_SOURCES += createuiwidget.mm requestmicpermission.mm
 SOURCES += EffectProcessor.cpp
 SOURCES += PortMidiStreamer.cpp
 win32 {
