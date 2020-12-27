@@ -22,5 +22,7 @@
 	<string>@EXECUTABLE@</string>
 	<key>CFBundleName</key>
 	<string>@EXECUTABLE@</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app requires microphone access to record audio for jam sessions.</string>
 </dict>
 </plist>
