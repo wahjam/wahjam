@@ -5,7 +5,9 @@ Makefile
 *.exe
 *.map
 *.o
+*.pvk
 *.rc
+*.spc
 *.Release
 moc_*.cpp
 server/wahjamsrv

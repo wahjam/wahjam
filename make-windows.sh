@@ -7,6 +7,9 @@
 target=${1:-wahjam}
 version=${2:-$(grep 'VERSION =' qtclient/qtclient.pro | awk '{ print $3 }')}
 
+spc_file="qtclient/installer/windows/$target.spc"
+pvk_file="qtclient/installer/windows/$target.pvk"
+
 common_dlls=(bin/libogg-0.dll
 	     bin/libportaudio-2.dll
 	     bin/libportmidi.dll
@@ -65,6 +68,37 @@ copy_qt_plugins() {
 	      "$dest_dir/plugins/"
 }
 
+# Sign EXE and DLL files with a code signing certificate. The private key
+# passphrase must be stored in the keyring with the name
+# "<target>-windows-code-signing" and username "password" where "<target>" is
+# the name of the program. The Software Publisher File (spc) and Private Key
+# File (pvk) must be stored in "qtclient/installer/windows/<target>.spc" and
+# ".pvk", respectively.
+sign() {
+	file="$1"
+
+	if ! type keyring 2>&1 >/dev/null; then
+		echo 'Installing python3-keyring for signcode utility...'
+		sudo dnf install -y python3-keyring
+	fi
+	if ! type signcode 2>&1 >/dev/null; then
+		echo 'Installing mono-devel for signcode utility...'
+		sudo dnf install -y mono-devel
+	fi
+
+	echo
+	echo "Signing $file..."
+	keyring get "$target-windows-code-signing" password | \
+		signcode -spc "$spc_file" \
+			 -v "$pvk_file" \
+			 -a sha256 \
+			 '-$' commercial \
+			 -n "$target" \
+			 -i https://jammr.net/ \
+			 -t http://timestamp.digicert.com \
+			 "$file"
+}
+
 make distclean
 rm -rf qtclient/installer/windows/32
 rm -rf qtclient/installer/windows/64
@@ -85,5 +119,19 @@ copy_qt_plugins ~/mxe/usr/x86_64-w64-mingw32.shared qtclient/installer/windows/6
 mv qtclient/release/"$target".exe qtclient/installer/windows/64/
 make distclean
 
+if [ -f "$spc_file" -a -f "$pvk_file" ]; then
+	for f in $(find qtclient/installer/windows/{32,64} -name \*.dll -o -name \*.exe); do
+		sign "$f"
+	done
+fi
+
 cd qtclient/installer/windows
-makensis -DPROGRAM_NAME="$target" -DVERSION="$version" installer.nsi
+
+# makensis returns with a non-zero exit code
+makensis -DPROGRAM_NAME="$target" -DVERSION="$version" installer.nsi || true
+
+cd -
+
+if [ -f "$spc_file" -a -f "$pvk_file" ]; then
+	sign "qtclient/installer/windows/$target-installer.exe"
+fi
