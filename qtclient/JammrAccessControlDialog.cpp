@@ -220,7 +220,7 @@ void JammrAccessControlDialog::applyChanges()
   request.setRawHeader("Referer", aclUrl.toString(QUrl::RemoveUserInfo).toLatin1().data());
 
   QByteArray formData;
-  formData.append(QString("mode=%1").arg(allowRadio->isChecked() ? "allow" : "block"));
+  formData.append(QString("mode=%1").arg(allowRadio->isChecked() ? "allow" : "block").toUtf8());
   for (int i = 0; i < usernamesList->count(); i++) {
     QListWidgetItem *item = usernamesList->item(i);
     formData.append("&usernames=");
