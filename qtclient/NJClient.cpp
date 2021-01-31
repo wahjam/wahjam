@@ -427,10 +427,7 @@ void NJClient::_reinit()
 
   m_issoloactive&=~1;
 
-  if (midiBeatClockStarted) {
-    sendMidiMessage(MIDI_STOP, 0);
-    midiBeatClockStarted = false;
-  }
+  sendMidiStop();
 
   int x;
   for (x = 0; x < m_locchannels.GetSize(); x ++)
@@ -505,9 +502,8 @@ void NJClient::updateInterval(int nsamples)
     m_interval_length = (int)v;
 
     /* Restart MIDI Beat Clock when tempo changes */
-    if (m_active_bpm != m_bpm && midiBeatClockStarted) {
-      sendMidiMessage(MIDI_STOP, 0);
-      midiBeatClockStarted = false;
+    if (m_active_bpm != m_bpm) {
+      sendMidiStop();
     }
 
     //m_interval_length-=m_interval_length%1152;//hack
@@ -1478,9 +1474,8 @@ void NJClient::process_samples(float **outbuf, int outnch,
         PmTimestamp timestampMS = (outputBufferDacTime + (double)(offset + x) / m_srate) * 1000.0 + 0.5;
         sendMidiMessage(MIDI_CLOCK, timestampMS);
       }
-    } else if (midiBeatClockStarted) {
-      sendMidiMessage(MIDI_STOP, 0);
-      midiBeatClockStarted = false;
+    } else {
+      sendMidiStop();
     }
   }
 }
@@ -2037,5 +2032,13 @@ void NJClient::sendMidiMessage(PmMessage msg, PmTimestamp timestamp)
       .timestamp = timestamp,
     };
     midiStreamer->write(&pmEvent);
+  }
+}
+
+void NJClient::sendMidiStop()
+{
+  if (midiBeatClockStarted) {
+    sendMidiMessage(MIDI_STOP, 0);
+    midiBeatClockStarted = false;
   }
 }

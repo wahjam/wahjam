@@ -251,6 +251,7 @@ private:
   int Run();// returns nonzero if sleep is OK
   void processMessage(Net_Message *msg);
   void sendMidiMessage(PmMessage msg, PmTimestamp timestamp);
+  void sendMidiStop();
 };
 
 
