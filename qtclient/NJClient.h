@@ -223,7 +223,7 @@ protected:
   double m_metronome_pos;
 
   bool sendMidiBeatClock;
-  bool midiBeatClockStarted;
+  bool midiStarted;
   PortMidiStreamer *midiStreamer;
 
   // Values that we watch for changes

@@ -386,7 +386,7 @@ NJClient::NJClient(QObject *parent)
 
   midiStreamer = NULL;
   sendMidiBeatClock = false;
-  midiBeatClockStarted = false;
+  midiStarted = false;
 
   _reinit();
 
@@ -1466,9 +1466,9 @@ void NJClient::process_samples(float **outbuf, int outnch,
       for (int x = (stepSize - ((m_interval_pos + offset) % stepSize)) % stepSize;
            x < len;
            x += stepSize) {
-        if (!midiBeatClockStarted) {
+        if (!midiStarted) {
           sendMidiMessage(MIDI_START, 0);
-          midiBeatClockStarted = true;
+          midiStarted = true;
         }
 
         PmTimestamp timestampMS = (outputBufferDacTime + (double)(offset + x) / m_srate) * 1000.0 + 0.5;
@@ -2037,8 +2037,8 @@ void NJClient::sendMidiMessage(PmMessage msg, PmTimestamp timestamp)
 
 void NJClient::sendMidiStop()
 {
-  if (midiBeatClockStarted) {
+  if (midiStarted) {
     sendMidiMessage(MIDI_STOP, 0);
-    midiBeatClockStarted = false;
+    midiStarted = false;
   }
 }
