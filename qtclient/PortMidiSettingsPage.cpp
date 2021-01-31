@@ -35,12 +35,16 @@ PortMidiSettingsPage::PortMidiSettingsPage(QWidget *parent)
   sendMidiBeatClockBox = new QCheckBox(tr("Send tempo to external apps and devices"));
   sendMidiBeatClockBox->setToolTip(tr("Enable MIDI beat clock"));
 
+  sendMidiStartOnIntervalBox = new QCheckBox(tr("Send MIDI Start on each interval"));
+  sendMidiStartOnIntervalBox->setToolTip(tr("Enable to loop external MIDI sequencers"));
+
   QFormLayout *formLayout = new QFormLayout;
   formLayout->setSpacing(5);
   formLayout->setContentsMargins(2, 2, 2, 2);
   formLayout->addRow(tr("&Input device:"), inputDeviceList);
   formLayout->addRow(tr("&Output device:"), outputDeviceList);
   formLayout->addRow(new QLabel, sendMidiBeatClockBox);
+  formLayout->addRow(new QLabel, sendMidiStartOnIntervalBox);
   contentsWidget->setLayout(formLayout);
 
   populateDeviceLists();
@@ -98,4 +102,14 @@ bool PortMidiSettingsPage::sendMidiBeatClock() const
 void PortMidiSettingsPage::setSendMidiBeatClock(bool enable)
 {
   sendMidiBeatClockBox->setChecked(enable);
+}
+
+bool PortMidiSettingsPage::sendMidiStartOnInterval() const
+{
+  return sendMidiStartOnIntervalBox->isChecked();
+}
+
+void PortMidiSettingsPage::setSendMidiStartOnInterval(bool enable)
+{
+  sendMidiStartOnIntervalBox->setChecked(enable);
 }

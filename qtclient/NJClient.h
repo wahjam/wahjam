@@ -159,6 +159,10 @@ public:
   {
     sendMidiBeatClock = enable;
   }
+  void SetSendMidiStartOnInterval(bool enable)
+  {
+    sendMidiStartOnInterval = enable;
+  }
 
   int LicenseAgreement_User32;
   int (*LicenseAgreementCallback)(int user32, char *licensetext); // return TRUE if user accepts
@@ -223,6 +227,7 @@ protected:
   double m_metronome_pos;
 
   bool sendMidiBeatClock;
+  bool sendMidiStartOnInterval;
   bool midiStarted;
   PortMidiStreamer *midiStreamer;
 

@@ -373,6 +373,7 @@ void MainWindow::setupPortMidiSettingsPage()
   portMidiSettingsPage->setInputDevice(settings->value("midi/inputDevice").toString());
   portMidiSettingsPage->setOutputDevice(settings->value("midi/outputDevice").toString());
   portMidiSettingsPage->setSendMidiBeatClock(settings->value("midi/sendMidiBeatClock", false).toBool());
+  portMidiSettingsPage->setSendMidiStartOnInterval(settings->value("midi/sendMidiStartOnInterval", false).toBool());
 
   settingsDialog->addPage(tr("MIDI"), portMidiSettingsPage);
 }
@@ -459,6 +460,7 @@ void MainWindow::Connect(const QString &host, const QString &user, const QString
   QString midiInputDevice = settings->value("midi/inputDevice").toString();
   QString midiOutputDevice = settings->value("midi/outputDevice").toString();
   client.SetSendMidiBeatClock(settings->value("midi/sendMidiBeatClock").toBool());
+  client.SetSendMidiStartOnInterval(settings->value("midi/sendMidiStartOnInterval").toBool());
 
   QString hostAPI = settings->value("audio/hostAPI").toString();
   QString inputDevice = settings->value("audio/inputDevice").toString();
@@ -1120,6 +1122,7 @@ void MainWindow::SettingsDialogClosed()
   settings->setValue("midi/inputDevice", portMidiSettingsPage->inputDevice());
   settings->setValue("midi/outputDevice", portMidiSettingsPage->outputDevice());
   settings->setValue("midi/sendMidiBeatClock", portMidiSettingsPage->sendMidiBeatClock());
+  settings->setValue("midi/sendMidiStartOnInterval", portMidiSettingsPage->sendMidiStartOnInterval());
 
   /* Save UI settings */
   int chatFontSize = uiSettingsPage->chatFontSize();

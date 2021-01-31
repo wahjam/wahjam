@@ -386,6 +386,7 @@ NJClient::NJClient(QObject *parent)
 
   midiStreamer = NULL;
   sendMidiBeatClock = false;
+  sendMidiStartOnInterval = false;
   midiStarted = false;
 
   _reinit();
@@ -485,6 +486,12 @@ void NJClient::updateInterval(int nsamples)
   // Lock so GetPosition() sees a consistent update when interval length
   // and interval position are set together.
   m_misc_cs.Enter();
+
+  // Restart MIDI song position each interval to sync DAWs/sequencers
+  if (sendMidiStartOnInterval) {
+    sendMidiStop();
+  }
+
   if (m_beatinfo_updated)
   {
     double v=(double)m_bpm*(1.0/60.0);
@@ -1474,7 +1481,9 @@ void NJClient::process_samples(float **outbuf, int outnch,
         PmTimestamp timestampMS = (outputBufferDacTime + (double)(offset + x) / m_srate) * 1000.0 + 0.5;
         sendMidiMessage(MIDI_CLOCK, timestampMS);
       }
-    } else {
+    } else if (!sendMidiStartOnInterval) {
+      /* If neither the MIDI Beat Clock nor the interval Start/Stop is needed,
+       * stop MIDI now. */
       sendMidiStop();
     }
   }

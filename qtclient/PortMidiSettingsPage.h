@@ -29,6 +29,7 @@ class PortMidiSettingsPage : public LockableSettingsPage
   Q_PROPERTY(QString inputDevice READ inputDevice WRITE setInputDevice)
   Q_PROPERTY(QString outputDevice READ outputDevice WRITE setOutputDevice)
   Q_PROPERTY(bool sendMidiBeatClock READ sendMidiBeatClock WRITE setSendMidiBeatClock)
+  Q_PROPERTY(bool sendMidiStartOnInterval READ sendMidiStartOnInterval WRITE setSendMidiStartOnInterval)
 
 public:
   PortMidiSettingsPage(QWidget *parent = 0);
@@ -38,11 +39,14 @@ public:
   void setOutputDevice(const QString &name);
   bool sendMidiBeatClock() const;
   void setSendMidiBeatClock(bool enable);
+  bool sendMidiStartOnInterval() const;
+  void setSendMidiStartOnInterval(bool enable);
 
 private:
   QComboBox *inputDeviceList;
   QComboBox *outputDeviceList;
   QCheckBox *sendMidiBeatClockBox;
+  QCheckBox *sendMidiStartOnIntervalBox;
 
   void populateDeviceLists();
 };
