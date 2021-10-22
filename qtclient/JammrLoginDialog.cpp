@@ -117,6 +117,8 @@ void JammrLoginDialog::login()
       (username() + ":" + passEdit->text()).toUtf8().toBase64());
   reply = netmanager->post(request, QString("token=%1").arg(hexToken).toLatin1());
   connect(reply, SIGNAL(finished()), this, SLOT(requestFinished()));
+  connect(reply, &QNetworkReply::sslErrors,
+          this, &JammrLoginDialog::requestSslErrors);
 
   qDebug("Logging in as \"%s\" at %s", username().toLatin1().data(),
          tokenUrl.toString().toLatin1().data());
@@ -124,6 +126,13 @@ void JammrLoginDialog::login()
   connectButton->setEnabled(false);
 
   QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+}
+
+void JammrLoginDialog::requestSslErrors(const QList<QSslError> &errors)
+{
+  for (const QSslError &error : errors) {
+    qCritical("SSL error: %s", error.errorString().toLatin1().constData());
+  }
 }
 
 void JammrLoginDialog::requestFinished()
@@ -136,7 +145,8 @@ void JammrLoginDialog::requestFinished()
 
   QNetworkReply::NetworkError err = reply->error();
   if (err != QNetworkReply::NoError) {
-    qCritical("Login network reply failed (error=%d)", err);
+    qCritical("Login network reply failed (error=%d, errorString=\"%s\")",
+              err, reply->errorString().toLatin1().constData());
 
     QString message;
     switch (err) {

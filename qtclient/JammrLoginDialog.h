@@ -26,6 +26,7 @@
 #include <QUrl>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QSslError>
 
 class JammrLoginDialog : public QDialog
 {
@@ -50,6 +51,7 @@ public:
 private slots:
   void login();
   void requestFinished();
+  void requestSslErrors(const QList<QSslError> &errors);
 
 private:
   QLineEdit *userEdit;
