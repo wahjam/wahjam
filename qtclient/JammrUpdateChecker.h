@@ -23,6 +23,7 @@
 #include <QUrl>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QSslError>
 
 class JammrUpdateChecker : public QObject
 {
@@ -37,6 +38,7 @@ public:
 
 private slots:
   void requestFinished();
+  void requestSslErrors(const QList<QSslError> &errors);
 
 private:
   QWidget *parent;

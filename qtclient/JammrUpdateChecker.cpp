@@ -54,6 +54,8 @@ void JammrUpdateChecker::start()
   QNetworkRequest request(updateUrl);
   reply = netManager->get(request);
   connect(reply, SIGNAL(finished()), this, SLOT(requestFinished()));
+  connect(reply, &QNetworkReply::sslErrors,
+          this, &JammrUpdateChecker::requestSslErrors);
 
   qDebug("Checking for updates from %s", updateUrl.toString().toLatin1().data());
 }
@@ -100,6 +102,13 @@ static bool isUpToDate(const QString &ourVersion, const QString &latestVersion)
   return false;
 }
 
+void JammrUpdateChecker::requestSslErrors(const QList<QSslError> &errors)
+{
+  for (const QSslError &error : errors) {
+    qCritical("SSL error: %s", error.errorString().toLatin1().constData());
+  }
+}
+
 void JammrUpdateChecker::requestFinished()
 {
   QNetworkReply *theReply = reply;
@@ -110,7 +119,9 @@ void JammrUpdateChecker::requestFinished()
   if (err == QNetworkReply::OperationCanceledError) {
     return;
   } else if (err != QNetworkReply::NoError) {
-    qCritical("Update checker network reply failed (error=%d)", err);
+    qCritical("Update checker network reply failed (error=%d, "
+              "errorString=\"%s\")",
+              err, theReply->errorString().toLatin1().constData());
     return;
   }
 
