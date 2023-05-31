@@ -363,6 +363,12 @@ static void transcode(FILE *infile, FILE *outfile, void **resampleState, VorbisE
       }
     }
 
+    /* If no samples were decoded, then something is wrong */
+    if (decoder.m_samples_used == 0) {
+      fillSilenceSamples(outfile, encoder, framesRemaining);
+      break;
+    }
+
     int nframes = decoder.m_samples_used / decoder.GetNumChannels();
     AudioBuffer abuf((float*)decoder.m_samples.Get(), nframes, decoder.GetNumChannels(), true);
     decoder.m_samples_used = 0;
