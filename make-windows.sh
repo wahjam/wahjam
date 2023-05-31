@@ -35,12 +35,12 @@ common_dlls=(bin/libogg-0.dll
 	     qt5/bin/Qt5Widgets.dll)
 
 i686_dlls=(bin/libgcc_s_sjlj-1.dll
-	   bin/libcrypto-1_1.dll
-	   bin/libssl-1_1.dll)
+	   bin/libcrypto-3.dll
+	   bin/libssl-3.dll)
 
 x86_64_dlls=(bin/libgcc_s_seh-1.dll
-	     bin/libcrypto-1_1-x64.dll
-	     bin/libssl-1_1-x64.dll)
+	     bin/libcrypto-3-x64.dll
+	     bin/libssl-3-x64.dll)
 
 copy_dlls() {
 	dll_dir="$1"
